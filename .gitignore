@@ -1,5 +1,6 @@
 node_modules/
 www/
+supabase/.temp/
 temporary screenshots/
 *.tmp.json
 e2e-test-creds.json
