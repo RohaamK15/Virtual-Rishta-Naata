@@ -22,3 +22,6 @@ ios/App/App.xcodeproj/xcuserdata/
 
 *.log
 .DS_Store
+*.apk
+*.ipa
+*.aab

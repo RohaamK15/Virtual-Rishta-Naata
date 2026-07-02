@@ -66,7 +66,7 @@
     <div class="divider-text">New here?</div>
     <a href="/signup.html" class="btn btn-outline btn-block">Create a Profile</a>
 
-    <p class="signup-prompt">Are you a Virtual Rishta Naata administrator? <a href="/admin.html">Admin Login</a></p>
+    <p class="signup-prompt">Administrators: just log in above with your admin account — you'll be taken to the admin dashboard automatically.</p>
   </div>
 </div>
 
@@ -89,8 +89,9 @@
     btn.setAttribute('disabled', '');
     btn.textContent = 'Logging in...';
     try {
-      await vrnSignIn(email, password);
-      window.location.href = '/search.html';
+      const user = await vrnSignIn(email, password);
+      const { data: profile } = await sb.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
+      window.location.href = profile?.is_admin ? '/admin.html' : '/search.html';
     } catch (err) {
       errorEl.textContent = err.message || 'Could not log in. Please check your details.';
       errorEl.style.display = 'block';

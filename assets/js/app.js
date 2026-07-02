@@ -28,6 +28,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Android hardware/gesture back button: without this, Capacitor's default
+// behaviour exits the app the moment there's no more WebView history, even
+// mid-navigation. Go back through our own page history first, and only let
+// the app actually close once there's truly nowhere left to go.
+if (window.Capacitor?.Plugins?.App) {
+  window.Capacitor.Plugins.App.addListener('backButton', () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.Capacitor.Plugins.App.exitApp();
+    }
+  });
+}
+
 function openSheet(id) {
   document.getElementById(id)?.classList.add('open');
   document.getElementById(id + '-overlay')?.classList.add('open');

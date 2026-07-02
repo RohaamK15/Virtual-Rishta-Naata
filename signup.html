@@ -130,9 +130,10 @@
         </div>
       </div>
 
+      <p class="step-error" style="display:none;color:#A85A3E;font-size:.85rem;margin-top:16px;"></p>
       <div class="step-actions">
         <span></span>
-        <button type="button" class="btn btn-primary" onclick="nextStep()">Continue</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(1)">Continue</button>
       </div>
     </div>
 
@@ -180,9 +181,10 @@
         <p class="field-hint">This is shown alongside your age on the search page — your city and county are only visible once someone opens your full profile.</p>
       </div>
 
+      <p class="step-error" style="display:none;color:#A85A3E;font-size:.85rem;margin-top:16px;"></p>
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" onclick="nextStep()">Continue</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(2)">Continue</button>
       </div>
     </div>
 
@@ -222,9 +224,10 @@
         <textarea id="additionalNote" placeholder="Add any additional preference or note here"></textarea>
       </div>
 
+      <p class="step-error" style="display:none;color:#A85A3E;font-size:.85rem;margin-top:16px;"></p>
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" onclick="nextStep()">Continue</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(3)">Continue</button>
       </div>
     </div>
 
@@ -244,17 +247,19 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
           <span>As a male member, you may optionally add a photo. It will only ever be shown to someone who opens your full profile.</span>
         </div>
-        <div class="upload-box" onclick="document.getElementById('photoInput').click()">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
-          <div style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:.85rem;color:var(--green);">Click to upload a photo</div>
-          <div style="font-size:.78rem;margin-top:4px;">Optional · JPG or PNG · Max 5MB</div>
+        <div class="upload-box" id="uploadBox" onclick="document.getElementById('photoInput').click()">
+          <img id="photoPreview" style="display:none;width:72px;height:72px;object-fit:cover;border-radius:50%;margin:0 auto 12px;" alt="Selected photo preview">
+          <svg id="uploadIcon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+          <div id="uploadLabel" style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:.85rem;color:var(--green);">Click to upload a photo</div>
+          <div id="uploadHint" style="font-size:.78rem;margin-top:4px;">Optional · JPG or PNG · Max 5MB</div>
           <input type="file" id="photoInput" accept="image/*" style="display:none;">
         </div>
       </div>
 
+      <p class="step-error" style="display:none;color:#A85A3E;font-size:.85rem;margin-top:16px;"></p>
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" onclick="nextStep()">Continue</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(4)">Continue</button>
       </div>
     </div>
 
@@ -341,6 +346,21 @@
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
 <script>
+  // One profile per account: if someone already signed up and is still logged
+  // in, send them to their account instead of letting the wizard create a
+  // second, separate profile.
+  async function blockIfAlreadyRegistered(){
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') return; // returning from Stripe — let them through to step 7
+    const user = await vrnCurrentUser();
+    if (!user) return;
+    const { data: existing } = await sb.from('profiles').select('ref_code').eq('id', user.id).maybeSingle();
+    if (existing) {
+      window.location.href = '/account.html';
+    }
+  }
+  blockIfAlreadyRegistered();
+
   const TOTAL_STEPS = 7;
   const stepNames = ["Basics","Background","Preferences","About You","Contact","Membership","Complete"];
   let current = 1;
@@ -348,6 +368,28 @@
 
   document.getElementById('photoInput').addEventListener('change', (e) => {
     selectedPhotoFile = e.target.files[0] || null;
+    if (!selectedPhotoFile) return;
+
+    if (selectedPhotoFile.size > 5 * 1024 * 1024) {
+      alert('That photo is larger than 5MB — please choose a smaller one.');
+      selectedPhotoFile = null;
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const preview = document.getElementById('photoPreview');
+      preview.src = ev.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(selectedPhotoFile);
+
+    document.getElementById('uploadIcon').style.display = 'none';
+    document.getElementById('uploadLabel').textContent = selectedPhotoFile.name;
+    document.getElementById('uploadHint').textContent = 'Photo selected — click to choose a different one';
+    document.getElementById('uploadBox').style.borderColor = 'var(--green)';
+    document.getElementById('uploadBox').style.borderStyle = 'solid';
   });
 
   function renderStep(){
@@ -364,6 +406,47 @@
   function goToStep(n){ current = n; renderStep(); }
   function nextStep(){ if(current < TOTAL_STEPS){ current++; renderStep(); } }
   function prevStep(){ if(current > 1){ current--; renderStep(); } }
+
+  function showStepError(stepNum, message){
+    const el = document.querySelector(`.step[data-step="${stepNum}"] .step-error`);
+    if (el) { el.textContent = message; el.style.display = 'block'; }
+  }
+  function clearStepError(stepNum){
+    const el = document.querySelector(`.step[data-step="${stepNum}"] .step-error`);
+    if (el) el.style.display = 'none';
+  }
+
+  function validateStep(stepNum){
+    if (stepNum === 1) {
+      if (!document.querySelector('input[name="gender"]:checked')) return 'Please select whether you are male or female.';
+      const age = document.getElementById('age').value;
+      if (!age || age < 18 || age > 90) return 'Please enter a valid age (18 or over).';
+      if (!document.getElementById('height').value.trim()) return 'Please enter your height.';
+    }
+    if (stepNum === 2) {
+      const required = ['qualifications', 'employment', 'residentialStatus', 'city', 'county'];
+      for (const id of required) {
+        if (!document.getElementById(id).value.trim()) return 'Please fill in every field before continuing.';
+      }
+      if (!document.getElementById('countryOfResidence').value) return 'Please select your country of residence.';
+    }
+    if (stepNum === 3) {
+      if (!document.getElementById('preferenceLine').value.trim()) return 'Please describe your preference in a line.';
+      if (!document.getElementById('countryLookingIn').value) return 'Please select which country you are looking in.';
+      if (!document.querySelector('input[name="considerPakistan"]:checked')) return 'Please let us know if you\'d consider a match from Pakistan.';
+    }
+    if (stepNum === 4) {
+      if (!document.getElementById('aboutYourself').value.trim()) return 'Please tell us a little about yourself.';
+    }
+    return null;
+  }
+
+  function tryNextStep(stepNum){
+    const error = validateStep(stepNum);
+    if (error) { showStepError(stepNum, error); return; }
+    clearStepError(stepNum);
+    nextStep();
+  }
   function onGenderChange(){
     const isMale = document.querySelector('input[name="gender"]:checked')?.value === 'M';
     document.getElementById('photoSection').style.display = isMale ? 'block' : 'none';
@@ -410,8 +493,14 @@
     btn.setAttribute('disabled', '');
     btn.textContent = 'Creating account...';
     try {
-      await vrnSignUp(email, password);
-      const user = await vrnCurrentUser();
+      // If a session already exists (e.g. the profile insert failed after an
+      // earlier signup attempt), reuse it instead of creating a second,
+      // separate account — one person should only ever have one profile.
+      let user = await vrnCurrentUser();
+      if (!user) {
+        await vrnSignUp(email, password);
+        user = await vrnCurrentUser();
+      }
       if (!user) {
         // Email confirmation is required by this Supabase project's auth settings.
         errorEl.style.color = 'var(--ink-soft)';
