@@ -170,7 +170,7 @@ label{
   letter-spacing:.02em;color:var(--green);margin-bottom:8px;
 }
 .field-hint{font-size:.78rem;color:var(--ink-soft);margin-top:6px;}
-input[type=text],input[type=number],input[type=email],input[type=password],select,textarea{
+input[type=text],input[type=number],input[type=email],input[type=password],input[type=tel],select,textarea{
   width:100%;font-family:'Lato',sans-serif;font-size:.95rem;color:var(--ink);
   background:var(--ivory);border:1.5px solid rgba(19,75,53,.16);border-radius:var(--radius-s);
   padding:13px 16px;transition:border-color .25s var(--ease-out), box-shadow .25s var(--ease-out);
