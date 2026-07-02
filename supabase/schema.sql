@@ -164,7 +164,30 @@ create policy "profile_photos_delete_own" on storage.objects
 -- being enumerable via the storage API directly.
 
 -- ============================================================
--- 5. FIRST ADMIN
+-- 5. CONSULTATION REQUESTS
+-- ============================================================
+-- The Services page's booking form. Open to anyone (even visitors who
+-- haven't created a profile yet), since consultations are available to all
+-- members equally — insert-only from the client; only admins can read these,
+-- via the request-consultation / admin Edge Functions with the service role.
+create table if not exists public.consultation_requests (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  ref_code text,
+  message text,
+  status text not null default 'new' check (status in ('new','contacted','completed')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.consultation_requests enable row level security;
+
+create policy "consultation_requests_insert_anyone" on public.consultation_requests
+  for insert with check (true);
+
+grant insert on public.consultation_requests to anon, authenticated;
+
+-- ============================================================
+-- 6. FIRST ADMIN
 -- ============================================================
 -- After you've created your own account through the normal signup flow once,
 -- run this (with your real user id from auth.users) to make yourself an admin:

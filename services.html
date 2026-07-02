@@ -11,22 +11,26 @@
   .page-hero p{max-width:520px;margin:18px auto 0;color:var(--ink-soft);}
 
   .section{padding:80px 0;}
-  .service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;}
-  @media (max-width:940px){.service-grid{grid-template-columns:1fr;}}
-  .service-card{padding:0;overflow:hidden;display:flex;flex-direction:column;}
-  .service-top{padding:34px 30px 26px;}
-  .service-icon{width:54px;height:54px;border-radius:16px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
-  .service-card.premium .service-icon{background:var(--gold-soft);color:#8A6A2E;}
-  .service-price{
-    margin-top:auto;padding:18px 30px;background:var(--beige);
-    display:flex;align-items:center;justify-content:space-between;
+  .service-feature{
+    display:grid;grid-template-columns:1.1fr .9fr;gap:0;overflow:hidden;max-width:920px;margin:0 auto;
   }
-  .service-price strong{font-family:'Cinzel',serif;color:var(--green);font-size:1.1rem;}
-  .service-price span{font-size:.72rem;color:var(--ink-soft);letter-spacing:.02em;}
-  .service-list{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:10px;}
-  .service-list li{display:flex;gap:10px;font-size:.86rem;color:var(--ink-soft);}
+  @media (max-width:800px){.service-feature{grid-template-columns:1fr;}}
+  .service-feature-main{padding:48px 44px;}
+  @media (max-width:600px){.service-feature-main{padding:36px 28px;}}
+  .service-icon{width:54px;height:54px;border-radius:16px;background:var(--gold-soft);color:#8A6A2E;display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
+  .service-list{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:12px;}
+  .service-list li{display:flex;gap:10px;font-size:.9rem;color:var(--ink-soft);}
   .service-list svg{color:var(--gold);flex-shrink:0;margin-top:3px;}
-  .ribbon{position:absolute;top:18px;right:-34px;background:var(--rose);color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.62rem;letter-spacing:.08em;padding:6px 40px;transform:rotate(40deg);text-transform:uppercase;}
+  .service-feature-price{
+    background:var(--green-2);color:var(--ivory);padding:44px 40px;display:flex;flex-direction:column;justify-content:center;
+  }
+  .service-feature-price .amt{font-family:'Cinzel',serif;font-size:2.6rem;color:var(--gold);margin:10px 0 4px;}
+  .service-feature-price p{color:rgba(255,249,242,.7);font-size:.88rem;margin-top:10px;}
+  .open-to-all-badge{
+    display:inline-flex;align-items:center;gap:8px;background:var(--green-soft);color:var(--green);
+    padding:8px 16px;border-radius:999px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:.72rem;
+    letter-spacing:.03em;margin-top:22px;
+  }
 
   .process-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
   @media (max-width:860px){.process-strip{grid-template-columns:1fr;}}
@@ -48,10 +52,21 @@
 
   .consult-cta{
     background:var(--green-2);border-radius:var(--radius-l);padding:52px 44px;color:var(--ivory);
-    display:grid;grid-template-columns:1.2fr .8fr;gap:36px;align-items:center;position:relative;overflow:hidden;
+    display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start;position:relative;overflow:hidden;
   }
   @media (max-width:800px){.consult-cta{grid-template-columns:1fr;}}
   .consult-cta h2{color:var(--ivory);}
+  .consult-form .field label{color:rgba(255,249,242,.85);}
+  .consult-form .field input,.consult-form .field textarea{
+    background:rgba(255,249,242,.06);border-color:rgba(255,249,242,.2);color:var(--ivory);
+  }
+  .consult-form .field input::placeholder,.consult-form .field textarea::placeholder{color:rgba(255,249,242,.4);}
+  .consult-form .field input:focus,.consult-form .field textarea:focus{border-color:var(--gold);}
+  .consult-success{display:none;text-align:center;padding:30px 10px;}
+  .consult-success .check-circle{
+    width:56px;height:56px;border-radius:50%;background:rgba(255,249,242,.1);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
+  }
 </style>
 </head>
 <body>
@@ -101,48 +116,25 @@
 
   <section class="section">
     <div class="wrap">
-      <div class="service-grid">
-        <div class="service-card surface" data-reveal>
-          <div class="service-top">
-            <div class="service-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
-            <h3>Profile Writing Help</h3>
-            <p style="margin-top:10px;color:var(--ink-soft);font-size:.9rem;">Struggling to describe yourself? We'll help you write a profile that feels authentic and puts your best foot forward.</p>
-            <ul class="service-list">
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>30-minute guided write-up session</li>
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Review of your "about yourself" section</li>
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Delivered over email, at your pace</li>
-            </ul>
+      <div class="service-feature surface" data-reveal>
+        <div class="service-feature-main">
+          <div class="service-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2"/></svg></div>
+          <h3 style="font-size:1.5rem;">One-to-One Consultation</h3>
+          <p style="margin-top:10px;color:var(--ink-soft);font-size:.92rem;">A private video or phone consultation to build the right strategy for your search — honest, personal advice, one member at a time.</p>
+          <ul class="service-list">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>45-minute one-to-one session</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Personalised search & filter strategy</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Guidance on messaging and etiquette</li>
+          </ul>
+          <div class="open-to-all-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            Open to every member, monthly or annual
           </div>
-          <div class="service-price"><span>Included for</span><strong>All Members</strong></div>
         </div>
-
-        <div class="service-card surface premium" style="position:relative;" data-reveal>
-          <div class="ribbon">Popular</div>
-          <div class="service-top">
-            <div class="service-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2"/></svg></div>
-            <h3>One-to-One Consultation</h3>
-            <p style="margin-top:10px;color:var(--ink-soft);font-size:.9rem;">A private video or phone consultation to build the right strategy for your search — honest, personal advice.</p>
-            <ul class="service-list">
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>45-minute one-to-one session</li>
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Personalised search & filter strategy</li>
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Guidance on messaging and etiquette</li>
-            </ul>
-          </div>
-          <div class="service-price"><strong>£35</strong><span>Per session, extra charge</span></div>
-        </div>
-
-        <div class="service-card surface" data-reveal>
-          <div class="service-top">
-            <div class="service-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12l2-2 4 4 8-8 2 2-10 10z"/></svg></div>
-            <h3>Ongoing Search Support</h3>
-            <p style="margin-top:10px;color:var(--ink-soft);font-size:.9rem;">Monthly check-ins with our team to refine your approach as you go, and gentle nudges to keep momentum.</p>
-            <ul class="service-list">
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Monthly progress check-in by email</li>
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Priority response from our support team</li>
-              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Available to annual members</li>
-            </ul>
-          </div>
-          <div class="service-price"><strong>£15</strong><span>Per month, optional add-on</span></div>
+        <div class="service-feature-price">
+          <span class="eyebrow" style="color:var(--gold);">Per Session</span>
+          <div class="amt">£35</div>
+          <p>Available to all members equally — no plan gives priority access, everyone books the same way.</p>
         </div>
       </div>
     </div>
@@ -188,13 +180,13 @@
         </div>
         <div class="t-card surface" data-reveal>
           <div class="stars">★★★★★</div>
-          <p class="t-quote">"I couldn't find the words to describe myself. The profile writing help made it so much easier and it still sounded like me."</p>
-          <div class="t-attrib"><div class="t-avatar">F</div><div><strong>VRN-6108</strong><span>Profile help client</span></div></div>
+          <p class="t-quote">"I wasn't sure I was even filtering the right way. The call sorted that out in 45 minutes — worth every penny."</p>
+          <div class="t-attrib"><div class="t-avatar">F</div><div><strong>VRN-6108</strong><span>Consultation client</span></div></div>
         </div>
         <div class="t-card surface" data-reveal>
           <div class="stars">★★★★★</div>
-          <p class="t-quote">"The monthly check-ins kept me accountable. Small thing, but it made a real difference to how seriously I took the process."</p>
-          <div class="t-attrib"><div class="t-avatar">M</div><div><strong>VRN-0965</strong><span>Ongoing support client</span></div></div>
+          <p class="t-quote">"Honest, practical, and not pushy at all. I came away with an actual plan instead of just vague encouragement."</p>
+          <div class="t-attrib"><div class="t-avatar">M</div><div><strong>VRN-0965</strong><span>Consultation client</span></div></div>
         </div>
       </div>
     </div>
@@ -207,11 +199,32 @@
         <div>
           <span class="eyebrow" style="color:var(--gold);">Book a Consultation</span>
           <h2>Let's Build Your Strategy Together</h2>
-          <p style="margin-top:14px;color:rgba(255,249,242,.75);">A one-to-one session with our team — honest, private, and focused entirely on you.</p>
+          <p style="margin-top:14px;color:rgba(255,249,242,.75);">A one-to-one session with our team — honest, private, and focused entirely on you, at £35 per session. We'll reply by email within one working day to arrange a time.</p>
         </div>
-        <div style="text-align:center;">
-          <a href="mailto:consultations@virtualrishtanaata.com" class="btn btn-gold btn-block">Request a Consultation</a>
-          <p style="margin-top:14px;color:rgba(255,249,242,.5);font-size:.78rem;">We'll reply within one working day.</p>
+        <div>
+          <form class="consult-form" id="consultForm" onsubmit="return false;">
+            <div class="field">
+              <label for="consultEmail">Your Contact Email</label>
+              <input type="email" id="consultEmail" placeholder="you@example.com">
+            </div>
+            <div class="field">
+              <label for="consultRef">Reference Code (if you're already a member)</label>
+              <input type="text" id="consultRef" placeholder="e.g. VRN-2481">
+            </div>
+            <div class="field">
+              <label for="consultMessage">What would you like help with?</label>
+              <textarea id="consultMessage" placeholder="A little about what you're hoping to get from the session..."></textarea>
+            </div>
+            <p id="consultError" style="display:none;color:#F0B49C;font-size:.85rem;margin-bottom:16px;"></p>
+            <button type="button" class="btn btn-gold btn-block" id="consultSubmitBtn" onclick="submitConsultRequest()">Request a Consultation</button>
+          </form>
+          <div class="consult-success" id="consultSuccess">
+            <div class="check-circle">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <h3 style="color:var(--ivory);">Request Sent</h3>
+            <p style="margin-top:10px;color:rgba(255,249,242,.7);font-size:.9rem;">Thank you — we've received your request and will reply within one working day.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -264,5 +277,40 @@
   </div>
 </footer>
 <script src="/assets/js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase-client.js"></script>
+<script>
+  async function submitConsultRequest(){
+    const email = document.getElementById('consultEmail').value.trim();
+    const refCode = document.getElementById('consultRef').value.trim();
+    const message = document.getElementById('consultMessage').value.trim();
+    const errorEl = document.getElementById('consultError');
+    const btn = document.getElementById('consultSubmitBtn');
+    errorEl.style.display = 'none';
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errorEl.textContent = 'Please enter a valid email address.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    btn.setAttribute('disabled', '');
+    btn.textContent = 'Sending...';
+    try {
+      const { error } = await sb.functions.invoke('request-consultation', {
+        body: { email, ref_code: refCode || null, message: message || null }
+      });
+      if (error) throw error;
+      document.getElementById('consultForm').style.display = 'none';
+      document.getElementById('consultSuccess').style.display = 'block';
+    } catch (err) {
+      errorEl.textContent = err.message || 'Something went wrong sending your request — please try again.';
+      errorEl.style.display = 'block';
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Request a Consultation';
+    }
+  }
+</script>
 </body>
 </html>
