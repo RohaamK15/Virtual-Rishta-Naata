@@ -101,10 +101,31 @@
   }
   .commit-row label{margin:0;font-family:'Lato',sans-serif;font-weight:400;font-size:.9rem;color:var(--ink);line-height:1.55;}
   .divider-orn{margin:44px 0;}
+
+  .disclaimer-bar{
+    background:#7A3826;
+    color:#FBEDE7;
+    padding:18px 20px;
+    position:relative;
+    z-index:10;
+  }
+  .disclaimer-bar .wrap{
+    display:flex;align-items:flex-start;gap:14px;max-width:760px;
+  }
+  .disclaimer-bar svg{flex-shrink:0;margin-top:2px;color:#F0B49C;}
+  .disclaimer-bar p{font-family:'Lato',sans-serif;font-size:.88rem;line-height:1.6;}
+  .disclaimer-bar strong{color:#FFF;}
 </style>
 </head>
 <body>
 <a href="#guidance-body" class="skip-link">Skip to content</a>
+
+<div class="disclaimer-bar" role="note">
+  <div class="wrap">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+    <p><strong>Please note:</strong> Virtual Rishta Naata is an independent, privately-run platform. It is <strong>not an official website of the Ahmadiyya Muslim Jama'at</strong>, and is not affiliated with, endorsed by, or operated on behalf of the Jama'at or its Khilafat.</p>
+  </div>
+</div>
 
 <header class="guidance-hero">
   <div class="texture-noise"></div>
