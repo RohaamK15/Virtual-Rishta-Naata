@@ -213,6 +213,10 @@
               <input type="text" id="consultRef" placeholder="e.g. VRN-2481">
             </div>
             <div class="field">
+              <label for="consultPhone">Phone Number (optional)</label>
+              <input type="tel" id="consultPhone" placeholder="e.g. 07123 456789">
+            </div>
+            <div class="field">
               <label for="consultMessage">What would you like help with?</label>
               <textarea id="consultMessage" placeholder="A little about what you're hoping to get from the session..."></textarea>
             </div>
@@ -295,6 +299,7 @@
   async function submitConsultRequest(){
     const email = document.getElementById('consultEmail').value.trim();
     const refCode = document.getElementById('consultRef').value.trim();
+    const phone = document.getElementById('consultPhone').value.trim();
     const message = document.getElementById('consultMessage').value.trim();
     const memberChoice = document.querySelector('input[name="consultIsMember"]:checked');
     const errorEl = document.getElementById('consultError');
@@ -325,7 +330,7 @@
       // This is the part that actually matters — the request is saved
       // regardless of whether the notification email below succeeds.
       const { error: insertError } = await sb.from('consultation_requests').insert({
-        email, ref_code: refCode || null, message: message || null
+        email, ref_code: refCode || null, phone: phone || null, message: message || null
       });
       if (insertError) throw insertError;
 
@@ -337,6 +342,7 @@
         await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, {
           user_email: email,
           ref_code: refCode || '(not provided)',
+          phone: phone || '(not provided)',
           message: message || '(no message provided)',
         });
       } catch (emailErr) {

@@ -176,6 +176,7 @@ create table if not exists public.consultation_requests (
   id uuid primary key default gen_random_uuid(),
   email text not null,
   ref_code text,
+  phone text,
   message text,
   status text not null default 'new' check (status in ('new','contacted','completed')),
   created_at timestamptz not null default now()
