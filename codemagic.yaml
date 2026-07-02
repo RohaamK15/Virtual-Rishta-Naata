@@ -25,7 +25,6 @@ workflows:
     environment:
       node: 22
       xcode: latest
-      cocoapods: default
     scripts:
       - name: Install dependencies
         script: npm ci
@@ -33,13 +32,9 @@ workflows:
         script: node build-www.mjs
       - name: Sync Capacitor iOS
         script: npx cap sync ios
-      - name: Install CocoaPods
-        script: |
-          cd ios/App
-          pod install
       - name: Build for simulator (no signing required)
         script: |
-          xcodebuild -workspace ios/App/App.xcworkspace \
+          xcodebuild -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Debug \
             -sdk iphonesimulator \
@@ -76,7 +71,6 @@ workflows:
   #   environment:
   #     node: 22
   #     xcode: latest
-  #     cocoapods: default
   #     ios_signing:
   #       distribution_type: app_store
   #       bundle_identifier: com.virtualrishtanaata.app
@@ -86,8 +80,7 @@ workflows:
   #     - npm ci
   #     - node build-www.mjs
   #     - npx cap sync ios
-  #     - cd ios/App && pod install
-  #     - xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
+  #     - xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
   #   artifacts:
   #     - build/ios/ipa/*.ipa
   #   publishing:
