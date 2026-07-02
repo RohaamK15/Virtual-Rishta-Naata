@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  body{background:var(--green-2);}
+  body{background:var(--ivory);}
   .verses-section{
-    background:var(--green-2);
+    background:var(--ivory);
     padding:8px 0 84px;
     position:relative;
     overflow:hidden;
@@ -21,7 +21,7 @@
     font-weight:700;
     font-size:clamp(1.9rem,5vw,2.75rem);
     line-height:2.15;
-    color:var(--gold);
+    color:var(--green);
     margin-bottom:30px;
     direction:rtl;
     unicode-bidi:isolate;
@@ -31,7 +31,7 @@
     font-style:italic;
     font-size:1.08rem;
     line-height:1.85;
-    color:rgba(255,249,242,.86);
+    color:var(--ink-soft);
     margin-bottom:16px;
   }
   .verse-citation{
@@ -40,37 +40,37 @@
     font-size:.74rem;
     letter-spacing:.14em;
     text-transform:uppercase;
-    color:rgba(255,249,242,.5);
+    color:var(--gold);
   }
   .verses-divider{margin:56px auto;}
   .guidance-hero{
-    min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;color:var(--ivory);padding:80px 24px 60px;position:relative;overflow:hidden;
+    min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;color:var(--ink);padding:80px 24px 60px;position:relative;overflow:hidden;
     background:
-      radial-gradient(ellipse 60% 50% at 20% 0%, rgba(197,157,82,.18), transparent),
-      radial-gradient(ellipse 60% 50% at 85% 100%, rgba(216,137,111,.14), transparent),
-      var(--green-2);
+      radial-gradient(ellipse 60% 50% at 20% 0%, rgba(197,157,82,.14), transparent),
+      radial-gradient(ellipse 60% 50% at 85% 100%, rgba(216,137,111,.12), transparent),
+      var(--ivory);
   }
-  .guidance-hero .texture-noise{opacity:.06;mix-blend-mode:overlay;}
+  .guidance-hero .texture-noise{opacity:.04;mix-blend-mode:multiply;}
   .arch-portal{
     width:120px;height:150px;border:1.5px solid var(--gold);
     border-radius:50% 50% 8px 8px / 40% 40% 8px 8px;
     display:flex;align-items:center;justify-content:center;margin-bottom:32px;
-    background:rgba(197,157,82,.06);
+    background:rgba(197,157,82,.08);
   }
-  .arch-portal svg{width:46px;height:46px;}
+  .arch-portal svg{width:46px;height:46px;color:var(--gold);}
   .bismillah{font-family:'Cinzel',serif;font-size:.95rem;letter-spacing:.3em;color:var(--gold);margin-bottom:22px;text-transform:uppercase;}
-  .guidance-hero h1{color:var(--ivory);max-width:680px;}
-  .guidance-hero .lede{max-width:560px;color:rgba(255,249,242,.72);margin-top:22px;font-size:1.05rem;}
+  .guidance-hero h1{color:var(--green);max-width:680px;}
+  .guidance-hero .lede{max-width:560px;color:var(--ink-soft);margin-top:22px;font-size:1.05rem;}
   .scroll-cue{
     position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
-    display:flex;flex-direction:column;align-items:center;gap:8px;color:rgba(255,249,242,.5);
+    display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--ink-soft);
     font-family:'Montserrat',sans-serif;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;
   }
   .scroll-cue svg{animation:bob 2s ease-in-out infinite;}
   @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(6px);}}
 
-  .guidance-body{background:var(--ivory);border-radius:36px 36px 0 0;padding:72px 0 40px;position:relative;}
+  .guidance-body{background:var(--ivory);padding:24px 0 40px;position:relative;}
   .g-section{padding:0 0 56px;}
   .g-section:last-of-type{padding-bottom:0;}
   .g-icon{
