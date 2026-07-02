@@ -7,7 +7,7 @@
 // publishable key) — it only allows sending through templates you've set up
 // on your own account, it isn't a secret.
 window.EMAILJS_CONFIG = {
-  publicKey: "YOUR_EMAILJS_PUBLIC_KEY",
-  serviceId: "YOUR_EMAILJS_SERVICE_ID",
-  templateId: "YOUR_EMAILJS_TEMPLATE_ID",
+  publicKey: "OgOmel1OdnTJaWylP",
+  serviceId: "service_i15ivxr",
+  templateId: "template_qisck9a",
 };
