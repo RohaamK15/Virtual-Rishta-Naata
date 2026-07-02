@@ -35,6 +35,7 @@ The admin dashboard and payments run through small server-side functions in
 2. `supabase login`
 3. `supabase link --project-ref YOUR-PROJECT-REF` (run from this project folder)
 4. `supabase functions deploy create-checkout-session`
+   `supabase functions deploy create-consultation-checkout`
    `supabase functions deploy stripe-webhook --no-verify-jwt`
    `supabase functions deploy get-profile-photo`
    `supabase functions deploy admin-list-profiles`
@@ -48,11 +49,15 @@ The admin dashboard and payments run through small server-side functions in
    - "Monthly Membership" — £10.00 / month
    - "Annual Membership" — £100.00 / year
    Copy each **Price ID** (starts `price_...`).
+   Also add a one-off price:
+   - "One-to-One Consultation" — £35.00, **one time** (not recurring).
+   Copy its **Price ID** too.
 3. **Developers > API keys** — copy your **Secret key**.
 4. In Supabase: **Project Settings > Edge Functions > Secrets**, add:
    - `STRIPE_SECRET_KEY`
    - `STRIPE_PRICE_MONTHLY`
    - `STRIPE_PRICE_ANNUAL`
+   - `STRIPE_PRICE_CONSULTATION`
    - `APP_URL` — your site's URL (e.g. `https://virtualrishtanaata.com`, or
      `http://localhost:3000` while testing)
    - `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` — the

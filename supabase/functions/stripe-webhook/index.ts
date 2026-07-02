@@ -32,6 +32,18 @@ Deno.serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        if (session.mode === "payment") {
+          // The £35 one-to-one consultation — a single payment, not a subscription.
+          const requestId = session.metadata?.consultation_request_id;
+          if (requestId) {
+            await admin.from("consultation_requests").update({
+              payment_status: "paid",
+            }).eq("id", requestId);
+          }
+          break;
+        }
+
         const userId = session.client_reference_id || session.metadata?.supabase_user_id;
         const plan = session.metadata?.plan;
         if (userId) {

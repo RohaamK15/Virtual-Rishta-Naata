@@ -200,6 +200,11 @@ create table if not exists public.consultation_requests (
   phone text,
   message text,
   status text not null default 'new' check (status in ('new','contacted','completed')),
+  -- Set to 'paid' only by the stripe-webhook function once Stripe confirms the
+  -- £35 payment — never trust the client for this. Rows can exist as 'unpaid'
+  -- if someone abandons Stripe Checkout before paying.
+  payment_status text not null default 'unpaid' check (payment_status in ('unpaid','paid','refunded')),
+  stripe_checkout_session_id text,
   created_at timestamptz not null default now()
 );
 
