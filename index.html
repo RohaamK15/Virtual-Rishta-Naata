@@ -5,8 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Virtual Rishta Naata — Before You Begin</title>
 <link rel="stylesheet" href="/assets/css/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <style>
   body{background:var(--green-2);}
+  .verses-section{
+    background:var(--green-2);
+    padding:8px 0 84px;
+    position:relative;
+    overflow:hidden;
+  }
+  .verse-block{text-align:center;max-width:680px;margin:0 auto;}
+  .verse-arabic{
+    font-family:'Amiri',serif;
+    font-weight:700;
+    font-size:clamp(1.9rem,5vw,2.75rem);
+    line-height:2.15;
+    color:var(--gold);
+    margin-bottom:30px;
+    direction:rtl;
+    unicode-bidi:isolate;
+  }
+  .verse-translation{
+    font-family:'Lato',sans-serif;
+    font-style:italic;
+    font-size:1.08rem;
+    line-height:1.85;
+    color:rgba(255,249,242,.86);
+    margin-bottom:16px;
+  }
+  .verse-citation{
+    font-family:'Montserrat',sans-serif;
+    font-weight:600;
+    font-size:.74rem;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:rgba(255,249,242,.5);
+  }
+  .verses-divider{margin:56px auto;}
   .guidance-hero{
     min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;color:var(--ivory);padding:80px 24px 60px;position:relative;overflow:hidden;
@@ -83,6 +119,26 @@
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
   </div>
 </header>
+
+<section class="verses-section">
+  <div class="wrap wrap--narrow">
+    <div class="verse-block" data-reveal>
+      <p class="verse-arabic" dir="rtl" lang="ar">وَمِنْ آيَاتِهِ أَنْ خَلَقَ لَكُمْ مِّنْ أَنفُسِكُمْ أَزْوَاجًا لِّتَسْكُنُوا إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً ۚ إِنَّ فِي ذَٰلِكَ لَآيَاتٍ لِّقَوْمٍ يَتَفَكَّرُونَ</p>
+      <p class="verse-translation">"And of His Signs is that He has created wives for you from among yourselves that you may find peace of mind in them, and He has put love and tenderness between you. In that, surely, are Signs for a people who reflect."</p>
+      <span class="verse-citation">Surah Ar-Rum, 30:22</span>
+    </div>
+
+    <div class="ornament-divider verses-divider">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:var(--gold);"><path d="M12 2l2.5 7.5H22l-6 4.5 2.5 7.5-6.5-4.5L5.5 21.5 8 14 2 9.5h7.5z"/></svg>
+    </div>
+
+    <div class="verse-block" data-reveal>
+      <p class="verse-arabic" dir="rtl" lang="ar">هُنَّ لِبَاسٌ لَّكُمْ وَأَنتُمْ لِبَاسٌ لَّهُنَّ</p>
+      <p class="verse-translation">"They are a garment for you and you are a garment for them."</p>
+      <span class="verse-citation">Surah Al-Baqarah, 2:188</span>
+    </div>
+  </div>
+</section>
 
 <main class="guidance-body" id="guidance-body">
   <div class="wrap wrap--narrow">
