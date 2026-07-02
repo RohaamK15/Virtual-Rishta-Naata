@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<style>
+  .page-hero{padding:60px 0 50px;text-align:center;background:linear-gradient(160deg,var(--beige),var(--ivory));}
+  .page-hero h1{margin-top:14px;}
+  .page-hero p{max-width:520px;margin:18px auto 0;color:var(--ink-soft);}
+
+  .toggle-row{display:flex;justify-content:center;margin-top:36px;}
+  .toggle{
+    display:inline-flex;background:#fff;border-radius:999px;padding:5px;box-shadow:var(--shadow-1);
+  }
+  .toggle button{
+    font-family:'Montserrat',sans-serif;font-weight:600;font-size:.8rem;padding:11px 24px;border-radius:999px;
+    border:none;background:transparent;color:var(--ink-soft);cursor:pointer;transition:all .3s var(--ease-out);
+  }
+  .toggle button.active{background:var(--green);color:var(--ivory);}
+
+  .section{padding:70px 0 90px;}
+  .plans{display:grid;grid-template-columns:1fr 1fr;gap:30px;max-width:840px;margin:0 auto;}
+  @media (max-width:700px){.plans{grid-template-columns:1fr;}}
+  .plan-card{padding:40px 34px;position:relative;}
+  .plan-card.featured{border:2px solid var(--gold);}
+  .plan-tag{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--green-2);font-family:'Montserrat',sans-serif;font-weight:700;font-size:.68rem;letter-spacing:.06em;padding:7px 18px;border-radius:999px;text-transform:uppercase;}
+  .plan-amount{font-family:'Cinzel',serif;font-size:2.8rem;color:var(--green);margin:18px 0 2px;}
+  .plan-amount span{font-size:1rem;font-family:'Lato',sans-serif;color:var(--ink-soft);}
+  .plan-note{font-size:.82rem;color:var(--ink-soft);margin-top:6px;}
+  .plan-features{list-style:none;padding:0;margin:28px 0 30px;display:grid;gap:14px;}
+  .plan-features li{display:flex;gap:12px;font-size:.9rem;color:var(--ink-soft);}
+  .plan-features svg{color:var(--gold);flex-shrink:0;margin-top:3px;}
+
+  .compare-table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius-m);overflow:hidden;box-shadow:var(--shadow-1);}
+  .compare-table th,.compare-table td{padding:16px 20px;text-align:left;font-size:.88rem;border-bottom:1px solid rgba(19,75,53,.08);}
+  .compare-table th{font-family:'Montserrat',sans-serif;font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--green);background:var(--green-soft);}
+  .compare-table td:not(:first-child), .compare-table th:not(:first-child){text-align:center;}
+  .compare-table tr:last-child td{border-bottom:none;}
+  .compare-table svg{color:var(--green);}
+  .compare-table .no{color:rgba(75,58,42,.28);}
+
+  .faq{max-width:760px;margin:0 auto;}
+  .faq-item{padding:26px 0;border-bottom:1px solid rgba(19,75,53,.1);}
+  .faq-item h3{font-size:1.05rem;margin-bottom:10px;}
+  .faq-item p{color:var(--ink-soft);font-size:.92rem;}
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="/home.html" class="brand">
+      <img src="/assets/img/logo.jpg" alt="Virtual Rishta Naata logo">
+      <span class="brand-word">Virtual<br>Rishta Naata</span>
+    </a>
+    <div class="nav-links">
+      <a href="/home.html">Home</a>
+      <a href="/services.html">Services</a>
+      <a href="/pricing.html" class="active">Pricing</a>
+      <a href="/search.html">Browse Profiles</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/login.html" class="btn btn-outline btn-sm">Log In</a>
+      <a href="/signup.html" class="btn btn-primary btn-sm">Create Profile</a>
+      <button class="nav-toggle" aria-label="Open menu">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+<div class="mobile-menu">
+  <div class="mobile-menu-top">
+    <img src="/assets/img/logo.jpg" alt="" style="height:40px;width:40px;border-radius:50%;">
+    <button class="mobile-menu-close" aria-label="Close menu">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <a href="/home.html">Home</a>
+  <a href="/services.html">Services</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/search.html">Browse Profiles</a>
+  <a href="/login.html">Log In</a>
+  <a href="/signup.html" style="color:var(--gold);">Create Profile →</a>
+</div>
+
+<main id="main">
+  <header class="page-hero">
+    <span class="eyebrow">Membership</span>
+    <h1>One Membership. Full Access.</h1>
+    <p>No hidden tiers, no locked features. Every member gets the same complete, respectful experience.</p>
+  </header>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="plans">
+        <div class="plan-card surface" data-reveal>
+          <span class="eyebrow eyebrow--green">Monthly</span>
+          <div class="plan-amount">£10<span> / month</span></div>
+          <p class="plan-note">Billed monthly. Cancel anytime.</p>
+          <ul class="plan-features">
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Full profile creation & reference code</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Unlimited search with full filters</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Contact any member directly via email</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Free profile writing assistance</li>
+          </ul>
+          <a href="/signup.html?plan=monthly" class="btn btn-outline btn-block">Choose Monthly</a>
+        </div>
+
+        <div class="plan-card surface featured" data-reveal>
+          <span class="plan-tag">Save £20</span>
+          <span class="eyebrow eyebrow--green">Annual</span>
+          <div class="plan-amount">£100<span> / year</span></div>
+          <p class="plan-note">Just £8.33 a month, billed annually.</p>
+          <ul class="plan-features">
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Everything in Monthly, plus:</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Two months free compared to monthly</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Priority access to consultation slots</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>One complimentary check-in call</li>
+          </ul>
+          <a href="/signup.html?plan=annual" class="btn btn-gold btn-block">Choose Annual</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" style="background:var(--beige);padding-top:70px;">
+    <div class="wrap wrap--narrow">
+      <div class="section-head">
+        <span class="eyebrow eyebrow--rose">Compare</span>
+        <h2>Exactly What You Get</h2>
+      </div>
+      <table class="compare-table">
+        <thead><tr><th>Feature</th><th>Monthly</th><th>Annual</th></tr></thead>
+        <tbody>
+          <tr><td>Anonymous reference code profile</td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td></tr>
+          <tr><td>Full search & filters</td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td></tr>
+          <tr><td>Direct email contact</td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td></tr>
+          <tr><td>Free profile writing help</td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td></tr>
+          <tr><td>Priority consultation booking</td><td class="no">—</td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td></tr>
+          <tr><td>Complimentary check-in call</td><td class="no">—</td><td><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap wrap--narrow">
+      <div class="section-head">
+        <span class="eyebrow">Questions</span>
+        <h2>Frequently Asked</h2>
+      </div>
+      <div class="faq">
+        <div class="faq-item" data-reveal>
+          <h3>Can I cancel at any time?</h3>
+          <p>Yes. Monthly plans can be cancelled at any time and you won't be charged again. Annual plans run for the full year but are non-recurring — we'll simply ask if you'd like to renew.</p>
+        </div>
+        <div class="faq-item" data-reveal>
+          <h3>Is my payment linked to my identity on the platform?</h3>
+          <p>No. Payment details are held securely and separately from your public profile. Other members only ever see your reference code.</p>
+        </div>
+        <div class="faq-item" data-reveal>
+          <h3>What happens if my account is found in breach of the guidelines?</h3>
+          <p>Our admin team may remove your account immediately, without refund, in line with the standards outlined during onboarding.</p>
+        </div>
+        <div class="faq-item" data-reveal>
+          <h3>Do I need to pay before creating a profile?</h3>
+          <p>You'll complete your profile details first, then subscribe as the final step — that's when your reference code is generated.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:16px;">
+          <img src="/assets/img/logo.jpg" alt="">
+          <span class="brand-word" style="color:var(--ivory);">Virtual<br>Rishta Naata</span>
+        </div>
+        <p style="font-size:.86rem;max-width:280px;">Connecting Ahmadi Muslim families worldwide, anonymously and respectfully.</p>
+      </div>
+      <div>
+        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Platform</h4>
+        <div style="display:grid;gap:12px;font-size:.86rem;">
+          <a href="/home.html">Home</a>
+          <a href="/search.html">Browse Profiles</a>
+          <a href="/signup.html">Create Profile</a>
+          <a href="/pricing.html">Pricing</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Support</h4>
+        <div style="display:grid;gap:12px;font-size:.86rem;">
+          <a href="/services.html">Services</a>
+          <a href="/login.html">Log In</a>
+          <a href="mailto:support@virtualrishtanaata.com">Contact Us</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Trust</h4>
+        <div style="display:grid;gap:12px;font-size:.86rem;">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Use</a>
+          <a href="#">Community Guidelines</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Virtual Rishta Naata. All rights reserved.</span>
+      <span>Connecting Families. Creating Lifelong Bonds.</span>
+    </div>
+  </div>
+</footer>
+<script src="/assets/js/app.js"></script>
+</body>
+</html>

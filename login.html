@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<style>
+  body{
+    min-height:100vh;display:flex;flex-direction:column;
+    background:
+      radial-gradient(ellipse 60% 45% at 15% 0%, rgba(197,157,82,.12), transparent),
+      radial-gradient(ellipse 55% 40% at 90% 100%, rgba(216,137,111,.10), transparent),
+      var(--beige);
+  }
+  .login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:60px 24px;}
+  .login-card{width:100%;max-width:420px;background:#fff;border-radius:var(--radius-l);box-shadow:var(--shadow-3);padding:44px 38px;}
+  @media (max-width:480px){.login-card{padding:34px 26px;}}
+  .login-brand{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:30px;}
+  .login-brand img{height:56px;width:56px;border-radius:50%;margin-bottom:14px;}
+  .login-brand h1{font-size:1.4rem;}
+  .login-brand p{margin-top:8px;color:var(--ink-soft);font-size:.88rem;}
+  .form-foot{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;margin-top:-8px;margin-bottom:24px;}
+  .form-foot a{color:var(--gold);font-weight:600;}
+  .remember{display:flex;align-items:center;gap:8px;color:var(--ink-soft);}
+  .remember input{width:16px;height:16px;accent-color:var(--green);}
+  .divider-text{display:flex;align-items:center;gap:14px;margin:26px 0;color:var(--ink-soft);font-size:.78rem;}
+  .divider-text::before,.divider-text::after{content:'';flex:1;height:1px;background:rgba(19,75,53,.12);}
+  .signup-prompt{text-align:center;margin-top:22px;font-size:.88rem;color:var(--ink-soft);}
+  .signup-prompt a{color:var(--green);font-weight:700;}
+  .back-home{position:absolute;top:28px;left:28px;font-size:.82rem;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;gap:6px;}
+  .back-home:hover{color:var(--green);}
+</style>
+</head>
+<body>
+<a href="/home.html" class="back-home">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  Back to Home
+</a>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-brand">
+      <img src="/assets/img/logo.jpg" alt="Virtual Rishta Naata logo">
+      <h1>Welcome Back</h1>
+      <p>Log in with your contact email and password.</p>
+    </div>
+
+    <form onsubmit="return false;">
+      <div class="field">
+        <label for="email">Contact Email</label>
+        <input type="email" id="email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Your password">
+      </div>
+      <div class="form-foot">
+        <label class="remember"><input type="checkbox">Remember me</label>
+        <a href="#">Forgot password?</a>
+      </div>
+      <p id="loginError" style="display:none;color:#A85A3E;font-size:.85rem;margin-bottom:16px;"></p>
+      <button type="button" id="loginBtn" class="btn btn-primary btn-block" onclick="handleLogin()">Log In</button>
+    </form>
+
+    <div class="divider-text">New here?</div>
+    <a href="/signup.html" class="btn btn-outline btn-block">Create a Profile</a>
+
+    <p class="signup-prompt">Are you a Virtual Rishta Naata administrator? <a href="/admin.html">Admin Login</a></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase-client.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script>
+  async function handleLogin() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errorEl = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+    errorEl.style.display = 'none';
+    if (!email || !password) {
+      errorEl.textContent = 'Please enter your email and password.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    btn.setAttribute('disabled', '');
+    btn.textContent = 'Logging in...';
+    try {
+      await vrnSignIn(email, password);
+      window.location.href = '/search.html';
+    } catch (err) {
+      errorEl.textContent = err.message || 'Could not log in. Please check your details.';
+      errorEl.style.display = 'block';
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Log In';
+    }
+  }
+</script>
+</body>
+</html>

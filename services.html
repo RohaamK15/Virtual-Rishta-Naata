@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Services — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<style>
+  .page-hero{padding:60px 0 70px;text-align:center;background:linear-gradient(160deg,var(--beige),var(--ivory));position:relative;}
+  .page-hero h1{margin-top:14px;}
+  .page-hero p{max-width:520px;margin:18px auto 0;color:var(--ink-soft);}
+
+  .section{padding:80px 0;}
+  .service-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;}
+  @media (max-width:940px){.service-grid{grid-template-columns:1fr;}}
+  .service-card{padding:0;overflow:hidden;display:flex;flex-direction:column;}
+  .service-top{padding:34px 30px 26px;}
+  .service-icon{width:54px;height:54px;border-radius:16px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:20px;}
+  .service-card.premium .service-icon{background:var(--gold-soft);color:#8A6A2E;}
+  .service-price{
+    margin-top:auto;padding:18px 30px;background:var(--beige);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .service-price strong{font-family:'Cinzel',serif;color:var(--green);font-size:1.1rem;}
+  .service-price span{font-size:.72rem;color:var(--ink-soft);letter-spacing:.02em;}
+  .service-list{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:10px;}
+  .service-list li{display:flex;gap:10px;font-size:.86rem;color:var(--ink-soft);}
+  .service-list svg{color:var(--gold);flex-shrink:0;margin-top:3px;}
+  .ribbon{position:absolute;top:18px;right:-34px;background:var(--rose);color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.62rem;letter-spacing:.08em;padding:6px 40px;transform:rotate(40deg);text-transform:uppercase;}
+
+  .process-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+  @media (max-width:860px){.process-strip{grid-template-columns:1fr;}}
+  .process-item{text-align:center;padding:30px 20px;}
+  .process-num{
+    width:44px;height:44px;border-radius:50%;border:1.5px solid var(--gold);color:var(--gold);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:'Cinzel',serif;
+  }
+
+  .testimonial-row{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;}
+  @media (max-width:900px){.testimonial-row{grid-template-columns:1fr;}}
+  .t-card{padding:30px 26px;}
+  .t-quote{color:var(--ink-soft);font-style:italic;line-height:1.7;}
+  .t-attrib{margin-top:18px;display:flex;align-items:center;gap:12px;}
+  .t-avatar{width:38px;height:38px;border-radius:50%;background:var(--green-soft);display:flex;align-items:center;justify-content:center;color:var(--green);font-family:'Cinzel',serif;font-size:.82rem;}
+  .t-attrib strong{display:block;font-size:.85rem;color:var(--green);}
+  .t-attrib span{font-size:.74rem;color:var(--ink-soft);}
+  .stars{color:var(--gold);margin-bottom:14px;display:flex;gap:2px;}
+
+  .consult-cta{
+    background:var(--green-2);border-radius:var(--radius-l);padding:52px 44px;color:var(--ivory);
+    display:grid;grid-template-columns:1.2fr .8fr;gap:36px;align-items:center;position:relative;overflow:hidden;
+  }
+  @media (max-width:800px){.consult-cta{grid-template-columns:1fr;}}
+  .consult-cta h2{color:var(--ivory);}
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">Skip to content</a>
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="/home.html" class="brand">
+      <img src="/assets/img/logo.jpg" alt="Virtual Rishta Naata logo">
+      <span class="brand-word">Virtual<br>Rishta Naata</span>
+    </a>
+    <div class="nav-links">
+      <a href="/home.html">Home</a>
+      <a href="/services.html" class="active">Services</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/search.html">Browse Profiles</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/login.html" class="btn btn-outline btn-sm">Log In</a>
+      <a href="/signup.html" class="btn btn-primary btn-sm">Create Profile</a>
+      <button class="nav-toggle" aria-label="Open menu">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+<div class="mobile-menu">
+  <div class="mobile-menu-top">
+    <img src="/assets/img/logo.jpg" alt="" style="height:40px;width:40px;border-radius:50%;">
+    <button class="mobile-menu-close" aria-label="Close menu">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <a href="/home.html">Home</a>
+  <a href="/services.html">Services</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/search.html">Browse Profiles</a>
+  <a href="/login.html">Log In</a>
+  <a href="/signup.html" style="color:var(--gold);">Create Profile →</a>
+</div>
+
+<main id="main">
+  <header class="page-hero">
+    <span class="eyebrow">Guidance, Not Just a Platform</span>
+    <h1>Services Built Around You</h1>
+    <p>Beyond matching, we offer real human support — because a good profile and a clear strategy make all the difference.</p>
+  </header>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="service-grid">
+        <div class="service-card surface" data-reveal>
+          <div class="service-top">
+            <div class="service-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+            <h3>Profile Writing Help</h3>
+            <p style="margin-top:10px;color:var(--ink-soft);font-size:.9rem;">Struggling to describe yourself? We'll help you write a profile that feels authentic and puts your best foot forward.</p>
+            <ul class="service-list">
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>30-minute guided write-up session</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Review of your "about yourself" section</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Delivered over email, at your pace</li>
+            </ul>
+          </div>
+          <div class="service-price"><span>Included for</span><strong>All Members</strong></div>
+        </div>
+
+        <div class="service-card surface premium" style="position:relative;" data-reveal>
+          <div class="ribbon">Popular</div>
+          <div class="service-top">
+            <div class="service-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2"/></svg></div>
+            <h3>One-to-One Consultation</h3>
+            <p style="margin-top:10px;color:var(--ink-soft);font-size:.9rem;">A private video or phone consultation to build the right strategy for your search — honest, personal advice.</p>
+            <ul class="service-list">
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>45-minute one-to-one session</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Personalised search & filter strategy</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Guidance on messaging and etiquette</li>
+            </ul>
+          </div>
+          <div class="service-price"><strong>£35</strong><span>Per session, extra charge</span></div>
+        </div>
+
+        <div class="service-card surface" data-reveal>
+          <div class="service-top">
+            <div class="service-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12l2-2 4 4 8-8 2 2-10 10z"/></svg></div>
+            <h3>Ongoing Search Support</h3>
+            <p style="margin-top:10px;color:var(--ink-soft);font-size:.9rem;">Monthly check-ins with our team to refine your approach as you go, and gentle nudges to keep momentum.</p>
+            <ul class="service-list">
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Monthly progress check-in by email</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Priority response from our support team</li>
+              <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Available to annual members</li>
+            </ul>
+          </div>
+          <div class="service-price"><strong>£15</strong><span>Per month, optional add-on</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" style="background:var(--beige);">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow eyebrow--rose">How Consultations Work</span>
+        <h2>A Simple, Personal Process</h2>
+      </div>
+      <div class="process-strip">
+        <div class="process-item surface" data-reveal>
+          <div class="process-num">1</div>
+          <h3>Book Your Slot</h3>
+          <p style="margin-top:10px;color:var(--ink-soft);font-size:.88rem;">Choose a time that works for you — evenings and weekends available.</p>
+        </div>
+        <div class="process-item surface" data-reveal>
+          <div class="process-num">2</div>
+          <h3>Speak With Our Team</h3>
+          <p style="margin-top:10px;color:var(--ink-soft);font-size:.88rem;">A candid conversation about your goals, preferences and any concerns.</p>
+        </div>
+        <div class="process-item surface" data-reveal>
+          <div class="process-num">3</div>
+          <h3>Walk Away With a Plan</h3>
+          <p style="margin-top:10px;color:var(--ink-soft);font-size:.88rem;">Clear, practical next steps for your profile and your search.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Testimonials</span>
+        <h2>What Members Say About Our Support</h2>
+      </div>
+      <div class="testimonial-row">
+        <div class="t-card surface" data-reveal>
+          <div class="stars">★★★★★</div>
+          <p class="t-quote">"The consultation gave me the confidence to actually put myself out there. It didn't feel salesy — it felt like genuine advice."</p>
+          <div class="t-attrib"><div class="t-avatar">M</div><div><strong>VRN-2733</strong><span>Consultation client</span></div></div>
+        </div>
+        <div class="t-card surface" data-reveal>
+          <div class="stars">★★★★★</div>
+          <p class="t-quote">"I couldn't find the words to describe myself. The profile writing help made it so much easier and it still sounded like me."</p>
+          <div class="t-attrib"><div class="t-avatar">F</div><div><strong>VRN-6108</strong><span>Profile help client</span></div></div>
+        </div>
+        <div class="t-card surface" data-reveal>
+          <div class="stars">★★★★★</div>
+          <p class="t-quote">"The monthly check-ins kept me accountable. Small thing, but it made a real difference to how seriously I took the process."</p>
+          <div class="t-attrib"><div class="t-avatar">M</div><div><strong>VRN-0965</strong><span>Ongoing support client</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="consult-cta">
+        <div class="texture-noise"></div>
+        <div>
+          <span class="eyebrow" style="color:var(--gold);">Book a Consultation</span>
+          <h2>Let's Build Your Strategy Together</h2>
+          <p style="margin-top:14px;color:rgba(255,249,242,.75);">A one-to-one session with our team — honest, private, and focused entirely on you.</p>
+        </div>
+        <div style="text-align:center;">
+          <a href="mailto:consultations@virtualrishtanaata.com" class="btn btn-gold btn-block">Request a Consultation</a>
+          <p style="margin-top:14px;color:rgba(255,249,242,.5);font-size:.78rem;">We'll reply within one working day.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="brand" style="margin-bottom:16px;">
+          <img src="/assets/img/logo.jpg" alt="">
+          <span class="brand-word" style="color:var(--ivory);">Virtual<br>Rishta Naata</span>
+        </div>
+        <p style="font-size:.86rem;max-width:280px;">Connecting Ahmadi Muslim families worldwide, anonymously and respectfully.</p>
+      </div>
+      <div>
+        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Platform</h4>
+        <div style="display:grid;gap:12px;font-size:.86rem;">
+          <a href="/home.html">Home</a>
+          <a href="/search.html">Browse Profiles</a>
+          <a href="/signup.html">Create Profile</a>
+          <a href="/pricing.html">Pricing</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Support</h4>
+        <div style="display:grid;gap:12px;font-size:.86rem;">
+          <a href="/services.html">Services</a>
+          <a href="/login.html">Log In</a>
+          <a href="mailto:support@virtualrishtanaata.com">Contact Us</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Trust</h4>
+        <div style="display:grid;gap:12px;font-size:.86rem;">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Use</a>
+          <a href="#">Community Guidelines</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Virtual Rishta Naata. All rights reserved.</span>
+      <span>Connecting Families. Creating Lifelong Bonds.</span>
+    </div>
+  </div>
+</footer>
+<script src="/assets/js/app.js"></script>
+</body>
+</html>

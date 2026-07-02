@@ -1,0 +1,22 @@
+{
+  "name": "virtual-rishta-naata",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Virtual Rishta Naata — anonymous Ahmadi Muslim matrimonial platform (web + native app shell)",
+  "scripts": {
+    "serve": "node serve.mjs",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1",
+    "@capacitor/splash-screen": "^8.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
+    "supabase": "^2.109.0"
+  }
+}

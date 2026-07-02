@@ -1,0 +1,14 @@
+{
+  "appId": "com.virtualrishtanaata.app",
+  "appName": "Virtual Rishta Naata",
+  "webDir": "www",
+  "backgroundColor": "#134B35",
+  "plugins": {
+    "SplashScreen": {
+      "backgroundColor": "#134B35",
+      "showSpinner": false,
+      "launchAutoHide": true,
+      "launchShowDuration": 800
+    }
+  }
+}
