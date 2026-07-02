@@ -46,7 +46,7 @@
       <p>Log in with your contact email and password.</p>
     </div>
 
-    <form onsubmit="return false;">
+    <form id="loginForm" onsubmit="return false;">
       <div class="field">
         <label for="email">Contact Email</label>
         <input type="email" id="email" placeholder="you@example.com">
@@ -57,10 +57,22 @@
       </div>
       <div class="form-foot">
         <label class="remember"><input type="checkbox">Remember me</label>
-        <a href="#">Forgot password?</a>
+        <a href="#" onclick="return showResetForm()">Forgot password?</a>
       </div>
       <p id="loginError" style="display:none;color:#A85A3E;font-size:.85rem;margin-bottom:16px;"></p>
       <button type="button" id="loginBtn" class="btn btn-primary btn-block" onclick="handleLogin()">Log In</button>
+    </form>
+
+    <form id="resetForm" onsubmit="return false;" style="display:none;">
+      <p style="font-size:.86rem;color:var(--ink-soft);margin-bottom:18px;">Enter your contact email and we'll send you a link to reset your password.</p>
+      <div class="field">
+        <label for="resetEmail">Contact Email</label>
+        <input type="email" id="resetEmail" placeholder="you@example.com">
+      </div>
+      <p id="resetError" style="display:none;color:#A85A3E;font-size:.85rem;margin-bottom:16px;"></p>
+      <p id="resetSuccess" style="display:none;color:var(--green);font-size:.85rem;margin-bottom:16px;">Check your inbox for a password reset link.</p>
+      <button type="button" id="resetBtn" class="btn btn-primary btn-block" onclick="handleResetRequest()">Send Reset Link</button>
+      <button type="button" class="btn btn-outline btn-block" style="margin-top:12px;" onclick="return showLoginForm()">Back to Log In</button>
     </form>
 
     <div class="divider-text">New here?</div>
@@ -78,6 +90,43 @@
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
 <script>
+  function showResetForm() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('resetForm').style.display = 'block';
+    return false;
+  }
+  function showLoginForm() {
+    document.getElementById('resetForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+    return false;
+  }
+
+  async function handleResetRequest() {
+    const email = document.getElementById('resetEmail').value.trim();
+    const errorEl = document.getElementById('resetError');
+    const successEl = document.getElementById('resetSuccess');
+    const btn = document.getElementById('resetBtn');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errorEl.textContent = 'Please enter a valid email address.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    btn.setAttribute('disabled', '');
+    btn.textContent = 'Sending...';
+    try {
+      await vrnRequestPasswordReset(email);
+      successEl.style.display = 'block';
+    } catch (err) {
+      errorEl.textContent = err.message || 'Something went wrong — please try again.';
+      errorEl.style.display = 'block';
+    } finally {
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Send Reset Link';
+    }
+  }
+
   async function handleLogin() {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;

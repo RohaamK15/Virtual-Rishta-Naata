@@ -124,6 +124,7 @@
           <li><a href="/services.html">Book a Consultation <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="#">Notification Preferences <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="#" style="color:#A85A3E;" onclick="return handleDeactivate()">Deactivate My Account <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
+          <li><a href="#" style="color:#A85A3E;" onclick="return handleDeleteAccount()">Delete My Account &amp; Data <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
         </ul>
       </div>
     </div>
@@ -194,11 +195,27 @@
   }
 
   async function handleDeactivate(){
-    if (!confirm('Are you sure you want to deactivate your account? This will hide your profile from search and cancel your subscription.')) return false;
+    if (!confirm('Are you sure you want to deactivate your account? This will hide your profile from search and cancel your subscription — you will not be charged again.')) return false;
     try {
-      const user = await vrnCurrentUser();
-      await sb.from('profiles').update({ subscription_status: 'cancelled' }).eq('id', user.id);
-      alert('Your account has been deactivated. You can contact support to reactivate at any time.');
+      // cancel-subscription actually cancels the Stripe subscription, not just
+      // this row's status — see supabase/functions/cancel-subscription.
+      const { error } = await sb.functions.invoke('cancel-subscription');
+      if (error) throw error;
+      alert('Your account has been deactivated and your subscription cancelled. You can contact support to reactivate at any time.');
+      await vrnSignOut();
+    } catch (err) {
+      alert('Something went wrong: ' + (err.message || 'please try again.'));
+    }
+    return false;
+  }
+
+  async function handleDeleteAccount(){
+    if (!confirm("This permanently deletes your account, profile and photo, and cancels any active subscription — it cannot be undone. Are you sure?")) return false;
+    if (!confirm("Please confirm once more: delete your Virtual Rishta Naata account and all its data permanently?")) return false;
+    try {
+      const { error } = await sb.functions.invoke('delete-own-account');
+      if (error) throw error;
+      alert('Your account and data have been permanently deleted.');
       await vrnSignOut();
     } catch (err) {
       alert('Something went wrong: ' + (err.message || 'please try again.'));

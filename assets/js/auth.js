@@ -12,6 +12,18 @@ async function vrnSignIn(email, password) {
   return data.user;
 }
 
+async function vrnRequestPasswordReset(email) {
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password.html`,
+  });
+  if (error) throw error;
+}
+
+async function vrnUpdatePassword(newPassword) {
+  const { error } = await sb.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
 async function vrnSignOut() {
   await sb.auth.signOut();
   window.location.href = "/login.html";

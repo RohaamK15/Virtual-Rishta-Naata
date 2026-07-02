@@ -18,7 +18,11 @@ bottom; each section says exactly what to click/paste.
    email" so new members can use their account immediately after signup
    (you can turn this back on later once you also build a "check your email"
    step — the signup page already handles that case gracefully if you do).
-5. Create your own admin account: go through the normal Create Profile flow
+5. **Authentication > URL Configuration > Redirect URLs** — add
+   `https://yourdomain.com/reset-password.html` (and
+   `http://localhost:3000/reset-password.html` while testing locally). Without
+   this, the "Forgot password?" email link on the login page won't work.
+6. Create your own admin account: go through the normal Create Profile flow
    once on the site, then in **SQL Editor** run:
    ```sql
    update public.profiles set is_admin = true where contact_email = 'you@example.com';
@@ -36,6 +40,8 @@ The admin dashboard and payments run through small server-side functions in
 3. `supabase link --project-ref YOUR-PROJECT-REF` (run from this project folder)
 4. `supabase functions deploy create-checkout-session`
    `supabase functions deploy create-consultation-checkout`
+   `supabase functions deploy cancel-subscription`
+   `supabase functions deploy delete-own-account`
    `supabase functions deploy stripe-webhook --no-verify-jwt`
    `supabase functions deploy get-profile-photo`
    `supabase functions deploy admin-list-profiles`

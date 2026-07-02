@@ -9,7 +9,7 @@ const outDir = path.join(__dirname, "www");
 
 const pages = [
   "index.html", "home.html", "services.html", "pricing.html",
-  "signup.html", "login.html", "search.html", "account.html", "admin.html",
+  "signup.html", "login.html", "reset-password.html", "search.html", "account.html", "admin.html",
   "terms.html", "privacy.html", "guidelines.html"
 ];
 
