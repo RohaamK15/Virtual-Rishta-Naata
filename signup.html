@@ -188,8 +188,61 @@
       </div>
     </div>
 
-    <!-- STEP 3: Preferences -->
+    <!-- STEP 3: Community & History -->
     <div class="step" data-step="3">
+      <span class="eyebrow step-eyebrow">Community & History</span>
+      <h2>A Little More Context</h2>
+      <p class="step-desc">This helps potential matches understand your background honestly and completely.</p>
+
+      <div class="field" style="margin-top:28px;">
+        <label>Are you an Ahmadi Muslim?</label>
+        <div class="radio-pill-group">
+          <label class="radio-pill"><input type="radio" name="isAhmadi" value="Yes">Yes</label>
+          <label class="radio-pill"><input type="radio" name="isAhmadi" value="No">No</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="localJamaat">What is your Local Jamaat?</label>
+        <input type="text" id="localJamaat" placeholder="e.g. Baitul Futuh">
+      </div>
+      <div class="field">
+        <label>Have you had any previous engagement, Nikah, or marriage?</label>
+        <div class="radio-pill-group">
+          <label class="radio-pill"><input type="radio" name="hadPrevious" value="Yes" onchange="onPreviousChange()">Yes</label>
+          <label class="radio-pill"><input type="radio" name="hadPrevious" value="No" onchange="onPreviousChange()">No</label>
+        </div>
+      </div>
+      <div id="previousDetailsFields" style="display:none;">
+        <div class="field">
+          <label>Which one?</label>
+          <div class="radio-pill-group">
+            <label class="radio-pill"><input type="radio" name="previousType" value="Engagement">Engagement</label>
+            <label class="radio-pill"><input type="radio" name="previousType" value="Nikah">Nikah</label>
+            <label class="radio-pill"><input type="radio" name="previousType" value="Marriage">Marriage</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="previousDuration">How long did it last?</label>
+          <input type="text" id="previousDuration" placeholder="e.g. 8 months">
+        </div>
+      </div>
+      <div class="field">
+        <label>Do you have children?</label>
+        <div class="radio-pill-group">
+          <label class="radio-pill"><input type="radio" name="hasChildren" value="Yes">Yes</label>
+          <label class="radio-pill"><input type="radio" name="hasChildren" value="No">No</label>
+        </div>
+      </div>
+
+      <p class="step-error" style="display:none;color:#A85A3E;font-size:.85rem;margin-top:16px;"></p>
+      <div class="step-actions">
+        <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(3)">Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Preferences -->
+    <div class="step" data-step="4">
       <span class="eyebrow step-eyebrow">What You're Looking For</span>
       <h2>Your Preferences</h2>
       <p class="step-desc">Be as specific or as general as you like — this helps us and other members understand what matters to you.</p>
@@ -227,12 +280,12 @@
       <p class="step-error" style="display:none;color:#A85A3E;font-size:.85rem;margin-top:16px;"></p>
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" onclick="tryNextStep(3)">Continue</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(4)">Continue</button>
       </div>
     </div>
 
-    <!-- STEP 4: About You -->
-    <div class="step" data-step="4">
+    <!-- STEP 5: About You -->
+    <div class="step" data-step="5">
       <span class="eyebrow step-eyebrow">In Your Own Words</span>
       <h2>Tell Us About Yourself</h2>
       <p class="step-desc">A short, honest description goes a long way. Think personality, likes, and hobbies.</p>
@@ -263,8 +316,8 @@
       </div>
     </div>
 
-    <!-- STEP 5: Contact -->
-    <div class="step" data-step="5">
+    <!-- STEP 6: Contact -->
+    <div class="step" data-step="6">
       <span class="eyebrow step-eyebrow">Stay in Touch</span>
       <h2>Contact & Account</h2>
       <p class="step-desc">Your email is how interested members will reach you. It is never shown publicly on your profile card.</p>
@@ -289,8 +342,8 @@
       </div>
     </div>
 
-    <!-- STEP 6: Plan -->
-    <div class="step" data-step="6">
+    <!-- STEP 7: Plan -->
+    <div class="step" data-step="7">
       <span class="eyebrow step-eyebrow">Almost There</span>
       <h2>Choose Your Membership</h2>
       <p class="step-desc">Your reference code will be generated the moment your subscription is confirmed.</p>
@@ -319,8 +372,8 @@
       </div>
     </div>
 
-    <!-- STEP 7: Confirmation -->
-    <div class="step" data-step="7">
+    <!-- STEP 8: Confirmation -->
+    <div class="step" data-step="8">
       <div class="confirm-panel">
         <div class="check-circle">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
@@ -351,7 +404,7 @@
   // second, separate profile.
   async function blockIfAlreadyRegistered(){
     const params = new URLSearchParams(window.location.search);
-    if (params.get('checkout') === 'success') return; // returning from Stripe — let them through to step 7
+    if (params.get('checkout') === 'success') return; // returning from Stripe — let them through to the confirmation step
     const user = await vrnCurrentUser();
     if (!user) return;
     const { data: existing } = await sb.from('profiles').select('ref_code').eq('id', user.id).maybeSingle();
@@ -361,8 +414,8 @@
   }
   blockIfAlreadyRegistered();
 
-  const TOTAL_STEPS = 7;
-  const stepNames = ["Basics","Background","Preferences","About You","Contact","Membership","Complete"];
+  const TOTAL_STEPS = 8;
+  const stepNames = ["Basics","Background","Community & History","Preferences","About You","Contact","Membership","Complete"];
   let current = 1;
   let selectedPhotoFile = null;
 
@@ -431,11 +484,22 @@
       if (!document.getElementById('countryOfResidence').value) return 'Please select your country of residence.';
     }
     if (stepNum === 3) {
+      if (!document.querySelector('input[name="isAhmadi"]:checked')) return 'Please let us know if you are an Ahmadi Muslim.';
+      if (!document.getElementById('localJamaat').value.trim()) return 'Please enter your local Jamaat.';
+      const previousChoice = document.querySelector('input[name="hadPrevious"]:checked');
+      if (!previousChoice) return 'Please let us know if you have had any previous engagement, Nikah, or marriage.';
+      if (previousChoice.value === 'Yes') {
+        if (!document.querySelector('input[name="previousType"]:checked')) return 'Please let us know which one (engagement, Nikah, or marriage).';
+        if (!document.getElementById('previousDuration').value.trim()) return 'Please let us know how long it lasted.';
+      }
+      if (!document.querySelector('input[name="hasChildren"]:checked')) return 'Please let us know if you have children.';
+    }
+    if (stepNum === 4) {
       if (!document.getElementById('preferenceLine').value.trim()) return 'Please describe your preference in a line.';
       if (!document.getElementById('countryLookingIn').value) return 'Please select which country you are looking in.';
       if (!document.querySelector('input[name="considerPakistan"]:checked')) return 'Please let us know if you\'d consider a match from Pakistan.';
     }
-    if (stepNum === 4) {
+    if (stepNum === 5) {
       if (!document.getElementById('aboutYourself').value.trim()) return 'Please tell us a little about yourself.';
     }
     return null;
@@ -451,6 +515,10 @@
     const isMale = document.querySelector('input[name="gender"]:checked')?.value === 'M';
     document.getElementById('photoSection').style.display = isMale ? 'block' : 'none';
   }
+  function onPreviousChange(){
+    const hadPrevious = document.querySelector('input[name="hadPrevious"]:checked')?.value === 'Yes';
+    document.getElementById('previousDetailsFields').style.display = hadPrevious ? 'block' : 'none';
+  }
 
   function collectProfileFields(){
     return {
@@ -463,6 +531,12 @@
       city: document.getElementById('city').value,
       county: document.getElementById('county').value,
       country: document.getElementById('countryOfResidence').value,
+      is_ahmadi: document.querySelector('input[name="isAhmadi"]:checked')?.value === 'Yes',
+      local_jamaat: document.getElementById('localJamaat').value,
+      had_previous: document.querySelector('input[name="hadPrevious"]:checked')?.value === 'Yes',
+      previous_type: document.querySelector('input[name="previousType"]:checked')?.value || null,
+      previous_duration: document.getElementById('previousDuration').value || null,
+      has_children: document.querySelector('input[name="hasChildren"]:checked')?.value === 'Yes',
       preference_line: document.getElementById('preferenceLine').value,
       country_looking_in: document.getElementById('countryLookingIn').value,
       consider_pakistan: document.querySelector('input[name="considerPakistan"]:checked')?.value === 'Yes',
@@ -563,7 +637,7 @@
       const profile = await vrnMyProfile();
       if (profile) {
         document.getElementById('refCodeOut').textContent = profile.ref_code;
-        goToStep(7);
+        goToStep(8);
       }
     } catch (e) { /* not logged in / no profile yet — stay on step 1 */ }
   }

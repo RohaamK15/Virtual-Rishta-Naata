@@ -16,6 +16,12 @@ create table if not exists public.profiles (
   city text,
   county text,
   country text,                 -- country of residence (shown on search card)
+  is_ahmadi boolean,
+  local_jamaat text,
+  had_previous boolean,          -- previous engagement, Nikah, or marriage
+  previous_type text check (previous_type in ('Engagement','Nikah','Marriage')),
+  previous_duration text,
+  has_children boolean,
   preference_line text,
   country_looking_in text,
   consider_pakistan boolean,
@@ -78,8 +84,21 @@ create trigger trg_set_ref_code
 create policy "profiles_select_own" on public.profiles
   for select using (auth.uid() = id);
 
+-- The row-ownership check alone doesn't stop someone from setting is_admin
+-- or subscription_status themselves in the same insert that creates their
+-- profile — RLS only restricts which rows, not which column values, are
+-- allowed. This WITH CHECK forces every new profile to start pending,
+-- unpaid, and non-admin; only the service-role webhook/admin functions can
+-- change those fields afterward.
 create policy "profiles_insert_own" on public.profiles
-  for insert with check (auth.uid() = id);
+  for insert with check (
+    auth.uid() = id
+    and coalesce(is_admin, false) = false
+    and coalesce(subscription_status, 'pending') = 'pending'
+    and plan is null
+    and stripe_customer_id is null
+    and stripe_subscription_id is null
+  );
 
 create policy "profiles_update_own" on public.profiles
   for update using (auth.uid() = id);
@@ -95,7 +114,9 @@ create policy "profiles_update_own" on public.profiles
 revoke update on public.profiles from authenticated;
 grant update (
   gender, age, height, qualifications, employment, residential_status,
-  city, county, country, preference_line, country_looking_in,
+  city, county, country, is_ahmadi, local_jamaat, had_previous,
+  previous_type, previous_duration, has_children,
+  preference_line, country_looking_in,
   consider_pakistan, additional_note, about, contact_email,
   has_photo, photo_path
 ) on public.profiles to authenticated;
