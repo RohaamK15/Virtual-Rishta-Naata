@@ -62,6 +62,9 @@
   }
   .consult-form .field input::placeholder,.consult-form .field textarea::placeholder{color:rgba(255,249,242,.4);}
   .consult-form .field input:focus,.consult-form .field textarea:focus{border-color:var(--gold);}
+  .consult-form .radio-pill{border-color:rgba(255,249,242,.3);color:rgba(255,249,242,.75);}
+  .consult-form .radio-pill:hover{border-color:var(--gold);}
+  .consult-form .radio-pill:has(input:checked){background:var(--gold);border-color:var(--gold);color:var(--green-2);}
   .consult-success{display:none;text-align:center;padding:30px 10px;}
   .consult-success .check-circle{
     width:56px;height:56px;border-radius:50%;background:rgba(255,249,242,.1);color:var(--gold);
@@ -208,7 +211,14 @@
               <input type="email" id="consultEmail" placeholder="you@example.com">
             </div>
             <div class="field">
-              <label for="consultRef">Reference Code (if you're already a member)</label>
+              <label>Are you already a Virtual Rishta Naata member?</label>
+              <div class="radio-pill-group">
+                <label class="radio-pill"><input type="radio" name="consultIsMember" value="Yes" onchange="onConsultMemberChange()">Yes</label>
+                <label class="radio-pill"><input type="radio" name="consultIsMember" value="No" onchange="onConsultMemberChange()">No</label>
+              </div>
+            </div>
+            <div class="field" id="consultRefField" style="display:none;">
+              <label for="consultRef">Reference Code</label>
               <input type="text" id="consultRef" placeholder="e.g. VRN-2481">
             </div>
             <div class="field">
@@ -280,11 +290,22 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase-client.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="/assets/js/emailjs-config.js"></script>
 <script>
+  emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
+
+  function onConsultMemberChange(){
+    const isMember = document.querySelector('input[name="consultIsMember"]:checked')?.value === 'Yes';
+    document.getElementById('consultRefField').style.display = isMember ? 'block' : 'none';
+    if (!isMember) document.getElementById('consultRef').value = '';
+  }
+
   async function submitConsultRequest(){
     const email = document.getElementById('consultEmail').value.trim();
     const refCode = document.getElementById('consultRef').value.trim();
     const message = document.getElementById('consultMessage').value.trim();
+    const memberChoice = document.querySelector('input[name="consultIsMember"]:checked');
     const errorEl = document.getElementById('consultError');
     const btn = document.getElementById('consultSubmitBtn');
     errorEl.style.display = 'none';
@@ -294,18 +315,47 @@
       errorEl.style.display = 'block';
       return;
     }
+    if (!memberChoice) {
+      errorEl.textContent = "Please let us know if you're already a member.";
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (memberChoice.value === 'Yes' && !refCode) {
+      errorEl.textContent = 'Please enter your reference code.';
+      errorEl.style.display = 'block';
+      return;
+    }
 
     btn.setAttribute('disabled', '');
     btn.textContent = 'Sending...';
     try {
-      const { error } = await sb.functions.invoke('request-consultation', {
-        body: { email, ref_code: refCode || null, message: message || null }
+      // Stored via the same RLS policy that lets any visitor insert a request
+      // (see consultation_requests_insert_anyone in supabase/schema.sql).
+      // This is the part that actually matters — the request is saved
+      // regardless of whether the notification email below succeeds.
+      const { error: insertError } = await sb.from('consultation_requests').insert({
+        email, ref_code: refCode || null, message: message || null
       });
-      if (error) throw error;
+      if (insertError) throw insertError;
+
+      // EmailJS sends straight from the browser — its public key is designed
+      // to be exposed client-side, unlike a normal API secret. A failure here
+      // (e.g. EmailJS not configured yet) shouldn't hide that the request
+      // itself was saved successfully, so it's non-fatal.
+      try {
+        await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, {
+          user_email: email,
+          ref_code: refCode || '(not provided)',
+          message: message || '(no message provided)',
+        });
+      } catch (emailErr) {
+        console.warn('Consultation request saved, but the notification email failed to send:', emailErr);
+      }
+
       document.getElementById('consultForm').style.display = 'none';
       document.getElementById('consultSuccess').style.display = 'block';
     } catch (err) {
-      errorEl.textContent = err.message || 'Something went wrong sending your request — please try again.';
+      errorEl.textContent = (err && err.text) || err.message || 'Something went wrong sending your request — please try again.';
       errorEl.style.display = 'block';
       btn.removeAttribute('disabled');
       btn.textContent = 'Request a Consultation';

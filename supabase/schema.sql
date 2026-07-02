@@ -168,8 +168,10 @@ create policy "profile_photos_delete_own" on storage.objects
 -- ============================================================
 -- The Services page's booking form. Open to anyone (even visitors who
 -- haven't created a profile yet), since consultations are available to all
--- members equally — insert-only from the client; only admins can read these,
--- via the request-consultation / admin Edge Functions with the service role.
+-- members equally. The client inserts directly (RLS below) and separately
+-- notifies the team via EmailJS, sent straight from the browser — nothing
+-- server-side is needed for this flow. Only admins can read these rows,
+-- e.g. via the Supabase dashboard's Table Editor or a future admin view.
 create table if not exists public.consultation_requests (
   id uuid primary key default gen_random_uuid(),
   email text not null,
