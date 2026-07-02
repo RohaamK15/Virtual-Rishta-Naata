@@ -1,0 +1,96 @@
+workflows:
+  android-debug:
+    name: Android Debug Build
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      node: 20
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web bundle
+        script: node build-www.mjs
+      - name: Sync Capacitor Android
+        script: npx cap sync android
+      - name: Build debug APK
+        script: |
+          cd android
+          ./gradlew assembleDebug
+    artifacts:
+      - android/app/build/outputs/apk/debug/*.apk
+
+  ios-debug:
+    name: iOS Debug Build (Simulator)
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web bundle
+        script: node build-www.mjs
+      - name: Sync Capacitor iOS
+        script: npx cap sync ios
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install
+      - name: Build for simulator (no signing required)
+        script: |
+          xcodebuild -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            build
+
+  # --- Release workflows (uncomment / fill in once you have store accounts) ---
+  #
+  # android-release:
+  #   name: Android Release (Play Store)
+  #   instance_type: linux_x2
+  #   environment:
+  #     node: 20
+  #     android_signing:
+  #       - vrn_keystore          # create this reference in Codemagic > Team settings > Code signing identities
+  #     groups:
+  #       - google_play           # holds GCLOUD_SERVICE_ACCOUNT_CREDENTIALS for Play Store upload
+  #   scripts:
+  #     - npm ci
+  #     - node build-www.mjs
+  #     - npx cap sync android
+  #     - cd android && ./gradlew bundleRelease
+  #   artifacts:
+  #     - android/app/build/outputs/bundle/release/*.aab
+  #   publishing:
+  #     google_play:
+  #       credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+  #       track: internal
+  #
+  # ios-release:
+  #   name: iOS Release (App Store / TestFlight)
+  #   instance_type: mac_mini_m2
+  #   environment:
+  #     node: 20
+  #     xcode: latest
+  #     cocoapods: default
+  #     ios_signing:
+  #       distribution_type: app_store
+  #       bundle_identifier: com.virtualrishtanaata.app
+  #     groups:
+  #       - app_store_connect      # holds APP_STORE_CONNECT_ISSUER_ID, KEY_ID, PRIVATE_KEY
+  #   scripts:
+  #     - npm ci
+  #     - node build-www.mjs
+  #     - npx cap sync ios
+  #     - cd ios/App && pod install
+  #     - xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
+  #   artifacts:
+  #     - build/ios/ipa/*.ipa
+  #   publishing:
+  #     app_store_connect:
+  #       auth: integration
+  #       submit_to_testflight: true
