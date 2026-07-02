@@ -204,7 +204,7 @@ input:focus,select:focus,textarea:focus{
 }
 .site-nav .wrap{display:flex;align-items:center;justify-content:space-between;height:78px;}
 .brand{display:flex;align-items:center;gap:12px;}
-.brand img{height:42px;width:42px;border-radius:50%;object-fit:cover;}
+.brand img{height:44px;width:auto;}
 .brand-word{font-family:'Cinzel',serif;font-weight:600;color:var(--green);font-size:1.05rem;letter-spacing:.01em;line-height:1.1;}
 .brand-word small{display:block;font-family:'Montserrat',sans-serif;font-size:.58rem;letter-spacing:.24em;color:var(--gold);font-weight:600;}
 
