@@ -342,13 +342,17 @@
   }
 
   async function startConsultCheckout({ email, refCode, phone, message }){
+    // Generated client-side so we never need to read the row back — the
+    // insert-only RLS policy on consultation_requests (see schema.sql) means
+    // anon can write but not select, which is intentional: only admins should
+    // be able to browse other people's contact details and messages.
+    const requestId = crypto.randomUUID();
+
     // Saved first (regardless of whether payment completes) so an abandoned
     // Stripe Checkout never loses the visitor's details — see the
     // consultation_requests_insert_anyone policy in supabase/schema.sql.
-    const { data: inserted, error: insertError } = await sb.from('consultation_requests')
-      .insert({ email, ref_code: refCode || null, phone: phone || null, message: message || null })
-      .select('id')
-      .single();
+    const { error: insertError } = await sb.from('consultation_requests')
+      .insert({ id: requestId, email, ref_code: refCode || null, phone: phone || null, message: message || null });
     if (insertError) throw insertError;
 
     // create-consultation-checkout is a Supabase Edge Function — it returns a
@@ -356,12 +360,12 @@
     // ever confirmed server-side by the stripe-webhook function once Stripe
     // says the charge succeeded.
     const { data, error } = await sb.functions.invoke('create-consultation-checkout', {
-      body: { requestId: inserted.id }
+      body: { requestId }
     });
     if (error) throw error;
 
     sessionStorage.setItem(CONSULT_PENDING_KEY, JSON.stringify({
-      id: inserted.id, email, refCode, phone, message
+      id: requestId, email, refCode, phone, message
     }));
     window.location.href = data.url;
   }
