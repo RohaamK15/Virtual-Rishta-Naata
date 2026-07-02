@@ -270,6 +270,12 @@ input:focus,select:focus,textarea:focus{
 @media (max-width:800px){.footer-grid{grid-template-columns:1fr 1fr;}}
 .footer-bottom{
   margin-top:48px;padding-top:24px;border-top:1px solid rgba(255,249,242,.12);
+}
+.footer-disclaimer{
+  font-size:.78rem;line-height:1.7;color:rgba(255,249,242,.55);max-width:680px;margin-bottom:20px;
+}
+.footer-disclaimer strong{color:rgba(255,249,242,.8);}
+.footer-meta-row{
   display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
   font-size:.78rem;color:rgba(255,249,242,.5);
 }
