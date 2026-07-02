@@ -10,6 +10,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14?target=deno";
 import { corsHeaders } from "../_shared/cors.ts";
+import { buildReturnUrls } from "../_shared/checkoutUrls.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" });
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -18,7 +19,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { requestId } = await req.json();
+    const { requestId, native } = await req.json();
     if (!requestId) throw new Error("Missing requestId");
 
     // Service-role lookup — consultation_requests has no public select policy,
@@ -31,13 +32,20 @@ Deno.serve(async (req) => {
     if (fetchError || !request) throw new Error("Consultation request not found");
     if (request.payment_status === "paid") throw new Error("This request has already been paid for");
 
-    const appUrl = Deno.env.get("APP_URL")!;
+    const { successUrl, cancelUrl } = buildReturnUrls({
+      native: !!native,
+      appUrl: Deno.env.get("APP_URL")!,
+      page: "services.html",
+      successParams: { consult: "success" },
+      cancelParams: { consult: "cancelled" },
+    });
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: request.email,
       line_items: [{ price: Deno.env.get("STRIPE_PRICE_CONSULTATION")!, quantity: 1 }],
-      success_url: `${appUrl}/services.html?consult=success`,
-      cancel_url: `${appUrl}/services.html?consult=cancelled`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: { consultation_request_id: request.id },
     });
 

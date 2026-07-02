@@ -42,6 +42,42 @@ if (window.Capacitor?.Plugins?.App) {
   });
 }
 
+// Opens a Stripe Checkout URL. On native builds this uses an external system
+// browser tab (Capacitor's Browser plugin) rather than navigating the app's
+// own WebView — required so Apple/Google don't treat this as an in-app
+// purchase flow, and it also avoids losing sessionStorage state that would
+// happen if the WebView navigated away to a different origin.
+async function vrnOpenCheckout(url) {
+  if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins?.Browser) {
+    await window.Capacitor.Plugins.Browser.open({ url });
+  } else {
+    window.location.href = url;
+  }
+}
+
+// Stripe's success/cancel URLs point back at this app's custom URL scheme
+// (see supabase/functions for how "native: true" changes those URLs) so the
+// OS hands control back to the app once Checkout finishes. This just closes
+// the browser tab and reloads the same bundled page with the same query
+// params the website flow already knows how to handle.
+if (window.Capacitor?.Plugins?.App) {
+  window.Capacitor.Plugins.App.addListener('appUrlOpen', async (data) => {
+    try {
+      const url = new URL(data.url);
+      if (url.protocol !== 'com.virtualrishtanaata.app:') return;
+      if (window.Capacitor.Plugins.Browser) {
+        await window.Capacitor.Plugins.Browser.close().catch(() => {});
+      }
+      const page = url.searchParams.get('page');
+      if (!page) return;
+      url.searchParams.delete('page');
+      window.location.href = `/${page}?${url.searchParams.toString()}`;
+    } catch (e) {
+      console.warn('Could not handle return from checkout:', e);
+    }
+  });
+}
+
 function openSheet(id) {
   document.getElementById(id)?.classList.add('open');
   document.getElementById(id + '-overlay')?.classList.add('open');

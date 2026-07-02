@@ -359,15 +359,16 @@
     // Stripe-hosted Checkout URL for the £35 session. Payment status is only
     // ever confirmed server-side by the stripe-webhook function once Stripe
     // says the charge succeeded.
+    const isNative = !!window.Capacitor?.isNativePlatform?.();
     const { data, error } = await sb.functions.invoke('create-consultation-checkout', {
-      body: { requestId }
+      body: { requestId, native: isNative }
     });
     if (error) throw error;
 
     sessionStorage.setItem(CONSULT_PENDING_KEY, JSON.stringify({
       id: requestId, email, refCode, phone, message
     }));
-    window.location.href = data.url;
+    await vrnOpenCheckout(data.url);
   }
 
   async function notifyConsultBooked(pending){
@@ -409,11 +410,12 @@
         btn.setAttribute('disabled', '');
         btn.textContent = 'Redirecting to Stripe...';
         try {
+          const isNative = !!window.Capacitor?.isNativePlatform?.();
           const { data, error } = await sb.functions.invoke('create-consultation-checkout', {
-            body: { requestId: pending.id }
+            body: { requestId: pending.id, native: isNative }
           });
           if (error) throw error;
-          window.location.href = data.url;
+          await vrnOpenCheckout(data.url);
         } catch (err) {
           const errorEl = document.getElementById('consultError');
           errorEl.textContent = err.message || 'Something went wrong — please try again.';

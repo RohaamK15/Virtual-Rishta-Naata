@@ -619,9 +619,10 @@
       // It returns a Stripe-hosted Checkout URL; we never handle card details ourselves.
       // The chosen plan is only persisted to profiles.plan server-side, once Stripe
       // confirms the subscription — never trusted directly from the client.
-      const { data, error } = await sb.functions.invoke('create-checkout-session', { body: { plan } });
+      const isNative = !!window.Capacitor?.isNativePlatform?.();
+      const { data, error } = await sb.functions.invoke('create-checkout-session', { body: { plan, native: isNative } });
       if (error) throw error;
-      window.location.href = data.url;
+      await vrnOpenCheckout(data.url);
     } catch (err) {
       errorEl.textContent = 'Payment isn\'t connected yet (' + (err.message || 'Stripe not configured') + '). See SETUP.md to finish Stripe setup.';
       errorEl.style.display = 'block';

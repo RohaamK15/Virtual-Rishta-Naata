@@ -22,6 +22,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Lets Stripe Checkout (opened in an external browser tab, not
+                 the app's own WebView, so we stay compliant with Apple/Google
+                 payment policy) hand control back to the app once payment
+                 completes or is cancelled. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="com.virtualrishtanaata.app" />
+            </intent-filter>
+
         </activity>
 
         <provider

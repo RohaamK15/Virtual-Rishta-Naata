@@ -11,6 +11,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14?target=deno";
 import { corsHeaders } from "../_shared/cors.ts";
+import { buildReturnUrls } from "../_shared/checkoutUrls.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" });
 
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error("Not authenticated");
 
-    const { plan } = await req.json();
+    const { plan, native } = await req.json();
     if (!["monthly", "annual"].includes(plan)) throw new Error("Invalid plan");
 
     const priceId = plan === "annual"
@@ -52,14 +53,21 @@ Deno.serve(async (req) => {
       await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
     }
 
-    const appUrl = Deno.env.get("APP_URL")!;
+    const { successUrl, cancelUrl } = buildReturnUrls({
+      native: !!native,
+      appUrl: Deno.env.get("APP_URL")!,
+      page: "signup.html",
+      successParams: { checkout: "success" },
+      cancelParams: { checkout: "cancelled" },
+    });
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
       client_reference_id: user.id,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${appUrl}/signup.html?checkout=success`,
-      cancel_url: `${appUrl}/signup.html?checkout=cancelled`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: { supabase_user_id: user.id, plan },
     });
 
