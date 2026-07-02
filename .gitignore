@@ -25,3 +25,5 @@ ios/App/App.xcodeproj/xcuserdata/
 *.apk
 *.ipa
 *.aab
+
+.vercel

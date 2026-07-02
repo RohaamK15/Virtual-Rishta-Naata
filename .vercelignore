@@ -1,0 +1,19 @@
+android
+ios
+supabase
+node_modules
+www
+temporary screenshots
+*.apk
+*.ipa
+*.aab
+codemagic.yaml
+SETUP.md
+CLAUDE.md
+brand_assets
+build-www.mjs
+serve.mjs
+screenshot.mjs
+capacitor.config.json
+package.json
+package-lock.json
