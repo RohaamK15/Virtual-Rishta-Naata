@@ -216,7 +216,43 @@ create policy "consultation_requests_insert_anyone" on public.consultation_reque
 grant insert on public.consultation_requests to anon, authenticated;
 
 -- ============================================================
--- 6. FIRST ADMIN
+-- 6. PENDING SIGNUPS
+-- ============================================================
+-- The signup wizard collects everything (profile fields, chosen password, an
+-- optional photo) but must NOT create the auth account or profile row until
+-- Stripe actually confirms payment — otherwise someone who abandons or never
+-- completes Checkout would still end up with a working (if "pending") account
+-- able to log in and, depending on RLS timing, potentially browse. Instead,
+-- everything is staged here; the stripe-webhook function is the only thing
+-- that ever turns a row here into a real account, and only once
+-- checkout.session.completed actually fires for it.
+--
+-- photo_data_url briefly holds the optional photo as a base64 data URL (the
+-- browser can't upload to a user-scoped storage path before that user
+-- exists) — the webhook decodes and uploads it to profile-photos once the
+-- real account is created, then this row (password included) is deleted.
+-- There is deliberately no select policy: only service-role functions can
+-- ever read a row here, including the plaintext password it briefly holds.
+create table if not exists public.pending_signups (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  password text not null,
+  profile_data jsonb not null,
+  photo_data_url text,
+  plan text not null check (plan in ('monthly','annual')),
+  stripe_checkout_session_id text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.pending_signups enable row level security;
+
+create policy "pending_signups_insert_anyone" on public.pending_signups
+  for insert with check (true);
+
+grant insert on public.pending_signups to anon, authenticated;
+
+-- ============================================================
+-- 7. FIRST ADMIN
 -- ============================================================
 -- After you've created your own account through the normal signup flow once,
 -- run this (with your real user id from auth.users) to make yourself an admin:

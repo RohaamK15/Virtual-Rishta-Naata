@@ -44,6 +44,77 @@ Deno.serve(async (req) => {
           break;
         }
 
+        // New signups: the account/profile don't exist yet — this is the ONLY
+        // place they get created, and only because Stripe just confirmed
+        // payment. See create-signup-checkout and pending_signups in schema.sql.
+        const pendingSignupId = session.metadata?.pending_signup_id;
+        if (pendingSignupId) {
+          const { data: pending } = await admin
+            .from("pending_signups")
+            .select("*")
+            .eq("id", pendingSignupId)
+            .single();
+
+          // Already processed by an earlier delivery of this same event —
+          // Stripe retries webhooks, so this must be a safe no-op.
+          if (pending) {
+            let userId: string;
+            const { data: created, error: createError } = await admin.auth.admin.createUser({
+              email: pending.email,
+              password: pending.password,
+              email_confirm: true,
+            });
+            if (createError) {
+              const { data: existingUsers } = await admin.auth.admin.listUsers();
+              const match = existingUsers?.users?.find(
+                (u) => u.email?.toLowerCase() === pending.email.toLowerCase()
+              );
+              if (!match) throw createError;
+              userId = match.id;
+            } else {
+              userId = created.user!.id;
+            }
+
+            const profileFields = pending.profile_data as Record<string, unknown>;
+            const { error: profileError } = await admin.from("profiles").upsert({
+              id: userId,
+              ...profileFields,
+              contact_email: pending.email,
+              plan: pending.plan,
+              subscription_status: "active",
+              stripe_subscription_id: session.subscription as string,
+            });
+            if (profileError) throw profileError;
+
+            if (pending.photo_data_url && profileFields.gender === "M") {
+              try {
+                const match = pending.photo_data_url.match(/^data:(image\/\w+);base64,(.+)$/);
+                if (match) {
+                  const contentType = match[1];
+                  const bytes = Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0));
+                  const ext = contentType === "image/png" ? "png" : "jpg";
+                  const path = `${userId}/photo.${ext}`;
+                  const { error: uploadError } = await admin.storage
+                    .from("profile-photos")
+                    .upload(path, bytes, { contentType, upsert: true });
+                  if (!uploadError) {
+                    await admin.from("profiles").update({ has_photo: true, photo_path: path }).eq("id", userId);
+                  } else {
+                    console.error("Photo upload failed during signup completion:", uploadError);
+                  }
+                }
+              } catch (photoErr) {
+                console.error("Photo upload failed during signup completion:", photoErr);
+              }
+            }
+
+            await admin.from("pending_signups").delete().eq("id", pendingSignupId);
+          }
+          break;
+        }
+
+        // Legacy path (create-checkout-session): an already-authenticated
+        // member changing/renewing plan, not used by the signup wizard anymore.
         const userId = session.client_reference_id || session.metadata?.supabase_user_id;
         const plan = session.metadata?.plan;
         if (userId) {

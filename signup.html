@@ -77,6 +77,7 @@
     width:64px;height:64px;border-radius:50%;background:var(--green-soft);color:var(--green);
     display:flex;align-items:center;justify-content:center;margin:0 auto;
   }
+  @keyframes vrnSpin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -101,6 +102,7 @@
 
     <!-- STEP 1: Basics -->
     <div class="step active" data-step="1">
+      <p id="cancelledNotice" style="display:none;background:var(--gold-soft);color:#8A6A2E;border-radius:var(--radius-s);padding:14px 18px;font-size:.85rem;margin-bottom:20px;">Payment wasn't completed, so no account was created. Please fill in the form again to try once more — nothing from before was saved.</p>
       <span class="eyebrow step-eyebrow">The Basics</span>
       <h2>Let's Start With You</h2>
       <p class="step-desc">This helps us show the right badge on your profile. Your name is never collected — only your reference code will represent you.</p>
@@ -338,7 +340,7 @@
 
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" id="createAccountBtn" onclick="handleCreateAccount()">Continue</button>
+        <button type="button" class="btn btn-primary" id="contactContinueBtn" onclick="handleContinueFromContact()">Continue</button>
       </div>
     </div>
 
@@ -374,7 +376,15 @@
 
     <!-- STEP 8: Confirmation -->
     <div class="step" data-step="8">
-      <div class="confirm-panel">
+      <div class="confirm-panel" id="confirmFinalizing">
+        <div class="check-circle" style="background:var(--gold-soft);color:var(--gold);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:vrnSpin 1s linear infinite;"><path d="M21 12a9 9 0 11-9-9"/></svg>
+        </div>
+        <h2 style="margin-top:22px;">Finalizing Your Account</h2>
+        <p class="step-desc" style="max-width:400px;margin-left:auto;margin-right:auto;">Payment received — we're setting up your profile now. This usually only takes a few seconds.</p>
+      </div>
+
+      <div class="confirm-panel" id="confirmDone" style="display:none;">
         <div class="check-circle">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
         </div>
@@ -387,6 +397,11 @@
         <p class="step-desc">We've also notified our team so we can keep the community safe and well-matched.</p>
         <a href="/search.html" class="btn btn-primary btn-block" style="margin-top:24px;">Start Browsing Profiles</a>
         <a href="/account.html" class="btn btn-outline btn-block" style="margin-top:12px;">Go to My Account</a>
+      </div>
+
+      <div class="confirm-panel" id="confirmError" style="display:none;">
+        <h2>Almost There</h2>
+        <p class="step-desc" style="max-width:420px;margin-left:auto;margin-right:auto;">Your payment went through, but we're having trouble finalizing your account automatically. Please email <a href="mailto:uhameed53@hotmail.com">uhameed53@hotmail.com</a> with your payment confirmation and we'll sort it out right away.</p>
       </div>
     </div>
 
@@ -413,6 +428,14 @@
     }
   }
   blockIfAlreadyRegistered();
+
+  (function showCancelledNoticeIfNeeded(){
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'cancelled') {
+      document.getElementById('cancelledNotice').style.display = 'block';
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  })();
 
   const TOTAL_STEPS = 8;
   const stepNames = ["Basics","Background","Community & History","Preferences","About You","Contact","Membership","Complete"];
@@ -545,16 +568,28 @@
     };
   }
 
-  async function handleCreateAccount(){
+  const SIGNUP_PENDING_KEY = 'vrnSignupPending';
+
+  // No account exists yet at this point in the wizard — this step only
+  // validates the chosen email/password client-side. The actual account is
+  // created by stripe-webhook, only once Stripe confirms payment (see
+  // handleCheckout below and create-signup-checkout). This is deliberate:
+  // nobody should have a working login — let alone search access — without
+  // having actually paid.
+  function handleContinueFromContact(){
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const confirm = document.getElementById('confirmPassword').value;
     const errorEl = document.getElementById('accountError');
-    const btn = document.getElementById('createAccountBtn');
     errorEl.style.display = 'none';
 
-    if (!email || password.length < 8) {
-      errorEl.textContent = 'Please enter a valid email and a password of at least 8 characters.';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errorEl.textContent = 'Please enter a valid email address.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (password.length < 8) {
+      errorEl.textContent = 'Password must be at least 8 characters.';
       errorEl.style.display = 'block';
       return;
     }
@@ -563,45 +598,16 @@
       errorEl.style.display = 'block';
       return;
     }
+    nextStep();
+  }
 
-    btn.setAttribute('disabled', '');
-    btn.textContent = 'Creating account...';
-    try {
-      // If a session already exists (e.g. the profile insert failed after an
-      // earlier signup attempt), reuse it instead of creating a second,
-      // separate account — one person should only ever have one profile.
-      let user = await vrnCurrentUser();
-      if (!user) {
-        await vrnSignUp(email, password);
-        user = await vrnCurrentUser();
-      }
-      if (!user) {
-        // Email confirmation is required by this Supabase project's auth settings.
-        errorEl.style.color = 'var(--ink-soft)';
-        errorEl.textContent = 'Check your email to confirm your account, then log in to finish creating your profile.';
-        errorEl.style.display = 'block';
-        return;
-      }
-
-      const profile = await vrnCreateProfile({ ...collectProfileFields(), contact_email: email });
-
-      if (selectedPhotoFile && profile.gender === 'M') {
-        const path = `${user.id}/photo.jpg`;
-        const { error: uploadError } = await sb.storage.from('profile-photos').upload(path, selectedPhotoFile, { upsert: true });
-        if (!uploadError) {
-          await sb.from('profiles').update({ has_photo: true, photo_path: path }).eq('id', user.id);
-        }
-      }
-
-      nextStep();
-    } catch (err) {
-      errorEl.style.color = '#A85A3E';
-      errorEl.textContent = err.message || 'Something went wrong creating your account.';
-      errorEl.style.display = 'block';
-    } finally {
-      btn.removeAttribute('disabled');
-      btn.textContent = 'Continue';
-    }
+  function readFileAsDataUrl(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   async function handleCheckout(){
@@ -612,16 +618,26 @@
     btn.setAttribute('disabled', '');
     btn.textContent = 'Redirecting to Stripe...';
     try {
-      const user = await vrnCurrentUser();
-      if (!user) throw new Error('Please log in again to continue.');
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const profileData = collectProfileFields();
 
-      // create-checkout-session is a Supabase Edge Function — see supabase/functions/.
-      // It returns a Stripe-hosted Checkout URL; we never handle card details ourselves.
-      // The chosen plan is only persisted to profiles.plan server-side, once Stripe
-      // confirms the subscription — never trusted directly from the client.
+      let photoDataUrl = null;
+      if (selectedPhotoFile && profileData.gender === 'M') {
+        photoDataUrl = await readFileAsDataUrl(selectedPhotoFile);
+      }
+
       const isNative = !!window.Capacitor?.isNativePlatform?.();
-      const { data, error } = await sb.functions.invoke('create-checkout-session', { body: { plan, native: isNative } });
+      // create-signup-checkout stages everything in pending_signups and
+      // returns a Stripe-hosted Checkout URL — we never handle card details
+      // ourselves, and no account/profile exists until stripe-webhook creates
+      // one after payment is actually confirmed.
+      const { data, error } = await sb.functions.invoke('create-signup-checkout', {
+        body: { email, password, profileData, photoDataUrl, plan, native: isNative }
+      });
       if (error) throw error;
+
+      sessionStorage.setItem(SIGNUP_PENDING_KEY, JSON.stringify({ email, password }));
       await vrnOpenCheckout(data.url);
     } catch (err) {
       errorEl.textContent = 'Payment isn\'t connected yet (' + (err.message || 'Stripe not configured') + '). See SETUP.md to finish Stripe setup.';
@@ -634,13 +650,36 @@
   async function showConfirmationIfReturningFromStripe(){
     const params = new URLSearchParams(window.location.search);
     if (params.get('checkout') !== 'success') return;
-    try {
-      const profile = await vrnMyProfile();
-      if (profile) {
-        document.getElementById('refCodeOut').textContent = profile.ref_code;
-        goToStep(8);
-      }
-    } catch (e) { /* not logged in / no profile yet — stay on step 1 */ }
+
+    const pendingRaw = sessionStorage.getItem(SIGNUP_PENDING_KEY);
+    if (!pendingRaw) return;
+    const { email, password } = JSON.parse(pendingRaw);
+
+    goToStep(8);
+    document.getElementById('confirmFinalizing').style.display = 'block';
+    document.getElementById('confirmDone').style.display = 'none';
+    document.getElementById('confirmError').style.display = 'none';
+
+    // The account is created by stripe-webhook asynchronously, so it may not
+    // exist the instant Stripe redirects back here — retry sign-in for a few
+    // seconds rather than failing on the first attempt.
+    for (let attempt = 0; attempt < 10; attempt++) {
+      try {
+        await vrnSignIn(email, password);
+        const profile = await vrnMyProfile();
+        if (profile) {
+          sessionStorage.removeItem(SIGNUP_PENDING_KEY);
+          document.getElementById('refCodeOut').textContent = profile.ref_code;
+          document.getElementById('confirmFinalizing').style.display = 'none';
+          document.getElementById('confirmDone').style.display = 'block';
+          return;
+        }
+      } catch (e) { /* account not created yet — stripe-webhook may still be processing */ }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+
+    document.getElementById('confirmFinalizing').style.display = 'none';
+    document.getElementById('confirmError').style.display = 'block';
   }
   showConfirmationIfReturningFromStripe();
 </script>

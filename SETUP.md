@@ -38,7 +38,8 @@ The admin dashboard and payments run through small server-side functions in
 1. Install the Supabase CLI: `npm install -g supabase`
 2. `supabase login`
 3. `supabase link --project-ref YOUR-PROJECT-REF` (run from this project folder)
-4. `supabase functions deploy create-checkout-session`
+4. `supabase functions deploy create-signup-checkout`
+   `supabase functions deploy create-checkout-session`
    `supabase functions deploy create-consultation-checkout`
    `supabase functions deploy cancel-subscription`
    `supabase functions deploy delete-own-account`

@@ -32,6 +32,7 @@
     padding:10px 18px;border-radius:999px;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:600;
   }
   .ps-status .dot{width:8px;height:8px;border-radius:50%;background:#7FCB9E;}
+  .ps-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0;}
 
   .grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:24px;margin-top:28px;}
   @media (max-width:860px){.grid-2{grid-template-columns:1fr;}}
@@ -74,10 +75,13 @@
 <main class="wrap content">
   <div class="profile-summary" data-reveal>
     <div class="texture-noise"></div>
-    <div>
-      <span class="eyebrow" style="color:var(--gold);">Your Reference Code</span>
-      <div class="ps-code" id="f-ref">—</div>
-      <p style="margin-top:10px;color:rgba(255,249,242,.65);font-size:.85rem;" id="f-joined">Loading…</p>
+    <div style="display:flex;align-items:center;gap:20px;">
+      <img id="f-avatar" class="ps-avatar" style="display:none;" alt="Your profile photo">
+      <div>
+        <span class="eyebrow" style="color:var(--gold);">Your Reference Code</span>
+        <div class="ps-code" id="f-ref">—</div>
+        <p style="margin-top:10px;color:rgba(255,249,242,.65);font-size:.85rem;" id="f-joined">Loading…</p>
+      </div>
     </div>
     <div class="ps-status"><span class="dot"></span><span id="f-status">Loading</span></div>
   </div>
@@ -192,6 +196,20 @@
 
     document.getElementById('f-plan').textContent = PLAN_LABEL[p.plan] || 'No plan selected';
     document.getElementById('f-substatus').textContent = STATUS_LABEL[p.subscription_status] || p.subscription_status;
+
+    // Fetching this directly via Storage (not the get-profile-photo edge
+    // function) is fine here — profile_photos_select_own in schema.sql
+    // already lets a member read their own file regardless of subscription
+    // status; the edge function's "active members only" check only matters
+    // for viewing *other* members' photos.
+    if (p.gender === 'M' && p.has_photo && p.photo_path) {
+      const { data: signed } = await sb.storage.from('profile-photos').createSignedUrl(p.photo_path, 300);
+      if (signed?.signedUrl) {
+        const avatar = document.getElementById('f-avatar');
+        avatar.src = signed.signedUrl;
+        avatar.style.display = 'block';
+      }
+    }
   }
 
   async function handleDeactivate(){
