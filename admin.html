@@ -135,6 +135,23 @@
       <div id="notifList"></div>
     </div>
 
+    <div class="panel" id="flagged" data-reveal>
+      <div class="panel-head">
+        <h3>Flagged Messages</h3>
+        <span style="font-size:.78rem;color:var(--ink-soft);">Auto-flagged for possible contact-sharing, or reported by a member</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>From</th><th>To</th><th>Message</th><th>Reason</th><th>Date</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="flaggedTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="panel" id="members" data-reveal>
       <div class="panel-head">
         <h3>All Client Profiles</h3>
@@ -179,6 +196,7 @@
 <script>
   let refToDelete = null;
   let ALL_PROFILES = [];
+  let ALL_FLAGGED = [];
 
   async function loadProfiles(){
     await vrnRequireAuth();
@@ -196,6 +214,51 @@
     }
     renderNotifs();
     renderTable();
+    loadFlaggedMessages();
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  async function loadFlaggedMessages(){
+    const tbody = document.getElementById('flaggedTableBody');
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;">Loading…</td></tr>`;
+    try {
+      const { data, error } = await sb.functions.invoke('admin-list-flagged-messages');
+      if (error) throw error;
+      ALL_FLAGGED = data.messages;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:#A85A3E;">Couldn't load flagged messages (${err.message || 'unknown error'}).</td></tr>`;
+      return;
+    }
+    document.getElementById('statFlagged').textContent = ALL_FLAGGED.length;
+    tbody.innerHTML = ALL_FLAGGED.map(m => `
+      <tr data-id="${m.id}">
+        <td><strong>${m.sender_ref}</strong></td>
+        <td>${m.recipient_ref}</td>
+        <td style="white-space:normal;max-width:320px;">${escapeHtml(m.body)}</td>
+        <td>${m.reported ? `Reported: ${escapeHtml(m.reported_reason || '—')}` : escapeHtml(m.flag_reason || 'Auto-flagged')}</td>
+        <td>${new Date(m.created_at).toLocaleDateString('en-GB')}</td>
+        <td>
+          <button class="action-btn" title="Mark reviewed" onclick="markReviewed('${m.id}')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+        </td>
+      </tr>
+    `).join('') || `<tr><td colspan="6" style="text-align:center;padding:30px;">Nothing flagged right now.</td></tr>`;
+  }
+
+  async function markReviewed(messageId){
+    try {
+      const { error } = await sb.functions.invoke('admin-mark-message-reviewed', { body: { message_id: messageId } });
+      if (error) throw error;
+      await loadFlaggedMessages();
+    } catch (err) {
+      alert('Could not mark this message reviewed: ' + (err.message || 'unknown error'));
+    }
   }
 
   function renderNotifs(){

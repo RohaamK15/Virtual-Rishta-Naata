@@ -144,9 +144,9 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
     Search
   </a>
-  <a href="/signup.html" class="app-tab">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
-    Create
+  <a href="/messages.html" class="app-tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+    Messages
   </a>
   <a href="/account.html" class="app-tab active">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg>
@@ -191,7 +191,13 @@
     document.getElementById('f-jamaat').textContent = p.local_jamaat || '—';
     document.getElementById('f-previous').textContent = p.had_previous ? `Yes — ${p.previous_type || 'Not specified'}, ${p.previous_duration || 'duration not given'}` : 'No';
     document.getElementById('f-children').textContent = p.has_children ? 'Yes' : 'No';
-    document.getElementById('f-email').textContent = p.contact_email || '—';
+    // contact_email is deliberately no longer selectable from profiles by any
+    // client (see the SELECT column grant in schema.sql) — other members used
+    // to be able to read it straight out of the API response even after the
+    // mailto link was replaced with in-app messaging. The session's own auth
+    // email is the same value and always safe for a member to see themselves.
+    const authUser = await vrnCurrentUser();
+    document.getElementById('f-email').textContent = authUser?.email || '—';
     document.getElementById('f-about').textContent = p.about || '—';
 
     document.getElementById('f-plan').textContent = PLAN_LABEL[p.plan] || 'No plan selected';

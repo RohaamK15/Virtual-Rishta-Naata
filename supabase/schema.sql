@@ -35,6 +35,9 @@ create table if not exists public.profiles (
   stripe_customer_id text,
   stripe_subscription_id text,
   is_admin boolean not null default false,
+  -- Set once the member has acknowledged the in-app messaging guidelines —
+  -- see the CHAT & MESSAGING section below. Shown once, not on every chat.
+  chat_guidelines_accepted_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -118,7 +121,23 @@ grant update (
   previous_type, previous_duration, has_children,
   preference_line, country_looking_in,
   consider_pakistan, additional_note, about, contact_email,
-  has_photo, photo_path
+  has_photo, photo_path, chat_guidelines_accepted_at
+) on public.profiles to authenticated;
+
+-- Supabase grants SELECT on every column of every new table to `authenticated`
+-- by default; RLS above only ever restricted which ROWS are visible. Without
+-- this, any active member could read another member's contact_email straight
+-- out of the API response (dev tools, not even the UI) even after the "Send a
+-- Message" button replaced the visible mailto link — collecting everyone's
+-- email during one paid month and never subscribing again. Stripe identifiers
+-- are dropped too since nothing client-side legitimately needs them.
+revoke select on public.profiles from authenticated;
+grant select (
+  id, ref_code, gender, age, height, qualifications, employment, residential_status,
+  city, county, country, is_ahmadi, local_jamaat, had_previous, previous_type,
+  previous_duration, has_children, preference_line, country_looking_in,
+  consider_pakistan, additional_note, about, has_photo, photo_path,
+  plan, subscription_status, is_admin, chat_guidelines_accepted_at, created_at
 ) on public.profiles to authenticated;
 
 -- Any active, paying member can view the full details of another active member.
@@ -252,7 +271,183 @@ create policy "pending_signups_insert_anyone" on public.pending_signups
 grant insert on public.pending_signups to anon, authenticated;
 
 -- ============================================================
--- 7. FIRST ADMIN
+-- 7. CHAT & MESSAGING
+-- ============================================================
+-- Replaces the old "Contact via Email" reveal. That approach let one paid
+-- month's worth of unlocked profiles turn into a permanent contact list — no
+-- reason to ever subscribe again once every email address of interest had
+-- been copied down. Contact details are never exposed to other members at
+-- all now (see the profiles SELECT column grant above); everyone
+-- communicates through this in-app chat instead, which stays subject to the
+-- exact same "must be an active, paying member" gate as browsing search.
+
+create table if not exists public.conversations (
+  id uuid primary key default gen_random_uuid(),
+  -- Always stored with member_a < member_b (enforced below) so a pair of
+  -- members can only ever have one conversation between them, however it was
+  -- opened, without needing an order-independent unique expression index.
+  member_a uuid not null references public.profiles(id) on delete cascade,
+  member_b uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  last_message_at timestamptz not null default now(),
+  check (member_a < member_b),
+  unique (member_a, member_b)
+);
+
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations(id) on delete cascade,
+  sender_id uuid not null references public.profiles(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 2000),
+  -- Set automatically by the trigger below when a message looks like it's
+  -- trying to share contact details — the exact leak this feature exists to
+  -- close. Flagged messages still send; nothing here blocks a conversation,
+  -- it only queues the message for admin review.
+  flagged boolean not null default false,
+  flag_reason text,
+  -- A member can also flag a message themselves (e.g. harassment, anything
+  -- against the chat guidelines) — see the update policy/grant below.
+  reported boolean not null default false,
+  reported_reason text,
+  reviewed_by_admin boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.conversations enable row level security;
+alter table public.messages enable row level security;
+
+-- The only way a conversation ever gets created — never a direct client
+-- insert — so the member_a < member_b ordering and the "both members must be
+-- active" rule are always enforced in one place.
+create or replace function public.get_or_create_conversation(other_user_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := auth.uid();
+  a uuid;
+  b uuid;
+  conv_id uuid;
+begin
+  if me is null then
+    raise exception 'Not authenticated';
+  end if;
+  if me = other_user_id then
+    raise exception 'Cannot message yourself';
+  end if;
+  if not public.is_active_member() then
+    raise exception 'An active membership is required to message other members';
+  end if;
+  if not exists (select 1 from public.profiles where id = other_user_id and subscription_status = 'active') then
+    raise exception 'That member is not currently active';
+  end if;
+
+  if me < other_user_id then a := me; b := other_user_id;
+  else a := other_user_id; b := me;
+  end if;
+
+  select id into conv_id from public.conversations where member_a = a and member_b = b;
+  if conv_id is null then
+    insert into public.conversations (member_a, member_b) values (a, b) returning id into conv_id;
+  end if;
+  return conv_id;
+end;
+$$;
+
+grant execute on function public.get_or_create_conversation(uuid) to authenticated;
+
+-- Only ever your own conversations, and only while you're an active member —
+-- this is the "chats are locked until you pay" rule: losing active status
+-- doesn't delete history, it just stops it (and everything else) being
+-- readable until the subscription is active again.
+create policy "conversations_select_own" on public.conversations
+  for select using (
+    (auth.uid() = member_a or auth.uid() = member_b) and public.is_active_member()
+  );
+
+create policy "messages_select_own_conversation" on public.messages
+  for select using (
+    public.is_active_member()
+    and exists (
+      select 1 from public.conversations c
+      where c.id = messages.conversation_id
+        and (c.member_a = auth.uid() or c.member_b = auth.uid())
+    )
+  );
+
+create policy "messages_insert_own_conversation" on public.messages
+  for insert with check (
+    sender_id = auth.uid()
+    and public.is_active_member()
+    and exists (
+      select 1 from public.conversations c
+      where c.id = messages.conversation_id
+        and (c.member_a = auth.uid() or c.member_b = auth.uid())
+    )
+  );
+
+grant insert on public.messages to authenticated;
+
+-- Members can flag a message in their own conversation (reported/reported_reason
+-- only — column grants stop them from editing anything else, including body).
+create policy "messages_update_report_own_conversation" on public.messages
+  for update using (
+    public.is_active_member()
+    and exists (
+      select 1 from public.conversations c
+      where c.id = messages.conversation_id
+        and (c.member_a = auth.uid() or c.member_b = auth.uid())
+    )
+  );
+
+revoke update on public.messages from authenticated;
+grant update (reported, reported_reason) on public.messages to authenticated;
+
+-- Auto-flags messages that look like an attempt to share contact details —
+-- email addresses, phone-number-like digit runs, or spelled-out obfuscations
+-- like "name at gmail dot com". Deliberately loose/over-inclusive: false
+-- positives just mean an admin reviews an innocent message, but a missed
+-- real one defeats the entire point of moving off email in the first place.
+create or replace function public.flag_contact_info_in_message()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.body ~* '[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}'
+     or new.body ~* '(\+?\d[\d\s().-]{7,}\d)'
+     or new.body ~* '[a-z0-9._%-]+\s*[\(\[]?\s*at\s*[\)\]]?\s*[a-z0-9.-]+\s*[\(\[]?\s*dot\s*[\)\]]?\s*[a-z]{2,}'
+  then
+    new.flagged := true;
+    new.flag_reason := coalesce(new.flag_reason, 'auto: message looks like it may contain contact details');
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_flag_contact_info on public.messages;
+create trigger trg_flag_contact_info
+  before insert on public.messages
+  for each row execute function public.flag_contact_info_in_message();
+
+create or replace function public.touch_conversation_last_message()
+returns trigger
+language plpgsql
+as $$
+begin
+  update public.conversations set last_message_at = new.created_at where id = new.conversation_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_touch_conversation on public.messages;
+create trigger trg_touch_conversation
+  after insert on public.messages
+  for each row execute function public.touch_conversation_last_message();
+
+-- ============================================================
+-- 8. FIRST ADMIN
 -- ============================================================
 -- After you've created your own account through the normal signup flow once,
 -- run this (with your real user id from auth.users) to make yourself an admin:

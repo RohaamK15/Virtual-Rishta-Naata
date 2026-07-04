@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<style>
+  html,body{height:100%;}
+  body{display:flex;flex-direction:column;background:var(--beige);overflow:hidden;}
+  .chat-header{background:#fff;border-bottom:1px solid rgba(19,75,53,.08);padding:16px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
+  .chat-header a.back{color:var(--ink-soft);display:flex;flex-shrink:0;}
+  .chat-header a.back:hover{color:var(--green);}
+  .chat-header .who{font-family:'Cinzel',serif;font-weight:600;color:var(--green);}
+  .chat-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;}
+  .msg-row{display:flex;}
+  .msg-row.mine{justify-content:flex-end;}
+  .msg-row.mine .msg-col{align-items:flex-end;}
+  .msg-col{display:flex;flex-direction:column;max-width:75%;}
+  .msg-bubble{padding:11px 16px;border-radius:16px;font-size:.9rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
+  .msg-row.mine .msg-bubble{background:var(--green-2);color:var(--ivory);border-bottom-right-radius:4px;}
+  .msg-row.theirs .msg-bubble{background:#fff;color:var(--ink);border-bottom-left-radius:4px;box-shadow:var(--shadow-1);}
+  .msg-meta{display:flex;gap:8px;align-items:center;font-size:.68rem;color:var(--ink-soft);margin-top:4px;padding:0 2px;}
+  .msg-flag-btn{font-size:.68rem;color:var(--ink-soft);text-decoration:underline;background:none;border:none;padding:0;cursor:pointer;}
+  .chat-composer{background:#fff;border-top:1px solid rgba(19,75,53,.08);padding:14px 16px;display:flex;gap:10px;flex-shrink:0;align-items:flex-end;}
+  .chat-composer textarea{flex:1;resize:none;border:1.5px solid rgba(19,75,53,.16);border-radius:var(--radius-m);padding:10px 14px;font-family:inherit;font-size:.9rem;max-height:100px;}
+  .chat-composer textarea:focus{outline:none;border-color:var(--green);}
+  .chat-notice{text-align:center;padding:80px 24px;}
+
+  .guidelines-panel{position:fixed;inset:0;background:var(--beige);z-index:100;overflow-y:auto;padding:40px 20px;}
+  .guidelines-card{max-width:560px;margin:0 auto;background:#fff;border-radius:var(--radius-l);box-shadow:var(--shadow-2);padding:36px 32px;}
+  @media (max-width:600px){.guidelines-card{padding:28px 22px;}}
+  .g-list{list-style:none;padding:0;margin:20px 0;display:grid;gap:14px;}
+  .g-list li{display:flex;gap:12px;align-items:flex-start;font-size:.88rem;line-height:1.6;color:var(--ink-soft);}
+  .g-list li svg{flex-shrink:0;margin-top:3px;color:var(--gold);}
+  .g-list.boundary li svg{color:#C0654A;}
+  .boundary-box{background:linear-gradient(155deg,#FBF1EC,var(--rose-soft));border:1px solid rgba(216,137,111,.35);border-radius:var(--radius-l);padding:22px 24px;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="guidelines-panel" id="guidelinesPanel" style="display:none;">
+  <div class="guidelines-card">
+    <span class="eyebrow eyebrow--rose">Before You Start Chatting</span>
+    <h2 style="margin-top:10px;">Messaging Guidelines</h2>
+    <p style="margin-top:12px;color:var(--ink-soft);font-size:.9rem;">Please read and agree to these before sending your first message. You'll only see this once.</p>
+    <ul class="g-list">
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Remain respectful and honest in every conversation, whether or not it progresses.</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Keep correspondence within appropriate Islamic bounds until families are formally involved.</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Do not share external contact details (email, phone number, social media) here — for your own safety, and so families can be properly introduced before any of that is exchanged.</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>If a conversation isn't right for you, say so kindly rather than disappearing without word.</li>
+    </ul>
+    <div class="boundary-box">
+      <h3 style="color:#A85A3E;margin-bottom:10px;font-size:.95rem;">Please Note</h3>
+      <ul class="g-list boundary" style="margin:0;">
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>Messages that appear to share contact details are automatically flagged for our review.</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>Harassment, disrespect, or anything against our Community Guidelines can be reported directly from any message.</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>We reserve the right to review flagged conversations and take appropriate action, including suspending accounts.</li>
+      </ul>
+    </div>
+    <button class="btn btn-primary btn-block" style="margin-top:26px;" onclick="acceptGuidelines()">I Understand &amp; Agree</button>
+    <a href="/guidelines.html" target="_blank" style="display:block;text-align:center;margin-top:14px;font-size:.82rem;color:var(--ink-soft);">Read our full Community Guidelines</a>
+  </div>
+</div>
+
+<header class="chat-header">
+  <a href="/messages.html" class="back" aria-label="Back to messages">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+  </a>
+  <div>
+    <div class="who" id="chatWho">—</div>
+    <div style="font-size:.75rem;color:var(--ink-soft);" id="chatSubtitle">Loading…</div>
+  </div>
+</header>
+
+<div class="chat-body" id="chatBody"></div>
+
+<form class="chat-composer" id="chatComposer" onsubmit="return false;" style="display:none;">
+  <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000"></textarea>
+  <button type="button" class="btn btn-gold" id="sendBtn" onclick="sendMessage()">Send</button>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase-client.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const otherRefCode = params.get('ref');
+  let conversationId = null;
+  let myUserId = null;
+  let lastSignature = '';
+  let pollTimer = null;
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function showNotice(html){
+    document.getElementById('chatBody').innerHTML = `<div class="chat-notice">${html}</div>`;
+  }
+
+  async function init(){
+    const user = await vrnRequireAuth();
+    if (!user) return;
+    myUserId = user.id;
+
+    let me;
+    try { me = await vrnMyProfile(); } catch (e) { me = null; }
+    if (!me) { window.location.href = '/signup.html'; return; }
+
+    if (me.subscription_status !== 'active') {
+      document.getElementById('chatSubtitle').textContent = 'Active membership required';
+      showNotice(`<p>Messaging is available to active members. <a href="/pricing.html">View plans</a></p>`);
+      return;
+    }
+
+    if (!otherRefCode) { window.location.href = '/messages.html'; return; }
+
+    let other;
+    try {
+      other = await vrnGetProfileByRef(otherRefCode);
+    } catch (e) {
+      document.getElementById('chatSubtitle').textContent = 'Not found';
+      showNotice(`<p>This member's profile is no longer available.</p>`);
+      return;
+    }
+
+    document.getElementById('chatWho').textContent = other.ref_code;
+    document.getElementById('chatSubtitle').textContent = other.gender === 'M' ? 'Male member' : 'Female member';
+
+    const { data: convId, error: convError } = await sb.rpc('get_or_create_conversation', { other_user_id: other.id });
+    if (convError) {
+      showNotice(`<p style="color:#A85A3E;">${escapeHtml(convError.message)}</p>`);
+      return;
+    }
+    conversationId = convId;
+
+    if (!me.chat_guidelines_accepted_at) {
+      document.getElementById('guidelinesPanel').style.display = 'block';
+    } else {
+      startChat();
+    }
+  }
+
+  async function acceptGuidelines(){
+    await sb.from('profiles').update({ chat_guidelines_accepted_at: new Date().toISOString() }).eq('id', myUserId);
+    document.getElementById('guidelinesPanel').style.display = 'none';
+    startChat();
+  }
+
+  function startChat(){
+    document.getElementById('chatComposer').style.display = 'flex';
+    loadMessages();
+    pollTimer = setInterval(loadMessages, 3000);
+  }
+
+  async function loadMessages(){
+    const { data: msgs, error } = await sb.from('messages')
+      .select('id, sender_id, body, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+    if (error) return;
+
+    const signature = msgs.length + ':' + (msgs.length ? msgs[msgs.length - 1].id : '');
+    if (signature === lastSignature) return;
+    lastSignature = signature;
+
+    const bodyEl = document.getElementById('chatBody');
+    const wasAtBottom = bodyEl.scrollTop + bodyEl.clientHeight >= bodyEl.scrollHeight - 60;
+
+    bodyEl.innerHTML = msgs.length ? msgs.map(m => {
+      const mine = m.sender_id === myUserId;
+      const time = new Date(m.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      return `
+        <div class="msg-row ${mine ? 'mine' : 'theirs'}">
+          <div class="msg-col">
+            <div class="msg-bubble">${escapeHtml(m.body)}</div>
+            <div class="msg-meta">
+              <span>${time}</span>
+              ${!mine ? `<button class="msg-flag-btn" onclick="reportMessage('${m.id}')">Report</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('') : `<div class="chat-notice"><p style="color:var(--ink-soft);">Say hello — this is the start of your conversation with ${escapeHtml(otherRefCode)}.</p></div>`;
+
+    if (wasAtBottom) bodyEl.scrollTop = bodyEl.scrollHeight;
+  }
+
+  async function sendMessage(){
+    const input = document.getElementById('chatInput');
+    const body = input.value.trim();
+    if (!body) return;
+    const btn = document.getElementById('sendBtn');
+    btn.setAttribute('disabled', '');
+    try {
+      const { error } = await sb.from('messages').insert({ conversation_id: conversationId, sender_id: myUserId, body });
+      if (error) throw error;
+      input.value = '';
+      lastSignature = '';
+      await loadMessages();
+    } catch (err) {
+      alert(err.message || 'Could not send this message.');
+    } finally {
+      btn.removeAttribute('disabled');
+    }
+  }
+
+  async function reportMessage(messageId){
+    const reason = prompt("What's wrong with this message? (optional)") || 'Reported by member';
+    try {
+      const { error } = await sb.from('messages').update({ reported: true, reported_reason: reason }).eq('id', messageId);
+      if (error) throw error;
+      alert("Thank you — this has been reported to our team for review.");
+    } catch (err) {
+      alert(err.message || 'Could not report this message.');
+    }
+  }
+
+  document.getElementById('chatInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  window.addEventListener('beforeunload', () => { if (pollTimer) clearInterval(pollTimer); });
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messages — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<style>
+  body{padding-bottom:88px;background:var(--beige);}
+  .app-header{
+    position:sticky;top:0;z-index:40;background:rgba(255,249,242,.92);backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(19,75,53,.08);padding:18px 0;
+  }
+  .app-header .wrap{display:flex;align-items:center;justify-content:space-between;}
+  .app-header .brand-mini{display:flex;align-items:center;gap:10px;}
+  .app-header .brand-mini img{height:38px;width:auto;}
+  .app-header .brand-mini span{font-family:'Cinzel',serif;font-weight:600;color:var(--green);font-size:1rem;}
+
+  .content{padding:28px 0 40px;}
+  .convo-list{background:#fff;border-radius:var(--radius-m);box-shadow:var(--shadow-1);overflow:hidden;}
+  .convo-row{display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid rgba(19,75,53,.06);cursor:pointer;transition:background .2s;}
+  .convo-row:last-child{border-bottom:none;}
+  .convo-row:hover{background:var(--beige);}
+  .convo-avatar{width:44px;height:44px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:.82rem;flex-shrink:0;}
+  .convo-main{flex:1;min-width:0;}
+  .convo-ref{font-family:'Montserrat',sans-serif;font-weight:600;font-size:.9rem;color:var(--ink);}
+  .convo-preview{font-size:.82rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .convo-time{font-size:.72rem;color:var(--ink-soft);flex-shrink:0;}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--ink-soft);background:#fff;border-radius:var(--radius-m);box-shadow:var(--shadow-1);}
+  .empty-state a{color:var(--gold);font-weight:600;}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="wrap">
+    <a href="/home.html" class="brand-mini">
+      <img src="/assets/img/logo-icon.png" alt="">
+      <span>Messages</span>
+    </a>
+  </div>
+</header>
+
+<main class="wrap content">
+  <div id="convoList" class="convo-list" style="display:none;"></div>
+  <div id="emptyState" class="empty-state" style="display:none;"></div>
+</main>
+
+<nav class="app-bottom-nav">
+  <a href="/home.html" class="app-tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+    Home
+  </a>
+  <a href="/search.html" class="app-tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    Search
+  </a>
+  <a href="/messages.html" class="app-tab active">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+    Messages
+  </a>
+  <a href="/account.html" class="app-tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg>
+    Account
+  </a>
+</nav>
+
+<script src="/assets/js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase-client.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script>
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function timeAgo(iso){
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(iso).toLocaleDateString('en-GB');
+  }
+
+  async function loadInbox(){
+    const user = await vrnRequireAuth();
+    if (!user) return;
+
+    let me;
+    try { me = await vrnMyProfile(); } catch (e) { me = null; }
+    if (!me) { window.location.href = '/signup.html'; return; }
+
+    if (me.subscription_status !== 'active') {
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('emptyState').innerHTML = `<p>An active membership is required to use messages. <a href="/pricing.html">View plans</a></p>`;
+      return;
+    }
+
+    const { data: convos, error } = await sb.from('conversations')
+      .select('id, member_a, member_b, last_message_at')
+      .order('last_message_at', { ascending: false });
+    if (error) {
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('emptyState').innerHTML = `<p style="color:#A85A3E;">Couldn't load your messages (${error.message}).</p>`;
+      return;
+    }
+    if (!convos || !convos.length) {
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('emptyState').innerHTML = `<p>No conversations yet. Open a profile from Search and send a message to get started.</p>`;
+      return;
+    }
+
+    const otherIds = [...new Set(convos.map(c => c.member_a === user.id ? c.member_b : c.member_a))];
+    const { data: others } = await sb.from('profiles').select('id, ref_code').in('id', otherIds);
+    const othersById = Object.fromEntries((others || []).map(o => [o.id, o]));
+
+    const listEl = document.getElementById('convoList');
+    listEl.style.display = 'block';
+    listEl.innerHTML = '';
+
+    for (const c of convos) {
+      const otherId = c.member_a === user.id ? c.member_b : c.member_a;
+      const other = othersById[otherId];
+      const { data: lastMsgs } = await sb.from('messages')
+        .select('body, created_at')
+        .eq('conversation_id', c.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const lastMsg = lastMsgs?.[0];
+
+      const row = document.createElement('div');
+      row.className = 'convo-row';
+      row.innerHTML = `
+        <div class="convo-avatar">${other ? other.ref_code.slice(-2) : '—'}</div>
+        <div class="convo-main">
+          <div class="convo-ref">${other ? other.ref_code : 'Member no longer active'}</div>
+          <div class="convo-preview">${lastMsg ? escapeHtml(lastMsg.body) : 'No messages yet'}</div>
+        </div>
+        <div class="convo-time">${lastMsg ? timeAgo(lastMsg.created_at) : ''}</div>
+      `;
+      if (other) row.onclick = () => { window.location.href = `/chat.html?ref=${other.ref_code}`; };
+      listEl.appendChild(row);
+    }
+  }
+
+  loadInbox();
+</script>
+</body>
+</html>
