@@ -160,9 +160,38 @@ as $$
   );
 $$;
 
+-- Blocking is defined here (ahead of where it's first used, in the policy
+-- just below) even though the full BLOCKING & REPORTING section lives later
+-- in this file — blocks needs to exist before profiles_select_active_members
+-- can reference it, and that policy has to sit next to profiles' other ones.
+create table if not exists public.blocks (
+  id uuid primary key default gen_random_uuid(),
+  blocker_id uuid not null references public.profiles(id) on delete cascade,
+  blocked_id uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  check (blocker_id <> blocked_id),
+  unique (blocker_id, blocked_id)
+);
+
+alter table public.blocks enable row level security;
+
+create or replace function public.is_blocked_pair(a uuid, b uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.blocks
+    where (blocker_id = a and blocked_id = b) or (blocker_id = b and blocked_id = a)
+  );
+$$;
+
 create policy "profiles_select_active_members" on public.profiles
   for select using (
     subscription_status = 'active' and public.is_active_member()
+    and not public.is_blocked_pair(auth.uid(), id)
   );
 
 -- No delete/insert/update policy for other users' rows, and no policy at all for
@@ -343,6 +372,9 @@ begin
   if not exists (select 1 from public.profiles where id = other_user_id and subscription_status = 'active') then
     raise exception 'That member is not currently active';
   end if;
+  if public.is_blocked_pair(me, other_user_id) then
+    raise exception 'You cannot message this member';
+  end if;
 
   if me < other_user_id then a := me; b := other_user_id;
   else a := other_user_id; b := me;
@@ -385,6 +417,7 @@ create policy "messages_insert_own_conversation" on public.messages
       select 1 from public.conversations c
       where c.id = messages.conversation_id
         and (c.member_a = auth.uid() or c.member_b = auth.uid())
+        and not public.is_blocked_pair(c.member_a, c.member_b)
     )
   );
 
@@ -447,7 +480,48 @@ create trigger trg_touch_conversation
   for each row execute function public.touch_conversation_last_message();
 
 -- ============================================================
--- 8. FIRST ADMIN
+-- 8. BLOCKING & REPORTING
+-- ============================================================
+-- The blocks table itself lives up in section 3 (profiles' RLS policies
+-- need it to exist first) — this is just its own policies, plus profile
+-- reports, which nothing else depends on.
+
+-- A member manages only their own block list: who they've blocked, and
+-- unblocking (delete). There's no way to see who has blocked *you* — that's
+-- deliberate, same reasoning as most platforms with this feature.
+create policy "blocks_select_own" on public.blocks
+  for select using (blocker_id = auth.uid());
+
+create policy "blocks_insert_own" on public.blocks
+  for insert with check (blocker_id = auth.uid() and public.is_active_member());
+
+create policy "blocks_delete_own" on public.blocks
+  for delete using (blocker_id = auth.uid());
+
+grant select, insert, delete on public.blocks to authenticated;
+
+-- Reporting a whole profile (fake account, inappropriate photo/bio, etc.) —
+-- separate from reporting an individual chat message. Admin-only read, same
+-- as consultation_requests and messages' flag/report fields.
+create table if not exists public.profile_reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references public.profiles(id) on delete cascade,
+  reported_id uuid not null references public.profiles(id) on delete cascade,
+  reason text not null check (char_length(reason) between 1 and 1000),
+  reviewed_by_admin boolean not null default false,
+  created_at timestamptz not null default now(),
+  check (reporter_id <> reported_id)
+);
+
+alter table public.profile_reports enable row level security;
+
+create policy "profile_reports_insert_own" on public.profile_reports
+  for insert with check (reporter_id = auth.uid() and public.is_active_member());
+
+grant insert on public.profile_reports to authenticated;
+
+-- ============================================================
+-- 9. FIRST ADMIN
 -- ============================================================
 -- After you've created your own account through the normal signup flow once,
 -- run this (with your real user id from auth.users) to make yourself an admin:

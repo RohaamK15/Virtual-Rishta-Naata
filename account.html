@@ -121,6 +121,10 @@
         <div class="plan-row"><span>Status</span><strong style="font-family:'Lato',sans-serif;font-weight:700;color:var(--ink);" id="f-substatus">—</strong></div>
         <a href="/pricing.html" class="btn btn-outline btn-sm btn-block" style="margin-top:16px;">Manage Subscription</a>
       </div>
+      <div class="side-card" data-reveal id="blockedCard" style="display:none;">
+        <h4>Blocked Members</h4>
+        <ul class="quick-list" id="blockedList"></ul>
+      </div>
       <div class="side-card" data-reveal>
         <h4>Quick Links</h4>
         <ul class="quick-list">
@@ -218,6 +222,34 @@
     }
   }
 
+  async function loadBlockedMembers(){
+    const { data: blocks, error } = await sb.from('blocks').select('id, blocked_id').order('created_at', { ascending: false });
+    if (error || !blocks || !blocks.length) return;
+
+    const blockedIds = blocks.map(b => b.blocked_id);
+    const { data: profiles } = await sb.from('profiles').select('id, ref_code').in('id', blockedIds);
+    const refCodeById = Object.fromEntries((profiles || []).map(p => [p.id, p.ref_code]));
+
+    document.getElementById('blockedCard').style.display = 'block';
+    document.getElementById('blockedList').innerHTML = blocks.map(b => `
+      <li>
+        <span>${refCodeById[b.blocked_id] || 'Member no longer active'}</span>
+        <a href="#" onclick="return unblockMember('${b.id}')" style="color:var(--gold);">Unblock</a>
+      </li>
+    `).join('');
+  }
+
+  async function unblockMember(blockId){
+    try {
+      const { error } = await sb.from('blocks').delete().eq('id', blockId);
+      if (error) throw error;
+      await loadBlockedMembers();
+    } catch (err) {
+      alert(err.message || 'Could not unblock this member.');
+    }
+    return false;
+  }
+
   async function handleDeactivate(){
     if (!confirm('Are you sure you want to deactivate your account? This will hide your profile from search and cancel your subscription — you will not be charged again.')) return false;
     try {
@@ -248,6 +280,7 @@
   }
 
   loadAccount();
+  loadBlockedMembers();
 </script>
 </body>
 </html>

@@ -135,6 +135,23 @@
       <div id="notifList"></div>
     </div>
 
+    <div class="panel" id="reportedProfiles" data-reveal>
+      <div class="panel-head">
+        <h3>Reported Profiles</h3>
+        <span style="font-size:.78rem;color:var(--ink-soft);">Whole-profile reports from members — fake accounts, inappropriate content, etc.</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Reported By</th><th>Reported Profile</th><th>Reason</th><th>Date</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="reportedProfilesTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="panel" id="flagged" data-reveal>
       <div class="panel-head">
         <h3>Flagged Messages</h3>
@@ -215,6 +232,41 @@
     renderNotifs();
     renderTable();
     loadFlaggedMessages();
+    loadReportedProfiles();
+  }
+
+  async function loadReportedProfiles(){
+    const tbody = document.getElementById('reportedProfilesTableBody');
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;">Loading…</td></tr>`;
+    try {
+      const { data, error } = await sb.functions.invoke('admin-list-profile-reports');
+      if (error) throw error;
+      tbody.innerHTML = data.reports.map(r => `
+        <tr>
+          <td><strong>${r.reporter_ref}</strong></td>
+          <td>${r.reported_ref}</td>
+          <td style="white-space:normal;max-width:320px;">${escapeHtml(r.reason)}</td>
+          <td>${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
+          <td>
+            <button class="action-btn" title="Mark reviewed" onclick="markProfileReportReviewed('${r.id}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>
+          </td>
+        </tr>
+      `).join('') || `<tr><td colspan="5" style="text-align:center;padding:30px;">No profile reports right now.</td></tr>`;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:#A85A3E;">Couldn't load reported profiles (${err.message || 'unknown error'}).</td></tr>`;
+    }
+  }
+
+  async function markProfileReportReviewed(reportId){
+    try {
+      const { error } = await sb.functions.invoke('admin-mark-report-reviewed', { body: { report_id: reportId } });
+      if (error) throw error;
+      await loadReportedProfiles();
+    } catch (err) {
+      alert('Could not mark this report reviewed: ' + (err.message || 'unknown error'));
+    }
   }
 
   function escapeHtml(str){
