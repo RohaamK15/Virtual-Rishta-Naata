@@ -30,6 +30,13 @@ create table if not exists public.profiles (
   contact_email text not null,
   has_photo boolean not null default false,
   photo_path text,               -- storage path in the profile-photos bucket, males only
+  -- null until a photo is uploaded. Reset to 'pending' automatically whenever
+  -- photo_path changes (see trg_reset_photo_status below) — members never get
+  -- direct write access to this column, only admins (service role) can set it
+  -- to 'approved'/'rejected', via admin-review-photo. A pending/rejected photo
+  -- is never shown to other members — see get-profile-photo.
+  photo_status text check (photo_status in ('pending','approved','rejected')),
+  photo_rejection_reason text,
   plan text check (plan in ('monthly','annual')),
   subscription_status text not null default 'pending' check (subscription_status in ('pending','active','cancelled','past_due')),
   stripe_customer_id text,
@@ -79,6 +86,30 @@ drop trigger if exists trg_set_ref_code on public.profiles;
 create trigger trg_set_ref_code
   before insert on public.profiles
   for each row execute function public.set_ref_code();
+
+-- Whenever photo_path changes — a new upload, a replacement, or removal —
+-- photo_status resets automatically. This is the only way photo_status ever
+-- changes to 'pending': members are never granted UPDATE on that column
+-- directly (see the grant in section 3), so there's no way to self-approve.
+-- A trigger can still set columns the calling role has no grant on; only the
+-- statement's own SET clause is subject to column grants.
+create or replace function public.reset_photo_status_on_change()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.photo_path is distinct from old.photo_path then
+    new.photo_status := case when new.photo_path is null then null else 'pending' end;
+    new.photo_rejection_reason := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_reset_photo_status on public.profiles;
+create trigger trg_reset_photo_status
+  before update on public.profiles
+  for each row execute function public.reset_photo_status_on_change();
 
 -- ============================================================
 -- 3. ROW LEVEL SECURITY POLICIES
@@ -137,6 +168,7 @@ grant select (
   city, county, country, is_ahmadi, local_jamaat, had_previous, previous_type,
   previous_duration, has_children, preference_line, country_looking_in,
   consider_pakistan, additional_note, about, has_photo, photo_path,
+  photo_status, photo_rejection_reason,
   plan, subscription_status, is_admin, chat_guidelines_accepted_at, created_at
 ) on public.profiles to authenticated;
 

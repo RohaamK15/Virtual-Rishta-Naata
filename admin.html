@@ -135,6 +135,14 @@
       <div id="notifList"></div>
     </div>
 
+    <div class="panel" id="photoReview" data-reveal>
+      <div class="panel-head">
+        <h3>Photo Review</h3>
+        <span style="font-size:.78rem;color:var(--ink-soft);">New uploads wait here until approved — never shown to other members before that</span>
+      </div>
+      <div id="photoReviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px;padding:20px 24px;"></div>
+    </div>
+
     <div class="panel" id="reportedProfiles" data-reveal>
       <div class="panel-head">
         <h3>Reported Profiles</h3>
@@ -233,6 +241,44 @@
     renderTable();
     loadFlaggedMessages();
     loadReportedProfiles();
+    loadPendingPhotos();
+  }
+
+  async function loadPendingPhotos(){
+    const grid = document.getElementById('photoReviewGrid');
+    grid.innerHTML = `<p style="padding:10px;color:var(--ink-soft);">Loading…</p>`;
+    try {
+      const { data, error } = await sb.functions.invoke('admin-list-pending-photos');
+      if (error) throw error;
+      grid.innerHTML = data.photos.map(p => `
+        <div style="background:var(--beige);border-radius:var(--radius-m);overflow:hidden;">
+          <img src="${p.photo_url}" alt="${p.ref_code}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
+          <div style="padding:12px;">
+            <strong style="display:block;font-size:.85rem;margin-bottom:8px;">${p.ref_code}</strong>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewPhoto('${p.id}','approve')">Approve</button>
+              <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewPhoto('${p.id}','reject')">Reject</button>
+            </div>
+          </div>
+        </div>
+      `).join('') || `<p style="padding:10px;color:var(--ink-soft);">No photos waiting for review.</p>`;
+    } catch (err) {
+      grid.innerHTML = `<p style="padding:10px;color:#A85A3E;">Couldn't load pending photos (${err.message || 'unknown error'}).</p>`;
+    }
+  }
+
+  async function reviewPhoto(profileId, action){
+    let reason = null;
+    if (action === 'reject') {
+      reason = prompt('Optional: reason to show the member (e.g. "Please upload a clear photo of yourself, not a group photo")') || undefined;
+    }
+    try {
+      const { error } = await sb.functions.invoke('admin-review-photo', { body: { profile_id: profileId, action, reason } });
+      if (error) throw error;
+      await loadPendingPhotos();
+    } catch (err) {
+      alert('Could not review this photo: ' + (err.message || 'unknown error'));
+    }
   }
 
   async function loadReportedProfiles(){

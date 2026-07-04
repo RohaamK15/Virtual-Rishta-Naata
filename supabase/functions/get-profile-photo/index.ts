@@ -27,11 +27,13 @@ Deno.serve(async (req) => {
     const { ref_code } = await req.json();
     const { data: target, error: targetError } = await supabase
       .from("profiles")
-      .select("gender, has_photo, photo_path, subscription_status")
+      .select("gender, has_photo, photo_path, photo_status, subscription_status")
       .eq("ref_code", ref_code)
       .single();
     if (targetError || !target) throw new Error("Profile not found");
-    if (target.gender !== "M" || !target.has_photo || !target.photo_path) {
+    // A pending or rejected photo is treated exactly like no photo at all —
+    // only ever shown to other members once an admin has approved it.
+    if (target.gender !== "M" || !target.has_photo || !target.photo_path || target.photo_status !== "approved") {
       return new Response(JSON.stringify({ url: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

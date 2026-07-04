@@ -115,6 +115,14 @@
     </div>
 
     <div>
+      <div class="side-card" data-reveal id="photoCard" style="display:none;">
+        <h4>Your Photo</h4>
+        <img id="photo-preview" style="display:none;width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius-m);margin-bottom:14px;" alt="Your profile photo">
+        <p id="photo-status-badge" style="font-size:.82rem;margin-bottom:10px;"></p>
+        <p id="photo-rejection-note" style="display:none;font-size:.82rem;color:#A85A3E;margin-bottom:14px;"></p>
+        <input type="file" id="photoUploadInput" accept="image/*" style="display:none;">
+        <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('photoUploadInput').click()" id="photoUploadBtn">Upload a Photo</button>
+      </div>
       <div class="side-card" data-reveal>
         <h4>Membership</h4>
         <div class="plan-row"><span>Plan</span><strong id="f-plan">—</strong></div>
@@ -210,17 +218,81 @@
     // Fetching this directly via Storage (not the get-profile-photo edge
     // function) is fine here — profile_photos_select_own in schema.sql
     // already lets a member read their own file regardless of subscription
-    // status; the edge function's "active members only" check only matters
-    // for viewing *other* members' photos.
+    // status or review outcome; the edge function's checks only matter for
+    // viewing *other* members' photos.
+    let signedPhotoUrl = null;
     if (p.gender === 'M' && p.has_photo && p.photo_path) {
       const { data: signed } = await sb.storage.from('profile-photos').createSignedUrl(p.photo_path, 300);
-      if (signed?.signedUrl) {
+      signedPhotoUrl = signed?.signedUrl || null;
+      if (signedPhotoUrl) {
         const avatar = document.getElementById('f-avatar');
-        avatar.src = signed.signedUrl;
+        avatar.src = signedPhotoUrl;
         avatar.style.display = 'block';
       }
     }
+
+    if (p.gender === 'M') {
+      document.getElementById('photoCard').style.display = 'block';
+      const preview = document.getElementById('photo-preview');
+      const badge = document.getElementById('photo-status-badge');
+      const rejectionNote = document.getElementById('photo-rejection-note');
+      const uploadBtn = document.getElementById('photoUploadBtn');
+
+      if (signedPhotoUrl) {
+        preview.src = signedPhotoUrl;
+        preview.style.display = 'block';
+      }
+
+      const STATUS_COPY = {
+        pending: { text: '🕐 Pending review — not visible to other members yet.', color: 'var(--gold)' },
+        approved: { text: '✓ Approved — visible to other active members.', color: 'var(--green)' },
+        rejected: { text: '✕ Not approved.', color: '#A85A3E' },
+      };
+      const status = STATUS_COPY[p.photo_status];
+      badge.textContent = status ? status.text : 'No photo uploaded yet.';
+      badge.style.color = status ? status.color : 'var(--ink-soft)';
+
+      if (p.photo_status === 'rejected' && p.photo_rejection_reason) {
+        rejectionNote.textContent = `Reason: ${p.photo_rejection_reason}`;
+        rejectionNote.style.display = 'block';
+      } else {
+        rejectionNote.style.display = 'none';
+      }
+
+      uploadBtn.textContent = p.has_photo ? 'Change Photo' : 'Upload a Photo';
+    }
   }
+
+  document.getElementById('photoUploadInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('That photo is larger than 5MB — please choose a smaller one.');
+      e.target.value = '';
+      return;
+    }
+    const user = await vrnCurrentUser();
+    const ext = file.type === 'image/png' ? 'png' : 'jpg';
+    const path = `${user.id}/photo.${ext}`;
+    const btn = document.getElementById('photoUploadBtn');
+    btn.setAttribute('disabled', '');
+    btn.textContent = 'Uploading...';
+    try {
+      const { error: uploadError } = await sb.storage.from('profile-photos').upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      // Changing photo_path is what resets photo_status to 'pending' — see
+      // trg_reset_photo_status in schema.sql. No admin approval carries over
+      // from a previous photo.
+      const { error: updateError } = await sb.from('profiles').update({ has_photo: true, photo_path: path }).eq('id', user.id);
+      if (updateError) throw updateError;
+      await loadAccount();
+    } catch (err) {
+      alert(err.message || 'Could not upload this photo — please try again.');
+    } finally {
+      btn.removeAttribute('disabled');
+      e.target.value = '';
+    }
+  });
 
   async function loadBlockedMembers(){
     const { data: blocks, error } = await sb.from('blocks').select('id, blocked_id').order('created_at', { ascending: false });
