@@ -44,22 +44,24 @@ async function vrnRequireAuth() {
   return user;
 }
 
+// Postgres requires SELECT * to have table-wide privilege — with only the
+// column-level grant in schema.sql (contact_email and the Stripe IDs are
+// deliberately excluded from it), a bare select("*") fails outright with
+// "permission denied for table profiles" rather than just omitting those
+// columns. Every client-side profile read has to name its columns explicitly.
+const PROFILE_COLUMNS = [
+  "id", "ref_code", "gender", "age", "height", "qualifications", "employment",
+  "residential_status", "city", "county", "country", "is_ahmadi", "local_jamaat",
+  "had_previous", "previous_type", "previous_duration", "has_children",
+  "preference_line", "country_looking_in", "consider_pakistan", "additional_note",
+  "about", "has_photo", "photo_path", "plan", "subscription_status", "is_admin",
+  "chat_guidelines_accepted_at", "created_at",
+].join(", ");
+
 async function vrnMyProfile() {
   const user = await vrnCurrentUser();
   if (!user) return null;
-  const { data, error } = await sb.from("profiles").select("*").eq("id", user.id).single();
-  if (error) throw error;
-  return data;
-}
-
-async function vrnCreateProfile(profile) {
-  const user = await vrnCurrentUser();
-  if (!user) throw new Error("Not signed in");
-  const { data, error } = await sb
-    .from("profiles")
-    .insert({ id: user.id, ...profile })
-    .select()
-    .single();
+  const { data, error } = await sb.from("profiles").select(PROFILE_COLUMNS).eq("id", user.id).single();
   if (error) throw error;
   return data;
 }
@@ -67,7 +69,7 @@ async function vrnCreateProfile(profile) {
 // Any active member can read another active member's full row — enforced by
 // the profiles_select_active_members RLS policy in supabase/schema.sql.
 async function vrnGetProfileByRef(refCode) {
-  const { data, error } = await sb.from("profiles").select("*").eq("ref_code", refCode).single();
+  const { data, error } = await sb.from("profiles").select(PROFILE_COLUMNS).eq("ref_code", refCode).single();
   if (error) throw error;
   return data;
 }
