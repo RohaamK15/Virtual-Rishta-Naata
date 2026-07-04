@@ -54,8 +54,8 @@ const PROFILE_COLUMNS = [
   "residential_status", "city", "county", "country", "is_ahmadi", "local_jamaat",
   "had_previous", "previous_type", "previous_duration", "has_children",
   "preference_line", "country_looking_in", "consider_pakistan", "additional_note",
-  "about", "has_photo", "photo_path", "plan", "subscription_status", "is_admin",
-  "chat_guidelines_accepted_at", "created_at",
+  "about", "has_photo", "photo_path", "photo_status", "photo_rejection_reason",
+  "plan", "subscription_status", "is_admin", "chat_guidelines_accepted_at", "created_at",
 ].join(", ");
 
 async function vrnMyProfile() {
