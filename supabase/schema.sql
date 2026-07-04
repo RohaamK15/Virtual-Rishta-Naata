@@ -194,6 +194,16 @@ create policy "profiles_select_active_members" on public.profiles
     and not public.is_blocked_pair(auth.uid(), id)
   );
 
+-- Without this, a member can never resolve the ref_code of someone they've
+-- blocked — the exclusion above hides blocked profiles from each other
+-- entirely, which also breaks "who have I blocked" in account.html. Seeing
+-- someone you've chosen to block isn't a privacy issue; RLS policies are
+-- OR'd together, so this just restores visibility for that one specific case.
+create policy "profiles_select_blocked_by_me" on public.profiles
+  for select using (
+    exists (select 1 from public.blocks where blocker_id = auth.uid() and blocked_id = profiles.id)
+  );
+
 -- No delete/insert/update policy for other users' rows, and no policy at all for
 -- is_admin — admin reads/writes/deletes go through the service-role Edge Functions
 -- in supabase/functions/, which never run in the browser and independently verify
