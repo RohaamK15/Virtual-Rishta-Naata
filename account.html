@@ -269,6 +269,12 @@
       e.target.value = '';
       return;
     }
+    const shapeError = await vrnValidatePortraitPhoto(file);
+    if (shapeError) {
+      alert(shapeError);
+      e.target.value = '';
+      return;
+    }
     const user = await vrnCurrentUser();
     const ext = file.type === 'image/png' ? 'png' : 'jpg';
     const path = `${user.id}/photo.${ext}`;

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "837066795954",
+    "project_id": "virtual-rishta-naata",
+    "storage_bucket": "virtual-rishta-naata.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:837066795954:android:3f7134e303a08e1c7992ab",
+        "android_client_info": {
+          "package_name": "com.virtualrishtanaata.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBG3puk3ZU0ejHsP09721pQHkcyQXnudgM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

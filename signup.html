@@ -306,7 +306,7 @@
           <img id="photoPreview" style="display:none;width:72px;height:72px;object-fit:cover;border-radius:50%;margin:0 auto 12px;" alt="Selected photo preview">
           <svg id="uploadIcon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
           <div id="uploadLabel" style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:.85rem;color:var(--green);">Click to upload a photo</div>
-          <div id="uploadHint" style="font-size:.78rem;margin-top:4px;">Optional · JPG or PNG · Max 5MB</div>
+          <div id="uploadHint" style="font-size:.78rem;margin-top:4px;">Optional · Portrait photo only · JPG or PNG · Max 5MB</div>
           <input type="file" id="photoInput" accept="image/*" style="display:none;">
         </div>
       </div>
@@ -445,12 +445,20 @@
   let current = 1;
   let selectedPhotoFile = null;
 
-  document.getElementById('photoInput').addEventListener('change', (e) => {
+  document.getElementById('photoInput').addEventListener('change', async (e) => {
     selectedPhotoFile = e.target.files[0] || null;
     if (!selectedPhotoFile) return;
 
     if (selectedPhotoFile.size > 5 * 1024 * 1024) {
       alert('That photo is larger than 5MB — please choose a smaller one.');
+      selectedPhotoFile = null;
+      e.target.value = '';
+      return;
+    }
+
+    const shapeError = await vrnValidatePortraitPhoto(selectedPhotoFile);
+    if (shapeError) {
+      alert(shapeError);
       selectedPhotoFile = null;
       e.target.value = '';
       return;

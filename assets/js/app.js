@@ -1,3 +1,32 @@
+// The profile detail view displays photos in a fixed 4:5 portrait frame
+// (object-fit:cover) — a landscape or square photo gets cropped down to a
+// tiny sliver of itself to fill that shape, which is exactly the "you can
+// only see my mouth" problem. Rather than just cropping unpredictably,
+// reject the photo at upload time with a clear reason. Returns null if the
+// photo's shape is acceptable, otherwise a message to show the member.
+function vrnValidatePortraitPhoto(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const ratio = img.naturalWidth / img.naturalHeight; // <1 means taller than wide
+      if (ratio >= 0.95) {
+        resolve("Please upload a portrait photo (clearly taller than it is wide) — landscape and square photos get cropped awkwardly in the profile frame.");
+      } else if (ratio < 0.5) {
+        resolve("This photo is too tall and narrow to fit the profile frame well — please choose a more standard portrait photo, like a typical phone photo.");
+      } else {
+        resolve(null);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve("Could not read this image — please choose a different file.");
+    };
+    img.src = url;
+  });
+}
+
 // Shared behaviours: mobile nav toggle, reveal-on-scroll, generic sheet/overlay helpers
 document.addEventListener('DOMContentLoaded', () => {
   const toggle = document.querySelector('.nav-toggle');

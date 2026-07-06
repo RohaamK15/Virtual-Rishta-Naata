@@ -5,6 +5,13 @@ temporary screenshots/
 *.tmp.json
 e2e-test-creds.json
 
+# Firebase service account keys (private key — must never be committed;
+# contents go into the FIREBASE_SERVICE_ACCOUNT_JSON Supabase secret instead.
+# google-services.json is NOT secret and is intentionally not listed here —
+# it only contains public identifiers and needs to be committed for
+# Codemagic's Android build to pick it up.)
+android/app/*firebase-adminsdk*.json
+
 # Android build artifacts (keep the project files, ignore generated output)
 android/app/build/
 android/build/
