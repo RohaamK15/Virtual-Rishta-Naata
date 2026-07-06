@@ -27,6 +27,40 @@ function vrnValidatePortraitPhoto(file) {
   });
 }
 
+// A phone photo can easily be 4000x6000px while still under the 5MB file-size
+// cap — the profile frame never displays anywhere near that size (it's shown
+// at most a few hundred px wide), so anything bigger than maxDimension just
+// means a slower download and a bigger image for the browser to decode for
+// no visual benefit. Silently downscales instead of rejecting the photo —
+// nobody should have to fight with external resizing tools. Returns the
+// original file unchanged if it's already a reasonable size.
+function vrnDownscaleImage(file, maxDimension = 1600, quality = 0.85) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { naturalWidth: w, naturalHeight: h } = img;
+      if (w <= maxDimension && h <= maxDimension) {
+        resolve(file);
+        return;
+      }
+      const scale = maxDimension / Math.max(w, h);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        if (!blob) { resolve(file); return; } // canvas export failed — fall back to the original
+        resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); }; // let the later size/shape checks catch real problems
+    img.src = url;
+  });
+}
+
 // Shared behaviours: mobile nav toggle, reveal-on-scroll, generic sheet/overlay helpers
 document.addEventListener('DOMContentLoaded', () => {
   const toggle = document.querySelector('.nav-toggle');

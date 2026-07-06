@@ -77,14 +77,16 @@
   .detail-head{margin-bottom:26px;}
   .detail-photo{
     width:100%;border-radius:var(--radius-l);overflow:hidden;position:relative;
-    background:var(--green-soft);
+    background:var(--green-soft);display:flex;align-items:center;justify-content:center;
   }
-  /* Shows the photo at its own natural aspect ratio — no cropping. Upload
-     validation already keeps photos within a sensible portrait range, so this
-     never needs a fixed box; forcing one (object-fit:cover) was cutting off
-     the top/bottom of full-length photos to fill the frame. */
-  .detail-photo img{width:100%;height:auto;display:block;}
-  .detail-photo--empty{aspect-ratio:4/5;max-height:420px;display:flex;align-items:center;justify-content:center;}
+  /* max-height + auto width/height shows the whole photo (no cropping) while
+     capping how tall it can get — a very "portrait" photo (e.g. 9:16) at
+     full container width would otherwise be well over 1000px tall. Anything
+     narrower than the container just centers with the green background
+     showing at the sides, which beats either cropping or ballooning in size. */
+  .detail-photo img{max-width:100%;max-height:480px;width:auto;height:auto;display:block;}
+  @media (max-width:600px){.detail-photo img{max-height:380px;}}
+  .detail-photo--empty{aspect-ratio:4/5;max-height:420px;}
   @media (max-width:600px){.detail-photo--empty{max-height:340px;}}
   .detail-photo svg{color:var(--green);width:64px;height:64px;}
   .detail-photo .badge{position:absolute;top:16px;left:16px;}

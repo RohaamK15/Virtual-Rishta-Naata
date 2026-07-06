@@ -449,8 +449,8 @@
     selectedPhotoFile = e.target.files[0] || null;
     if (!selectedPhotoFile) return;
 
-    if (selectedPhotoFile.size > 5 * 1024 * 1024) {
-      alert('That photo is larger than 5MB — please choose a smaller one.');
+    if (selectedPhotoFile.size > 20 * 1024 * 1024) {
+      alert('That photo is too large to process — please choose a smaller file.');
       selectedPhotoFile = null;
       e.target.value = '';
       return;
@@ -459,6 +459,17 @@
     const shapeError = await vrnValidatePortraitPhoto(selectedPhotoFile);
     if (shapeError) {
       alert(shapeError);
+      selectedPhotoFile = null;
+      e.target.value = '';
+      return;
+    }
+
+    // Phone photos are routinely huge in pixel dimensions — downscale before
+    // we ever preview/upload it, rather than making the member deal with an
+    // oversized file themselves.
+    selectedPhotoFile = await vrnDownscaleImage(selectedPhotoFile);
+    if (selectedPhotoFile.size > 5 * 1024 * 1024) {
+      alert('That photo is still larger than 5MB even after resizing — please choose a different one.');
       selectedPhotoFile = null;
       e.target.value = '';
       return;

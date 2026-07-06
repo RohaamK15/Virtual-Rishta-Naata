@@ -117,7 +117,7 @@
     <div>
       <div class="side-card" data-reveal id="photoCard" style="display:none;">
         <h4>Your Photo</h4>
-        <img id="photo-preview" style="display:none;width:100%;height:auto;border-radius:var(--radius-m);margin-bottom:14px;" alt="Your profile photo">
+        <img id="photo-preview" style="display:none;max-width:100%;max-height:400px;width:auto;height:auto;border-radius:var(--radius-m);margin-bottom:14px;" alt="Your profile photo">
         <p id="photo-status-badge" style="font-size:.82rem;margin-bottom:10px;"></p>
         <p id="photo-rejection-note" style="display:none;font-size:.82rem;color:#A85A3E;margin-bottom:14px;"></p>
         <input type="file" id="photoUploadInput" accept="image/*" style="display:none;">
@@ -262,16 +262,24 @@
   }
 
   document.getElementById('photoUploadInput').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
+    let file = e.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('That photo is larger than 5MB — please choose a smaller one.');
+    if (file.size > 20 * 1024 * 1024) {
+      alert('That photo is too large to process — please choose a smaller file.');
       e.target.value = '';
       return;
     }
     const shapeError = await vrnValidatePortraitPhoto(file);
     if (shapeError) {
       alert(shapeError);
+      e.target.value = '';
+      return;
+    }
+    // Phone photos are routinely huge in pixel dimensions — downscale before
+    // uploading rather than making the member deal with an oversized file.
+    file = await vrnDownscaleImage(file);
+    if (file.size > 5 * 1024 * 1024) {
+      alert('That photo is still larger than 5MB even after resizing — please choose a different one.');
       e.target.value = '';
       return;
     }
