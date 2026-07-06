@@ -205,7 +205,11 @@
           <option>United Kingdom</option>
           <option>Pakistan</option>
           <option>Canada</option>
+          <option>United States</option>
           <option>Australia</option>
+          <option>Germany</option>
+          <option>United Arab Emirates</option>
+          <option>Other</option>
         </select>
       </div>
       <div class="filter-group">
@@ -232,7 +236,11 @@
   }
 
   function syncMobileToDesktop(){
-    // keep mobile + desktop filters in sync (mobile drives, applied on close)
+    // Keep the two filter panels in sync so currentFilters() can always just
+    // read from the 'd_' fields. Only call this in response to a MOBILE
+    // input changing — calling it unconditionally from renderGrid() (the old
+    // behaviour) meant every desktop filter change was immediately
+    // overwritten by whatever the (untouched) mobile panel still had.
     const g = document.querySelector('input[name="m_gender"]:checked')?.value || '';
     document.querySelector(`input[name="d_gender"][value="${g}"]`).checked = true;
     document.getElementById('d_ageMin').value = document.getElementById('m_ageMin').value;
@@ -242,8 +250,17 @@
     document.querySelector(`input[name="d_pak"][value="${pak}"]`).checked = true;
   }
 
+  function syncDesktopToMobile(){
+    const g = document.querySelector('input[name="d_gender"]:checked')?.value || '';
+    document.querySelector(`input[name="m_gender"][value="${g}"]`).checked = true;
+    document.getElementById('m_ageMin').value = document.getElementById('d_ageMin').value;
+    document.getElementById('m_ageMax').value = document.getElementById('d_ageMax').value;
+    document.getElementById('m_country').value = document.getElementById('d_country').value;
+    const pak = document.querySelector('input[name="d_pak"]:checked')?.value || '';
+    document.querySelector(`input[name="m_pak"][value="${pak}"]`).checked = true;
+  }
+
   async function renderGrid(){
-    syncMobileToDesktop();
     const {g, min, max, country, pak} = currentFilters();
     const grid = document.getElementById('profileGrid');
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><p>Loading profiles…</p></div>`;
@@ -373,9 +390,10 @@
     }
   }
 
-  ['d_ageMin','d_ageMax','d_country'].forEach(id => document.getElementById(id).addEventListener('input', renderGrid));
-  ['m_ageMin','m_ageMax','m_country'].forEach(id => document.getElementById(id).addEventListener('input', renderGrid));
-  document.querySelectorAll('input[name="d_gender"],input[name="d_pak"],input[name="m_gender"],input[name="m_pak"]').forEach(el => el.addEventListener('change', renderGrid));
+  ['d_ageMin','d_ageMax','d_country'].forEach(id => document.getElementById(id).addEventListener('input', () => { syncDesktopToMobile(); renderGrid(); }));
+  ['m_ageMin','m_ageMax','m_country'].forEach(id => document.getElementById(id).addEventListener('input', () => { syncMobileToDesktop(); renderGrid(); }));
+  document.querySelectorAll('input[name="d_gender"],input[name="d_pak"]').forEach(el => el.addEventListener('change', () => { syncDesktopToMobile(); renderGrid(); }));
+  document.querySelectorAll('input[name="m_gender"],input[name="m_pak"]').forEach(el => el.addEventListener('change', () => { syncMobileToDesktop(); renderGrid(); }));
 
   renderGrid();
 </script>
