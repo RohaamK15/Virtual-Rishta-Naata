@@ -291,7 +291,7 @@
     }
 
     let photoUrl = null;
-    if (p.gender === 'M' && p.has_photo) {
+    if (p.has_photo) {
       try {
         const { data } = await sb.functions.invoke('get-profile-photo', { body: { ref_code: refCode } });
         photoUrl = data?.url || null;

@@ -221,7 +221,7 @@
     // status or review outcome; the edge function's checks only matter for
     // viewing *other* members' photos.
     let signedPhotoUrl = null;
-    if (p.gender === 'M' && p.has_photo && p.photo_path) {
+    if (p.has_photo && p.photo_path) {
       const { data: signed } = await sb.storage.from('profile-photos').createSignedUrl(p.photo_path, 300);
       signedPhotoUrl = signed?.signedUrl || null;
       if (signedPhotoUrl) {
@@ -231,36 +231,34 @@
       }
     }
 
-    if (p.gender === 'M') {
-      document.getElementById('photoCard').style.display = 'block';
-      const preview = document.getElementById('photo-preview');
-      const badge = document.getElementById('photo-status-badge');
-      const rejectionNote = document.getElementById('photo-rejection-note');
-      const uploadBtn = document.getElementById('photoUploadBtn');
+    document.getElementById('photoCard').style.display = 'block';
+    const photoPreview = document.getElementById('photo-preview');
+    const photoBadge = document.getElementById('photo-status-badge');
+    const photoRejectionNote = document.getElementById('photo-rejection-note');
+    const photoUploadBtn = document.getElementById('photoUploadBtn');
 
-      if (signedPhotoUrl) {
-        preview.src = signedPhotoUrl;
-        preview.style.display = 'block';
-      }
-
-      const STATUS_COPY = {
-        pending: { text: '🕐 Pending review — not visible to other members yet.', color: 'var(--gold)' },
-        approved: { text: '✓ Approved — visible to other active members.', color: 'var(--green)' },
-        rejected: { text: '✕ Not approved.', color: '#A85A3E' },
-      };
-      const status = STATUS_COPY[p.photo_status];
-      badge.textContent = status ? status.text : 'No photo uploaded yet.';
-      badge.style.color = status ? status.color : 'var(--ink-soft)';
-
-      if (p.photo_status === 'rejected' && p.photo_rejection_reason) {
-        rejectionNote.textContent = `Reason: ${p.photo_rejection_reason}`;
-        rejectionNote.style.display = 'block';
-      } else {
-        rejectionNote.style.display = 'none';
-      }
-
-      uploadBtn.textContent = p.has_photo ? 'Change Photo' : 'Upload a Photo';
+    if (signedPhotoUrl) {
+      photoPreview.src = signedPhotoUrl;
+      photoPreview.style.display = 'block';
     }
+
+    const PHOTO_STATUS_COPY = {
+      pending: { text: '🕐 Pending review — not visible to other members yet.', color: 'var(--gold)' },
+      approved: { text: '✓ Approved — visible to other active members.', color: 'var(--green)' },
+      rejected: { text: '✕ Not approved.', color: '#A85A3E' },
+    };
+    const photoStatusInfo = PHOTO_STATUS_COPY[p.photo_status];
+    photoBadge.textContent = photoStatusInfo ? photoStatusInfo.text : 'No photo uploaded yet.';
+    photoBadge.style.color = photoStatusInfo ? photoStatusInfo.color : 'var(--ink-soft)';
+
+    if (p.photo_status === 'rejected' && p.photo_rejection_reason) {
+      photoRejectionNote.textContent = `Reason: ${p.photo_rejection_reason}`;
+      photoRejectionNote.style.display = 'block';
+    } else {
+      photoRejectionNote.style.display = 'none';
+    }
+
+    photoUploadBtn.textContent = p.has_photo ? 'Change Photo' : 'Upload a Photo';
   }
 
   document.getElementById('photoUploadInput').addEventListener('change', async (e) => {

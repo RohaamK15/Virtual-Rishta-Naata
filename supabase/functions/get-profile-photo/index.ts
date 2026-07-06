@@ -1,5 +1,5 @@
-// Returns a short-lived signed URL for a male member's optional photo, only to
-// callers who are themselves active members. Photos are never exposed as
+// Returns a short-lived signed URL for a member's optional photo (either
+// gender), only to callers who are themselves active members. Photos are never exposed as
 // public or permanently-signed URLs, and there is no storage RLS policy that
 // lets one member directly read another member's file — this function is the
 // only path, so every view can be gated on both members' subscription status.
@@ -27,13 +27,13 @@ Deno.serve(async (req) => {
     const { ref_code } = await req.json();
     const { data: target, error: targetError } = await supabase
       .from("profiles")
-      .select("gender, has_photo, photo_path, photo_status, subscription_status")
+      .select("has_photo, photo_path, photo_status, subscription_status")
       .eq("ref_code", ref_code)
       .single();
     if (targetError || !target) throw new Error("Profile not found");
     // A pending or rejected photo is treated exactly like no photo at all —
     // only ever shown to other members once an admin has approved it.
-    if (target.gender !== "M" || !target.has_photo || !target.photo_path || target.photo_status !== "approved") {
+    if (!target.has_photo || !target.photo_path || target.photo_status !== "approved") {
       return new Response(JSON.stringify({ url: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

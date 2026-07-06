@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
             });
             if (profileError) throw profileError;
 
-            if (pending.photo_data_url && profileFields.gender === "M") {
+            if (pending.photo_data_url) {
               try {
                 const match = pending.photo_data_url.match(/^data:(image\/\w+);base64,(.+)$/);
                 if (match) {

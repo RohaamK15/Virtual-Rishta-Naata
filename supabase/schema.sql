@@ -29,7 +29,7 @@ create table if not exists public.profiles (
   about text,
   contact_email text not null,
   has_photo boolean not null default false,
-  photo_path text,               -- storage path in the profile-photos bucket, males only
+  photo_path text,               -- storage path in the profile-photos bucket, either gender
   -- null until a photo is uploaded. Reset to 'pending' automatically whenever
   -- photo_path changes (see trg_reset_photo_status below) — members never get
   -- direct write access to this column, only admins (service role) can set it
@@ -243,7 +243,7 @@ create policy "profiles_select_blocked_by_me" on public.profiles
 -- service role key off the client entirely.
 
 -- ============================================================
--- 4. PHOTO STORAGE (male-only, optional)
+-- 4. PHOTO STORAGE (optional, either gender)
 -- ============================================================
 insert into storage.buckets (id, name, public)
 values ('profile-photos', 'profile-photos', false)
