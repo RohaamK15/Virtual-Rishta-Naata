@@ -85,6 +85,25 @@ The admin dashboard and payments run through small server-side functions in
    secret in Supabase.
 6. Test with Stripe's test card `4242 4242 4242 4242`, any future expiry, any
    CVC, before going live.
+7. **Android App Link for the Stripe return redirect.** After paying,
+   Stripe redirects back to `APP_URL` (e.g. `.../signup.html?checkout=success`).
+   On Android this must be intercepted by the app rather than opened in the
+   browser — a custom URL scheme doesn't work here because Chrome refuses to
+   hand off to an external app for a navigation that isn't tied to a direct
+   user gesture, and Stripe's redirect fires asynchronously after the
+   original "Pay" click. Instead, `android/app/src/main/AndroidManifest.xml`
+   declares a verified App Link intent-filter for `virtual-rishta-naata.vercel.app`,
+   which Android only trusts once `/.well-known/assetlinks.json` (served from
+   that same domain) lists the app's signing certificate fingerprint. That
+   file currently lists only the debug keystore's fingerprint (get it with
+   `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey
+   -storepass android -keypass android`, look for `SHA256:`). **Before
+   publishing a release build (Play Store or a self-signed release APK), add
+   that build's SHA256 cert fingerprint as an additional entry in
+   `sha256_cert_fingerprints`** — otherwise the App Link (and the whole
+   "return to app after payment" flow) will silently stop working for anyone
+   using the release build. If the domain ever changes, update both the
+   `APP_URL` secret and the `android:host` values in the manifest to match.
 
 ## 4. Firebase (push notifications for new chat messages — Android first)
 

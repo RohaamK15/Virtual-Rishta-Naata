@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error("Not authenticated");
 
-    const { plan, native } = await req.json();
+    const { plan } = await req.json();
     if (!["monthly", "annual"].includes(plan)) throw new Error("Invalid plan");
 
     const priceId = plan === "annual"
@@ -54,7 +54,6 @@ Deno.serve(async (req) => {
     }
 
     const { successUrl, cancelUrl } = buildReturnUrls({
-      native: !!native,
       appUrl: Deno.env.get("APP_URL")!,
       page: "signup.html",
       successParams: { checkout: "success" },

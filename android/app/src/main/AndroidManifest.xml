@@ -25,12 +25,24 @@
             <!-- Lets Stripe Checkout (opened in an external browser tab, not
                  the app's own WebView, so we stay compliant with Apple/Google
                  payment policy) hand control back to the app once payment
-                 completes or is cancelled. -->
-            <intent-filter>
+                 completes or is cancelled.
+
+                 This must be a verified HTTPS App Link (not a custom URL
+                 scheme) — Chrome on Android refuses to hand off to an
+                 external app for a navigation that isn't tied to a direct
+                 user gesture, and Stripe's post-payment redirect fires
+                 asynchronously well after the original "Pay" click, so a
+                 custom scheme here would just get silently blocked. A
+                 verified App Link is intercepted by the OS before that
+                 gesture check ever applies. Verification requires
+                 /.well-known/assetlinks.json on this exact host, listing
+                 this app's signing cert fingerprint(s). -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.virtualrishtanaata.app" />
+                <data android:scheme="https" android:host="virtual-rishta-naata.vercel.app" android:pathPrefix="/signup.html" />
+                <data android:scheme="https" android:host="virtual-rishta-naata.vercel.app" android:pathPrefix="/services.html" />
             </intent-filter>
 
         </activity>

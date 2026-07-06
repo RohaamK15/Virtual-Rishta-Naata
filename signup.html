@@ -647,13 +647,12 @@
         photoDataUrl = await readFileAsDataUrl(selectedPhotoFile);
       }
 
-      const isNative = !!window.Capacitor?.isNativePlatform?.();
       // create-signup-checkout stages everything in pending_signups and
       // returns a Stripe-hosted Checkout URL — we never handle card details
       // ourselves, and no account/profile exists until stripe-webhook creates
       // one after payment is actually confirmed.
       const { data, error } = await sb.functions.invoke('create-signup-checkout', {
-        body: { email, password, profileData, photoDataUrl, plan, native: isNative }
+        body: { email, password, profileData, photoDataUrl, plan }
       });
       if (error) throw error;
 

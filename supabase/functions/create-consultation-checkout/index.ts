@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { requestId, native } = await req.json();
+    const { requestId } = await req.json();
     if (!requestId) throw new Error("Missing requestId");
 
     // Service-role lookup — consultation_requests has no public select policy,
@@ -33,7 +33,6 @@ Deno.serve(async (req) => {
     if (request.payment_status === "paid") throw new Error("This request has already been paid for");
 
     const { successUrl, cancelUrl } = buildReturnUrls({
-      native: !!native,
       appUrl: Deno.env.get("APP_URL")!,
       page: "services.html",
       successParams: { consult: "success" },

@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { email, password, profileData, photoDataUrl, plan, native } = await req.json();
+    const { email, password, profileData, photoDataUrl, plan } = await req.json();
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("A valid email is required");
     if (!password || password.length < 8) throw new Error("Password must be at least 8 characters");
@@ -41,7 +41,6 @@ Deno.serve(async (req) => {
       : Deno.env.get("STRIPE_PRICE_MONTHLY")!;
 
     const { successUrl, cancelUrl } = buildReturnUrls({
-      native: !!native,
       appUrl: Deno.env.get("APP_URL")!,
       page: "signup.html",
       successParams: { checkout: "success" },

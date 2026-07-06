@@ -234,23 +234,29 @@ async function vrnOpenCheckout(url, onCancelled) {
   }
 }
 
-// Stripe's success/cancel URLs point back at this app's custom URL scheme
-// (see supabase/functions for how "native: true" changes those URLs) so the
-// OS hands control back to the app once Checkout finishes. This just closes
-// the browser tab and reloads the same bundled page with the same query
-// params the website flow already knows how to handle.
+// Stripe's success/cancel URLs point back at the real website (see
+// supabase/functions/_shared/checkoutUrls.ts). On Android, a verified App
+// Link (see android/app/src/main/AndroidManifest.xml and the
+// /.well-known/assetlinks.json served from that same domain) intercepts
+// navigation to those URLs and routes it here instead of loading them in the
+// external browser tab. This just closes that tab and reloads the same
+// bundled page with the same query params the website flow already knows
+// how to handle.
+//
+// A custom URL scheme (e.g. myapp://) was tried first, but Chrome on Android
+// refuses to hand off to an external app for a navigation that isn't tied to
+// a direct user gesture — and Stripe's post-payment redirect fires
+// asynchronously, well after the original "Pay" click, so it was always
+// getting silently blocked.
 if (window.Capacitor?.Plugins?.App) {
   window.Capacitor.Plugins.App.addListener('appUrlOpen', async (data) => {
     try {
       const url = new URL(data.url);
-      if (url.protocol !== 'com.virtualrishtanaata.app:') return;
+      if (!url.pathname.endsWith('.html')) return;
       if (window.Capacitor.Plugins.Browser) {
         await window.Capacitor.Plugins.Browser.close().catch(() => {});
       }
-      const page = url.searchParams.get('page');
-      if (!page) return;
-      url.searchParams.delete('page');
-      window.location.href = `/${page}?${url.searchParams.toString()}`;
+      window.location.href = url.pathname + url.search;
     } catch (e) {
       console.warn('Could not handle return from checkout:', e);
     }
