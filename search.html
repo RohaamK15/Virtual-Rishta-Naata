@@ -76,11 +76,16 @@
   }
   .detail-head{margin-bottom:26px;}
   .detail-photo{
-    width:100%;aspect-ratio:4/5;max-height:420px;border-radius:var(--radius-l);overflow:hidden;position:relative;
-    background:var(--green-soft);display:flex;align-items:center;justify-content:center;
+    width:100%;border-radius:var(--radius-l);overflow:hidden;position:relative;
+    background:var(--green-soft);
   }
-  @media (max-width:600px){.detail-photo{max-height:340px;}}
-  .detail-photo img{width:100%;height:100%;object-fit:cover;}
+  /* Shows the photo at its own natural aspect ratio — no cropping. Upload
+     validation already keeps photos within a sensible portrait range, so this
+     never needs a fixed box; forcing one (object-fit:cover) was cutting off
+     the top/bottom of full-length photos to fill the frame. */
+  .detail-photo img{width:100%;height:auto;display:block;}
+  .detail-photo--empty{aspect-ratio:4/5;max-height:420px;display:flex;align-items:center;justify-content:center;}
+  @media (max-width:600px){.detail-photo--empty{max-height:340px;}}
   .detail-photo svg{color:var(--green);width:64px;height:64px;}
   .detail-photo .badge{position:absolute;top:16px;left:16px;}
   .detail-info{margin-top:18px;}
@@ -324,7 +329,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
       <div class="detail-head">
-        <div class="detail-photo">
+        <div class="detail-photo ${photoUrl ? '' : 'detail-photo--empty'}">
           <span class="badge ${p.gender==='M'?'badge-m':'badge-f'}">${p.gender==='M'?'Male':'Female'}</span>
           ${photoUrl ? `<img src="${photoUrl}" alt="Profile photo">` : `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg>`}
         </div>
