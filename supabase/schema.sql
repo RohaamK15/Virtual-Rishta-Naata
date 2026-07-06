@@ -42,6 +42,12 @@ create table if not exists public.profiles (
   stripe_customer_id text,
   stripe_subscription_id text,
   is_admin boolean not null default false,
+  -- Set by the device itself after registering with FCM/APNs (see
+  -- vrnRegisterForPush in app.js) — never selectable by any client (including
+  -- the owner), only used server-side by send-message-push to know where to
+  -- deliver a push for a new chat message.
+  push_token text,
+  push_platform text check (push_platform in ('android','ios')),
   -- Set once the member has acknowledged the in-app messaging guidelines —
   -- see the CHAT & MESSAGING section below. Shown once, not on every chat.
   chat_guidelines_accepted_at timestamptz,
@@ -152,7 +158,7 @@ grant update (
   previous_type, previous_duration, has_children,
   preference_line, country_looking_in,
   consider_pakistan, additional_note, about, contact_email,
-  has_photo, photo_path, chat_guidelines_accepted_at
+  has_photo, photo_path, chat_guidelines_accepted_at, push_token, push_platform
 ) on public.profiles to authenticated;
 
 -- Supabase grants SELECT on every column of every new table to `authenticated`

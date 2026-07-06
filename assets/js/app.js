@@ -28,7 +28,43 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   vrnRenderNavAuthState();
+  vrnRegisterForPush();
 });
+
+// Registers this device for push notifications (new chat messages) — native
+// only, and only once a member is signed in. Safe to call on every page load:
+// re-registering is a no-op if the token hasn't changed, and Capacitor only
+// prompts for permission once (or if it was previously denied, just no-ops).
+async function vrnRegisterForPush(){
+  if (!window.Capacitor?.isNativePlatform?.()) return;
+  const { PushNotifications } = window.Capacitor.Plugins || {};
+  if (!PushNotifications) return;
+  if (typeof vrnCurrentUser !== 'function') return;
+
+  let user;
+  try { user = await vrnCurrentUser(); } catch (e) { return; }
+  if (!user) return;
+
+  let permStatus = await PushNotifications.checkPermissions();
+  if (permStatus.receive === 'prompt') {
+    permStatus = await PushNotifications.requestPermissions();
+  }
+  if (permStatus.receive !== 'granted') return;
+
+  await PushNotifications.register();
+
+  PushNotifications.addListener('registration', async (token) => {
+    try {
+      await sb.from('profiles').update({
+        push_token: token.value,
+        push_platform: window.Capacitor.getPlatform(), // 'android' today; 'ios' once APNs is connected
+      }).eq('id', user.id);
+    } catch (e) { console.warn('Could not save push token:', e); }
+  });
+  PushNotifications.addListener('registrationError', (err) => {
+    console.warn('Push registration error:', err);
+  });
+}
 
 // Swaps the marketing-page nav's "Log In" / "Create Profile" buttons for the
 // member's own avatar + ref code (linking to their account) and a Log Out

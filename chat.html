@@ -197,11 +197,17 @@
     const btn = document.getElementById('sendBtn');
     btn.setAttribute('disabled', '');
     try {
-      const { error } = await sb.from('messages').insert({ conversation_id: conversationId, sender_id: myUserId, body });
+      const { data: inserted, error } = await sb.from('messages')
+        .insert({ conversation_id: conversationId, sender_id: myUserId, body })
+        .select('id')
+        .single();
       if (error) throw error;
       input.value = '';
       lastSignature = '';
       await loadMessages();
+      // Best-effort — a push failing (or the recipient having no device
+      // registered) should never surface as an error to the sender.
+      sb.functions.invoke('send-message-push', { body: { message_id: inserted.id } }).catch(() => {});
     } catch (err) {
       alert(err.message || 'Could not send this message.');
     } finally {

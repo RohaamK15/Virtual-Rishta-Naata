@@ -53,6 +53,7 @@ The admin dashboard and payments run through small server-side functions in
    `supabase functions deploy admin-mark-report-reviewed`
    `supabase functions deploy admin-list-pending-photos`
    `supabase functions deploy admin-review-photo`
+   `supabase functions deploy send-message-push`
 
 ## 3. Stripe (payments)
 
@@ -85,13 +86,38 @@ The admin dashboard and payments run through small server-side functions in
 6. Test with Stripe's test card `4242 4242 4242 4242`, any future expiry, any
    CVC, before going live.
 
-## 4. Try it locally
+## 4. Firebase (push notifications for new chat messages — Android first)
+
+A member gets a push notification ("Message from VRN-XXXX: ...") when someone
+replies, the way most chat apps work. This needs a Firebase project — free,
+but only Google can issue the credentials, so this step is yours to do.
+
+1. Create a project at https://console.firebase.google.com (free, just needs
+   a Google account).
+2. **Add an app > Android** — package name must exactly match
+   `com.virtualrishtanaata.app` (from `capacitor.config.json`). Download the
+   generated **`google-services.json`** and place it at `android/app/google-services.json`
+   in this project. `android/app/build.gradle` already checks for this file
+   and wires up the Google Services Gradle plugin automatically once it's there.
+3. **Project Settings (gear icon) > Service Accounts > Generate new private key**
+   — downloads a JSON file. This is a secret; don't commit it. In Supabase:
+   **Project Settings > Edge Functions > Secrets**, add it as
+   `FIREBASE_SERVICE_ACCOUNT_JSON` (paste the entire file's contents as the value).
+4. Run `npx cap sync android` again after adding `google-services.json`, then
+   rebuild the app — pushes should now work on Android.
+5. iOS isn't wired up yet — it needs an Apple Push Notification key (.p8) from
+   your Apple Developer account connected to this same Firebase project
+   (Project Settings > Cloud Messaging > Apple app configuration). Once you
+   have that, the one check in `supabase/functions/send-message-push/index.ts`
+   restricting sends to `push_platform === 'android'` can be removed.
+
+## 5. Try it locally
 
 1. `node serve.mjs` (serves the site at http://localhost:3000)
 2. Make sure `assets/js/supabase-config.js` has your real URL/key (step 1.3).
 3. Create a profile, subscribe, browse, and check the admin dashboard.
 
-## 5. Package for the App Store / Play Store (Capacitor)
+## 6. Package for the App Store / Play Store (Capacitor)
 
 The native app shells already exist in `android/` and `ios/`. Whenever you
 change any page or asset:

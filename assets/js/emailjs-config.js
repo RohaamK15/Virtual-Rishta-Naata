@@ -10,5 +10,5 @@ window.EMAILJS_CONFIG = {
   publicKey: "OgOmel1OdnTJaWylP",
   serviceId: "service_i15ivxr",
   templateId: "template_qisck9a",       // consultation request notification (services.html)
-  signupTemplateId: "REPLACE_ME",        // new member signup notification (signup.html) — see email-templates/new-signup.html
+  signupTemplateId: "template_fbvt045",  // new member signup notification (signup.html) — see email-templates/new-signup.html
 };
