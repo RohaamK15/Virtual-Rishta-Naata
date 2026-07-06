@@ -233,7 +233,19 @@
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
             <h3 style="color:var(--ivory);">Payment Received</h3>
-            <p style="margin-top:10px;color:rgba(255,249,242,.7);font-size:.9rem;">Thank you — your consultation is booked and paid for. We'll reply by email within one working day to arrange a time.</p>
+            <p style="margin-top:10px;color:rgba(255,249,242,.7);font-size:.9rem;">Thank you — your £35 consultation is booked and paid for.</p>
+
+            <div style="text-align:left;background:rgba(255,249,242,.06);border:1px solid rgba(255,249,242,.14);border-radius:var(--radius-m);padding:20px 22px;margin-top:22px;">
+              <span class="eyebrow" style="color:var(--gold);">What Happens Next</span>
+              <ol style="margin:12px 0 0;padding-left:18px;color:rgba(255,249,242,.75);font-size:.87rem;line-height:1.7;">
+                <li>Our team reviews your request — usually within one working day.</li>
+                <li>We'll reply by email to arrange a time that works for you.</li>
+                <li>Your session is held privately, over video or phone, with a neutral facilitator.</li>
+              </ol>
+            </div>
+
+            <a href="/home.html" class="btn btn-outline btn-block" style="margin-top:24px;">Back to Home</a>
+            <a href="#" id="consultSuccessSecondaryLink" class="btn btn-gold btn-block" style="margin-top:12px;">Browse Profiles</a>
           </div>
         </div>
       </div>
@@ -333,7 +345,7 @@
     btn.setAttribute('disabled', '');
     btn.textContent = 'Redirecting to Stripe...';
     try {
-      await startConsultCheckout({ email, refCode, phone, message });
+      await startConsultCheckout({ email, refCode, phone, message, isMember: memberChoice.value === 'Yes' });
     } catch (err) {
       errorEl.textContent = (err && err.text) || await vrnFunctionErrorMessage(err);
       errorEl.style.display = 'block';
@@ -342,7 +354,7 @@
     }
   }
 
-  async function startConsultCheckout({ email, refCode, phone, message }){
+  async function startConsultCheckout({ email, refCode, phone, message, isMember }){
     // Generated client-side so we never need to read the row back — the
     // insert-only RLS policy on consultation_requests (see schema.sql) means
     // anon can write but not select, which is intentional: only admins should
@@ -367,7 +379,7 @@
     if (error) throw error;
 
     sessionStorage.setItem(CONSULT_PENDING_KEY, JSON.stringify({
-      id: requestId, email, refCode, phone, message
+      id: requestId, email, refCode, phone, message, isMember
     }));
     await vrnOpenCheckout(data.url);
   }
@@ -400,6 +412,16 @@
       sessionStorage.removeItem(CONSULT_PENDING_KEY);
       document.getElementById('consultForm').style.display = 'none';
       document.getElementById('consultSuccess').style.display = 'block';
+
+      const secondaryLink = document.getElementById('consultSuccessSecondaryLink');
+      if (pending?.isMember) {
+        secondaryLink.href = '/search.html';
+        secondaryLink.textContent = 'Browse Profiles';
+      } else {
+        secondaryLink.href = '/signup.html';
+        secondaryLink.textContent = 'Create Your Profile';
+      }
+
       if (pending) notifyConsultBooked(pending);
     } else if (outcome === 'cancelled' && pending) {
       const notice = document.getElementById('consultNotice');
