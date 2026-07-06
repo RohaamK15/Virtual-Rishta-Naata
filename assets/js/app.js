@@ -78,6 +78,23 @@ if (window.Capacitor?.Plugins?.App) {
   });
 }
 
+// supabase-js's functions.invoke() only ever sets error.message to a generic
+// "Edge Function returned a non-2xx status code" — the actual {error: "..."}
+// body every one of our functions returns is left on error.context (a raw
+// Response) and has to be read separately. Without this, specific messages
+// like "An account with this email already exists" never reach the user;
+// they just see the generic wrapper text instead.
+async function vrnFunctionErrorMessage(error) {
+  if (!error) return 'Something went wrong — please try again.';
+  try {
+    if (error.context && typeof error.context.json === 'function') {
+      const body = await error.context.json();
+      if (body?.error) return body.error;
+    }
+  } catch (e) { /* body wasn't JSON, or already consumed — fall through */ }
+  return error.message || 'Something went wrong — please try again.';
+}
+
 function openSheet(id) {
   document.getElementById(id)?.classList.add('open');
   document.getElementById(id + '-overlay')?.classList.add('open');

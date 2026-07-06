@@ -232,8 +232,9 @@
       if (error) throw error;
       ALL_PROFILES = data.profiles;
     } catch (err) {
+      const msg = await vrnFunctionErrorMessage(err);
       tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:#A85A3E;">
-        Couldn't load members (${err.message || 'admin access required'}). Make sure you're logged in with an account that has is_admin = true.
+        Couldn't load members (${msg}). Make sure you're logged in with an account that has is_admin = true.
       </td></tr>`;
       return;
     }
@@ -263,7 +264,7 @@
         </div>
       `).join('') || `<p style="padding:10px;color:var(--ink-soft);">No photos waiting for review.</p>`;
     } catch (err) {
-      grid.innerHTML = `<p style="padding:10px;color:#A85A3E;">Couldn't load pending photos (${err.message || 'unknown error'}).</p>`;
+      grid.innerHTML = `<p style="padding:10px;color:#A85A3E;">Couldn't load pending photos (${await vrnFunctionErrorMessage(err)}).</p>`;
     }
   }
 
@@ -277,7 +278,7 @@
       if (error) throw error;
       await loadPendingPhotos();
     } catch (err) {
-      alert('Could not review this photo: ' + (err.message || 'unknown error'));
+      alert('Could not review this photo: ' + await vrnFunctionErrorMessage(err));
     }
   }
 
@@ -301,7 +302,7 @@
         </tr>
       `).join('') || `<tr><td colspan="5" style="text-align:center;padding:30px;">No profile reports right now.</td></tr>`;
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:#A85A3E;">Couldn't load reported profiles (${err.message || 'unknown error'}).</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:#A85A3E;">Couldn't load reported profiles (${await vrnFunctionErrorMessage(err)}).</td></tr>`;
     }
   }
 
@@ -311,7 +312,7 @@
       if (error) throw error;
       await loadReportedProfiles();
     } catch (err) {
-      alert('Could not mark this report reviewed: ' + (err.message || 'unknown error'));
+      alert('Could not mark this report reviewed: ' + await vrnFunctionErrorMessage(err));
     }
   }
 
@@ -329,7 +330,7 @@
       if (error) throw error;
       ALL_FLAGGED = data.messages;
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:#A85A3E;">Couldn't load flagged messages (${err.message || 'unknown error'}).</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:#A85A3E;">Couldn't load flagged messages (${await vrnFunctionErrorMessage(err)}).</td></tr>`;
       return;
     }
     document.getElementById('statFlagged').textContent = ALL_FLAGGED.length;
@@ -355,7 +356,7 @@
       if (error) throw error;
       await loadFlaggedMessages();
     } catch (err) {
-      alert('Could not mark this message reviewed: ' + (err.message || 'unknown error'));
+      alert('Could not mark this message reviewed: ' + await vrnFunctionErrorMessage(err));
     }
   }
 
@@ -416,7 +417,7 @@
       renderTable(document.getElementById('adminSearch').value);
       renderNotifs();
     } catch (err) {
-      alert('Could not delete this account: ' + (err.message || 'unknown error'));
+      alert('Could not delete this account: ' + await vrnFunctionErrorMessage(err));
     }
     closeSheet('confirmModal');
   }

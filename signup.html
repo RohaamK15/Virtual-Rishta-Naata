@@ -636,7 +636,7 @@
       sessionStorage.setItem(SIGNUP_PENDING_KEY, JSON.stringify({ email, password }));
       await vrnOpenCheckout(data.url);
     } catch (err) {
-      errorEl.textContent = 'Payment isn\'t connected yet (' + (err.message || 'Stripe not configured') + '). See SETUP.md to finish Stripe setup.';
+      errorEl.textContent = await vrnFunctionErrorMessage(err);
       errorEl.style.display = 'block';
       btn.removeAttribute('disabled');
       btn.textContent = 'Continue to Secure Payment';
@@ -648,7 +648,17 @@
     if (params.get('checkout') !== 'success') return;
 
     const pendingRaw = sessionStorage.getItem(SIGNUP_PENDING_KEY);
-    if (!pendingRaw) return;
+    if (!pendingRaw) {
+      // sessionStorage can be lost across the redirect to Stripe and back in
+      // some mobile browsers (e.g. the tab being reloaded in the background
+      // while the user is on Stripe's page). Payment already succeeded and
+      // stripe-webhook already created the account by this point regardless
+      // — silently resetting to Step 1 here would make a real member think
+      // signup failed and re-enter everything, when they actually just need
+      // to log in.
+      window.location.href = '/login.html?justPaid=1';
+      return;
+    }
     const { email, password } = JSON.parse(pendingRaw);
 
     goToStep(8);

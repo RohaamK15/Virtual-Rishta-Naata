@@ -330,7 +330,7 @@
       alert('Your account has been deactivated and your subscription cancelled. You can contact support to reactivate at any time.');
       await vrnSignOut();
     } catch (err) {
-      alert('Something went wrong: ' + (err.message || 'please try again.'));
+      alert('Something went wrong: ' + await vrnFunctionErrorMessage(err));
     }
     return false;
   }
@@ -344,7 +344,7 @@
       alert('Your account and data have been permanently deleted.');
       await vrnSignOut();
     } catch (err) {
-      alert('Something went wrong: ' + (err.message || 'please try again.'));
+      alert('Something went wrong: ' + await vrnFunctionErrorMessage(err));
     }
     return false;
   }

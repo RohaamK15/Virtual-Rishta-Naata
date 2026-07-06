@@ -334,7 +334,7 @@
     try {
       await startConsultCheckout({ email, refCode, phone, message });
     } catch (err) {
-      errorEl.textContent = (err && err.text) || err.message || 'Something went wrong — please try again.';
+      errorEl.textContent = (err && err.text) || await vrnFunctionErrorMessage(err);
       errorEl.style.display = 'block';
       btn.removeAttribute('disabled');
       btn.textContent = 'Continue to Secure Payment';
@@ -418,7 +418,7 @@
           await vrnOpenCheckout(data.url);
         } catch (err) {
           const errorEl = document.getElementById('consultError');
-          errorEl.textContent = err.message || 'Something went wrong — please try again.';
+          errorEl.textContent = await vrnFunctionErrorMessage(err);
           errorEl.style.display = 'block';
           btn.removeAttribute('disabled');
           btn.textContent = 'Complete Payment';

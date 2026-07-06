@@ -46,6 +46,8 @@
       <p>Log in with your contact email and password.</p>
     </div>
 
+    <p id="justPaidNotice" style="display:none;background:var(--gold-soft);color:#8A6A2E;border-radius:var(--radius-s);padding:14px 18px;font-size:.85rem;margin-bottom:20px;">Payment successful — your account is ready. Log in with the email and password you just chose to finish setting up your profile.</p>
+
     <form id="loginForm" onsubmit="return false;">
       <div class="field">
         <label for="email">Contact Email</label>
@@ -125,6 +127,10 @@
       btn.removeAttribute('disabled');
       btn.textContent = 'Send Reset Link';
     }
+  }
+
+  if (new URLSearchParams(window.location.search).get('justPaid') === '1') {
+    document.getElementById('justPaidNotice').style.display = 'block';
   }
 
   async function handleLogin() {
