@@ -223,10 +223,17 @@ input:focus,select:focus,textarea:focus{
 .nav-links a.active{color:var(--green);}
 .nav-cta{display:flex;align-items:center;gap:14px;}
 
+.nav-user-chip{display:flex;align-items:center;gap:9px;padding:5px 14px 5px 6px;border-radius:999px;background:var(--green-soft);transition:background .2s;}
+.nav-user-chip:hover{background:rgba(19,75,53,.14);}
+.nav-user-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.nav-user-avatar--placeholder{display:flex;align-items:center;justify-content:center;background:var(--green);color:var(--ivory);}
+.nav-user-ref{font-family:'Montserrat',sans-serif;font-weight:700;font-size:.8rem;color:var(--green);white-space:nowrap;}
+
 .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--green);}
 @media (max-width:900px){
   .nav-links{display:none;}
   .nav-cta .btn-outline{display:none;}
+  .nav-user-chip{display:none;}
   .nav-toggle{display:flex;}
 }
 

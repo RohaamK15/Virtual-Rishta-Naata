@@ -413,7 +413,10 @@
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="/assets/js/emailjs-config.js"></script>
 <script>
+  emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
   // One profile per account: if someone already signed up and is still logged
   // in, send them to their account instead of letting the wizard create a
   // second, separate profile.
@@ -643,6 +646,26 @@
     }
   }
 
+  // Best-effort, non-blocking — same reasoning as the consultation email in
+  // services.html: a failure here shouldn't hide that the account itself was
+  // created successfully, and the admin dashboard is the source of truth
+  // regardless of whether this notification arrives.
+  async function notifyNewSignup(profile, contactEmail){
+    try {
+      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.signupTemplateId, {
+        ref_code: profile.ref_code,
+        gender: profile.gender === 'M' ? 'Male' : 'Female',
+        age: profile.age,
+        city: profile.city || '(not provided)',
+        country: profile.country || '(not provided)',
+        plan: profile.plan === 'annual' ? 'Annual — £100/yr' : 'Monthly — £10/mo',
+        contact_email: contactEmail,
+      });
+    } catch (emailErr) {
+      console.warn('Signup completed, but the new-member notification email failed to send:', emailErr);
+    }
+  }
+
   async function showConfirmationIfReturningFromStripe(){
     const params = new URLSearchParams(window.location.search);
     if (params.get('checkout') !== 'success') return;
@@ -678,6 +701,7 @@
           document.getElementById('refCodeOut').textContent = profile.ref_code;
           document.getElementById('confirmFinalizing').style.display = 'none';
           document.getElementById('confirmDone').style.display = 'block';
+          notifyNewSignup(profile, email);
           return;
         }
       } catch (e) { /* account not created yet — stripe-webhook may still be processing */ }

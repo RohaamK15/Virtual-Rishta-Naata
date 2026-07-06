@@ -74,15 +74,18 @@
     position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:var(--beige);
     display:flex;align-items:center;justify-content:center;color:var(--green);cursor:pointer;border:none;
   }
-  .detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:26px;}
+  .detail-head{margin-bottom:26px;}
   .detail-photo{
-    width:96px;height:120px;border-radius:50% 50% 8px 8px / 34% 34% 8px 8px;overflow:hidden;flex-shrink:0;
+    width:100%;height:320px;border-radius:var(--radius-l);overflow:hidden;position:relative;
     background:var(--green-soft);display:flex;align-items:center;justify-content:center;
   }
+  @media (max-width:600px){.detail-photo{height:260px;}}
   .detail-photo img{width:100%;height:100%;object-fit:cover;}
-  .detail-photo svg{color:var(--green);}
-  .detail-info h2{font-size:1.5rem;}
-  .detail-meta{margin-top:8px;color:var(--ink-soft);font-size:.9rem;}
+  .detail-photo svg{color:var(--green);width:64px;height:64px;}
+  .detail-photo .badge{position:absolute;top:16px;left:16px;}
+  .detail-info{margin-top:18px;}
+  .detail-info h2{font-size:1.6rem;}
+  .detail-meta{margin-top:8px;color:var(--ink-soft);font-size:.92rem;}
   .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;margin:26px 0;}
   @media (max-width:520px){.detail-grid{grid-template-columns:1fr;}}
   .detail-field span{display:block;font-family:'Montserrat',sans-serif;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:5px;}
@@ -322,11 +325,11 @@
       </button>
       <div class="detail-head">
         <div class="detail-photo">
-          ${photoUrl ? `<img src="${photoUrl}" alt="Profile photo">` : `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg>`}
+          <span class="badge ${p.gender==='M'?'badge-m':'badge-f'}">${p.gender==='M'?'Male':'Female'}</span>
+          ${photoUrl ? `<img src="${photoUrl}" alt="Profile photo">` : `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg>`}
         </div>
         <div class="detail-info">
-          <span class="badge ${p.gender==='M'?'badge-m':'badge-f'}">${p.gender==='M'?'Male':'Female'}</span>
-          <h2 style="margin-top:8px;">${p.ref_code}</h2>
+          <h2>${p.ref_code}</h2>
           <p class="detail-meta">${p.age} years old · ${p.city}, ${p.county}, ${p.country}</p>
         </div>
       </div>

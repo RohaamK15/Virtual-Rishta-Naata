@@ -26,7 +26,72 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.15 });
     revealEls.forEach(el => io.observe(el));
   }
+
+  vrnRenderNavAuthState();
 });
+
+// Swaps the marketing-page nav's "Log In" / "Create Profile" buttons for the
+// member's own avatar + ref code (linking to their account) and a Log Out
+// button, when they're already signed in. Guarded so pages that don't load
+// the Supabase SDK (nothing calls this before it's available) just no-op —
+// DOMContentLoaded fires after every script tag on the page has run, so by
+// the time this executes, vrnCurrentUser/sb are defined on any page that
+// includes them, regardless of tag order relative to app.js.
+async function vrnRenderNavAuthState(){
+  if (typeof vrnCurrentUser !== 'function') return;
+  let user;
+  try { user = await vrnCurrentUser(); } catch (e) { return; }
+  if (!user) return;
+
+  let profile = null;
+  try { profile = await vrnMyProfile(); } catch (e) {}
+  if (!profile) return;
+
+  let avatarUrl = null;
+  if (profile.has_photo && profile.photo_path && profile.photo_status === 'approved') {
+    try {
+      const { data: signed } = await sb.storage.from('profile-photos').createSignedUrl(profile.photo_path, 300);
+      avatarUrl = signed?.signedUrl || null;
+    } catch (e) { /* fall back to placeholder icon */ }
+  }
+  const avatarHtml = avatarUrl
+    ? `<img src="${avatarUrl}" alt="" class="nav-user-avatar">`
+    : `<span class="nav-user-avatar nav-user-avatar--placeholder"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg></span>`;
+
+  document.querySelectorAll('.nav-cta').forEach(navCta => {
+    const loginLink = navCta.querySelector('a[href="/login.html"]');
+    const signupLink = navCta.querySelector('a[href="/signup.html"]');
+    if (!loginLink && !signupLink) return;
+    loginLink?.remove();
+    signupLink?.remove();
+
+    const chip = document.createElement('a');
+    chip.href = '/account.html';
+    chip.className = 'nav-user-chip';
+    chip.innerHTML = avatarHtml + `<span class="nav-user-ref">${profile.ref_code}</span>`;
+
+    const logoutBtn = document.createElement('button');
+    logoutBtn.type = 'button';
+    logoutBtn.className = 'btn btn-outline btn-sm';
+    logoutBtn.textContent = 'Log Out';
+    logoutBtn.onclick = () => vrnSignOut();
+
+    navCta.insertBefore(logoutBtn, navCta.firstChild);
+    navCta.insertBefore(chip, logoutBtn);
+  });
+
+  // Mobile menu shows the same two links in a simple vertical list — swap
+  // them the same way rather than trying to fit the avatar chip in there.
+  document.querySelectorAll('.mobile-menu a[href="/login.html"]').forEach(a => {
+    a.textContent = 'My Account (' + profile.ref_code + ')';
+    a.href = '/account.html';
+  });
+  document.querySelectorAll('.mobile-menu a[href="/signup.html"]').forEach(a => {
+    a.textContent = 'Log Out';
+    a.href = '#';
+    a.onclick = (e) => { e.preventDefault(); vrnSignOut(); };
+  });
+}
 
 // Android hardware/gesture back button: without this, Capacitor's default
 // behaviour exits the app the moment there's no more WebView history, even
