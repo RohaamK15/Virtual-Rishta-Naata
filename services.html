@@ -382,7 +382,11 @@
     sessionStorage.setItem(CONSULT_PENDING_KEY, JSON.stringify({
       id: requestId, email, refCode, phone, message, isMember
     }));
-    await vrnOpenCheckout(data.url);
+    const btn = document.getElementById('consultSubmitBtn');
+    await vrnOpenCheckout(data.url, () => {
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Continue to Secure Payment';
+    });
   }
 
   async function notifyConsultBooked(pending){
@@ -439,7 +443,10 @@
             body: { requestId: pending.id, native: isNative }
           });
           if (error) throw error;
-          await vrnOpenCheckout(data.url);
+          await vrnOpenCheckout(data.url, () => {
+            btn.removeAttribute('disabled');
+            btn.textContent = 'Complete Payment';
+          });
         } catch (err) {
           const errorEl = document.getElementById('consultError');
           errorEl.textContent = await vrnFunctionErrorMessage(err);

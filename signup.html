@@ -658,7 +658,10 @@
       if (error) throw error;
 
       sessionStorage.setItem(SIGNUP_PENDING_KEY, JSON.stringify({ email, password }));
-      await vrnOpenCheckout(data.url);
+      await vrnOpenCheckout(data.url, () => {
+        btn.removeAttribute('disabled');
+        btn.textContent = 'Continue to Secure Payment';
+      });
     } catch (err) {
       errorEl.textContent = await vrnFunctionErrorMessage(err);
       errorEl.style.display = 'block';

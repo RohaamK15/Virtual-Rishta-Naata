@@ -211,8 +211,23 @@ if (window.Capacitor?.Plugins?.App) {
 // own WebView — required so Apple/Google don't treat this as an in-app
 // purchase flow, and it also avoids losing sessionStorage state that would
 // happen if the WebView navigated away to a different origin.
-async function vrnOpenCheckout(url) {
+//
+// onCancelled is called if the user backs out of the browser tab without
+// completing checkout (e.g. system back button) — without this, the calling
+// page's "Redirecting to Stripe..." button stays disabled forever, since the
+// only other place it re-enables is the success/cancel deep link, which never
+// fires if the browser was just closed rather than redirected. Capacitor's
+// 'browserFinished' event fires whenever the tab closes, including on a
+// completed checkout, so onCancelled may run there too — harmless, since by
+// then appUrlOpen has already navigated the page away.
+async function vrnOpenCheckout(url, onCancelled) {
   if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins?.Browser) {
+    if (onCancelled) {
+      const handle = await window.Capacitor.Plugins.Browser.addListener('browserFinished', () => {
+        handle.remove();
+        onCancelled();
+      });
+    }
     await window.Capacitor.Plugins.Browser.open({ url });
   } else {
     window.location.href = url;
