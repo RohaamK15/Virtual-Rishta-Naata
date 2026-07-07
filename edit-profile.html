@@ -257,12 +257,19 @@
   // literal option in the list (e.g. "Nigeria" was typed into the Other field).
   function setCountryField(selectEl, otherEl, storedValue){
     if (!storedValue) return;
-    const isKnownOption = Array.from(selectEl.options).some(o => o.value === storedValue);
+    // "Other" itself never counts as a known option, even though it's one of
+    // the <option> values — some real profiles have it stored literally, from
+    // before this specify-text field existed. Always fall through to the
+    // Other branch for it, and reveal (not just fill) the input directly
+    // rather than relying on a 'change' event, since setting .value here
+    // doesn't fire one.
+    const isKnownOption = storedValue !== 'Other' && Array.from(selectEl.options).some(o => o.value === storedValue);
     if (isKnownOption) {
       selectEl.value = storedValue;
+      otherEl.style.display = 'none';
     } else {
       selectEl.value = 'Other';
-      otherEl.value = storedValue;
+      otherEl.value = storedValue === 'Other' ? '' : storedValue;
       otherEl.style.display = 'block';
     }
   }
