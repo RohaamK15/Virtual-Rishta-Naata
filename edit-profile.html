@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<title>Edit Your Profile — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<style>
+  body{background:var(--beige);padding-bottom:88px;}
+  .wizard-nav{padding:22px 0;}
+  .wizard-nav .wrap{display:flex;align-items:center;justify-content:space-between;}
+  .brand-mini{display:flex;align-items:center;gap:10px;}
+  .brand-mini img{height:36px;width:auto;}
+  .brand-mini span{font-family:'Cinzel',serif;font-weight:600;color:var(--green);font-size:.95rem;}
+  .exit-link{font-family:'Montserrat',sans-serif;font-size:.8rem;font-weight:600;color:var(--ink-soft);display:flex;align-items:center;gap:6px;}
+  .exit-link:hover{color:var(--green);}
+
+  .wizard-wrap{max-width:640px;margin:0 auto;padding:0 24px 60px;}
+  .wizard-card{background:#fff;border-radius:var(--radius-l);box-shadow:var(--shadow-2);padding:44px 40px;}
+  @media (max-width:600px){.wizard-card{padding:32px 24px;}}
+  .section-block{margin-bottom:34px;}
+  .section-block:last-of-type{margin-bottom:0;}
+  .section-block h3{font-size:.95rem;color:var(--green);margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid rgba(19,75,53,.08);}
+
+  .gender-pick{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;}
+  .gender-card{position:relative;cursor:pointer;}
+  .gender-card input{position:absolute;opacity:0;}
+  .gender-card .box{border:1.5px solid rgba(19,75,53,.16);border-radius:var(--radius-m);padding:22px 16px;text-align:center;transition:all .25s var(--ease-out);}
+  .gender-card .box svg{color:var(--ink-soft);margin-bottom:8px;transition:color .25s;}
+  .gender-card:hover .box{border-color:var(--green);}
+  .gender-card input:checked + .box{border-color:var(--green);background:var(--green-soft);}
+  .gender-card input:checked + .box svg{color:var(--green);}
+  .gender-card input:focus-visible + .box{outline:2px solid var(--gold);outline-offset:2px;}
+
+  .readonly-note{font-size:.82rem;color:var(--ink-soft);background:var(--beige);border-radius:var(--radius-s);padding:12px 16px;margin-top:8px;}
+
+  .save-bar{display:flex;gap:14px;margin-top:36px;}
+  .save-bar .btn-outline{flex:none;}
+  .save-bar .btn-primary{flex:1;}
+</style>
+</head>
+<body>
+<nav class="wizard-nav">
+  <div class="wrap">
+    <a href="/account.html" class="brand-mini">
+      <img src="/assets/img/logo-icon.png" alt="">
+      <span>Virtual Rishta Naata</span>
+    </a>
+    <a href="/account.html" class="exit-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      Back to Account
+    </a>
+  </div>
+</nav>
+
+<main class="wizard-wrap">
+  <div class="wizard-card">
+    <span class="eyebrow" style="color:var(--gold);">My Profile</span>
+    <h2 style="margin-top:10px;">Edit Your Details</h2>
+    <p style="margin-top:12px;color:var(--ink-soft);font-size:.92rem;">Changes are shown to other members as soon as you save.</p>
+
+    <form id="editForm" onsubmit="return false;" style="margin-top:28px;">
+
+      <div class="section-block">
+        <h3>Basics</h3>
+        <div class="field">
+          <label>I am</label>
+          <div class="gender-pick">
+            <label class="gender-card">
+              <input type="radio" name="gender" value="M">
+              <div class="box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="14" r="6"/><path d="M14.5 9.5L21 3M21 3h-5M21 3v5"/></svg><div style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:.85rem;">Male</div></div>
+            </label>
+            <label class="gender-card">
+              <input type="radio" name="gender" value="F">
+              <div class="box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="9" r="6"/><path d="M12 15v6M9 18h6"/></svg><div style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:.85rem;">Female</div></div>
+            </label>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="age">Age</label>
+            <input type="number" id="age" min="18" max="90" step="1" placeholder="e.g. 28">
+          </div>
+          <div class="field">
+            <label for="height">Height</label>
+            <input type="text" id="height" placeholder="e.g. 5'9" inputmode="numeric">
+            <p class="field-hint">Format: feet'inches, e.g. 5'9</p>
+          </div>
+        </div>
+        <div class="field">
+          <label>Ahmadi Muslim status</label>
+          <p class="readonly-note" id="ahmadiReadonly">—</p>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>Background</h3>
+        <div class="field">
+          <label for="qualifications">Qualifications</label>
+          <input type="text" id="qualifications" placeholder="e.g. MSc Mechanical Engineering">
+        </div>
+        <div class="field">
+          <label for="employment">Employment</label>
+          <input type="text" id="employment" placeholder="e.g. Design Engineer, Automotive sector">
+        </div>
+        <div class="field">
+          <label for="residentialStatus">Residential Status</label>
+          <input type="text" id="residentialStatus" placeholder="e.g. Lives with parents / independently">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="city">Residency — City</label>
+            <input type="text" id="city" placeholder="e.g. Manchester">
+          </div>
+          <div class="field">
+            <label for="county">Residency — County</label>
+            <input type="text" id="county" placeholder="e.g. Greater Manchester">
+          </div>
+        </div>
+        <div class="field">
+          <label for="countryOfResidence">Country of Residence</label>
+          <select id="countryOfResidence"></select>
+          <input type="text" id="countryOfResidenceOther" placeholder="Please specify your country" style="display:none;margin-top:10px;">
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>Community &amp; History</h3>
+        <div class="field">
+          <label for="localJamaat">What is your Local Jamaat?</label>
+          <input type="text" id="localJamaat" placeholder="e.g. Baitul Futuh">
+        </div>
+        <div class="field">
+          <label>Have you had any previous engagement, Nikah, or marriage?</label>
+          <div class="radio-pill-group">
+            <label class="radio-pill"><input type="radio" name="hadPrevious" value="Yes" onchange="onPreviousChange()">Yes</label>
+            <label class="radio-pill"><input type="radio" name="hadPrevious" value="No" onchange="onPreviousChange()">No</label>
+          </div>
+        </div>
+        <div id="previousDetailsFields" style="display:none;">
+          <div class="field">
+            <label>Which one?</label>
+            <div class="radio-pill-group">
+              <label class="radio-pill"><input type="radio" name="previousType" value="Engagement">Engagement</label>
+              <label class="radio-pill"><input type="radio" name="previousType" value="Nikah">Nikah</label>
+              <label class="radio-pill"><input type="radio" name="previousType" value="Marriage">Marriage</label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="previousDuration">How long did it last?</label>
+            <input type="text" id="previousDuration" placeholder="e.g. 8 months">
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you have children?</label>
+          <div class="radio-pill-group">
+            <label class="radio-pill"><input type="radio" name="hasChildren" value="Yes">Yes</label>
+            <label class="radio-pill"><input type="radio" name="hasChildren" value="No">No</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>Preferences</h3>
+        <div class="field">
+          <label for="preferenceLine">In one line, describe your preference</label>
+          <input type="text" id="preferenceLine" placeholder="e.g. Someone practising, kind and family-oriented">
+        </div>
+        <div class="field">
+          <label for="countryLookingIn">Which country are you looking in? (choose one)</label>
+          <select id="countryLookingIn"></select>
+          <input type="text" id="countryLookingInOther" placeholder="Please specify the country" style="display:none;margin-top:10px;">
+        </div>
+        <div class="field">
+          <label>Would you consider a match from Pakistan?</label>
+          <div class="radio-pill-group">
+            <label class="radio-pill"><input type="radio" name="considerPakistan" value="Yes">Yes</label>
+            <label class="radio-pill"><input type="radio" name="considerPakistan" value="No">No</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="additionalNote">Anything else to add? (optional)</label>
+          <textarea id="additionalNote" placeholder="Add any additional preference or note here"></textarea>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>About You</h3>
+        <div class="field">
+          <label for="aboutYourself">About Yourself</label>
+          <textarea id="aboutYourself" style="min-height:120px;" placeholder="Describe your personality, likes and hobbies in a few sentences..."></textarea>
+        </div>
+      </div>
+
+      <p id="editError" style="display:none;color:#A85A3E;font-size:.85rem;"></p>
+      <p id="editSuccess" style="display:none;color:var(--green);font-size:.85rem;">Your profile has been updated.</p>
+
+      <div class="save-bar">
+        <a href="/account.html" class="btn btn-outline">Cancel</a>
+        <button type="button" class="btn btn-primary" id="saveBtn" onclick="handleSave()">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<nav class="app-bottom-nav">
+  <a href="/home.html" class="app-tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+    Home
+  </a>
+  <a href="/search.html" class="app-tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    Search
+  </a>
+  <a href="/messages.html" class="app-tab">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+    Messages
+  </a>
+  <a href="/account.html" class="app-tab active">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg>
+    Account
+  </a>
+</nav>
+
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/countries.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase-client.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script>
+  vrnPopulateCountrySelect(document.getElementById('countryOfResidence'), { placeholder: 'Select a country' });
+  vrnWireCountryOther(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther'));
+  // Pakistan is deliberately left out here — same reasoning as signup.html:
+  // the Yes/No "would you consider a match from Pakistan?" question below
+  // already covers it.
+  vrnPopulateCountrySelect(document.getElementById('countryLookingIn'), { placeholder: 'Select a country', anyLabel: 'Any Country', exclude: ['Pakistan'] });
+  vrnWireCountryOther(document.getElementById('countryLookingIn'), document.getElementById('countryLookingInOther'));
+
+  function onPreviousChange(){
+    const hadPrevious = document.querySelector('input[name="hadPrevious"]:checked')?.value === 'Yes';
+    document.getElementById('previousDetailsFields').style.display = hadPrevious ? 'block' : 'none';
+  }
+
+  // Selects a radio in a group by value if it exists — used to restore the
+  // member's current answers when the form loads.
+  function selectRadio(name, value){
+    if (value === null || value === undefined) return;
+    const el = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (el) el.checked = true;
+  }
+
+  // Splits a stored country value back into (select value, "Other" specify
+  // text) for a dropdown built by vrnPopulateCountrySelect — the stored value
+  // is whatever was actually chosen or typed at signup, which may not be a
+  // literal option in the list (e.g. "Nigeria" was typed into the Other field).
+  function setCountryField(selectEl, otherEl, storedValue){
+    if (!storedValue) return;
+    const isKnownOption = Array.from(selectEl.options).some(o => o.value === storedValue);
+    if (isKnownOption) {
+      selectEl.value = storedValue;
+    } else {
+      selectEl.value = 'Other';
+      otherEl.value = storedValue;
+      otherEl.style.display = 'block';
+    }
+  }
+
+  let currentProfile = null;
+
+  async function loadProfile(){
+    await vrnRequireAuth();
+    let p;
+    try { p = await vrnMyProfile(); } catch (e) { p = null; }
+    if (!p) { window.location.href = '/account.html'; return; }
+    currentProfile = p;
+
+    selectRadio('gender', p.gender);
+    document.getElementById('age').value = p.age ?? '';
+    document.getElementById('height').value = p.height || '';
+
+    const ahmadiNote = document.getElementById('ahmadiReadonly');
+    ahmadiNote.textContent = (p.is_ahmadi ? 'Yes' : 'No') + ' — contact us if this needs to change.';
+
+    document.getElementById('qualifications').value = p.qualifications || '';
+    document.getElementById('employment').value = p.employment || '';
+    document.getElementById('residentialStatus').value = p.residential_status || '';
+    document.getElementById('city').value = p.city || '';
+    document.getElementById('county').value = p.county || '';
+    setCountryField(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther'), p.country);
+
+    document.getElementById('localJamaat').value = p.local_jamaat || '';
+    selectRadio('hadPrevious', p.had_previous ? 'Yes' : 'No');
+    onPreviousChange();
+    selectRadio('previousType', p.previous_type);
+    document.getElementById('previousDuration').value = p.previous_duration || '';
+    selectRadio('hasChildren', p.has_children ? 'Yes' : 'No');
+
+    document.getElementById('preferenceLine').value = p.preference_line || '';
+    setCountryField(document.getElementById('countryLookingIn'), document.getElementById('countryLookingInOther'), p.country_looking_in);
+    selectRadio('considerPakistan', p.consider_pakistan ? 'Yes' : 'No');
+    document.getElementById('additionalNote').value = p.additional_note || '';
+
+    document.getElementById('aboutYourself').value = p.about || '';
+  }
+
+  function validateForm(){
+    if (!document.querySelector('input[name="gender"]:checked')) return 'Please select whether you are male or female.';
+    const age = document.getElementById('age').value;
+    if (!age || !/^\d+$/.test(age) || age < 18 || age > 90) return 'Please enter a valid age (between 18 and 90) using digits only.';
+    const height = document.getElementById('height').value.trim();
+    const heightMatch = height.match(/^([3-8])'(\d{1,2})"?$/);
+    if (!heightMatch || +heightMatch[2] > 11) return "Please enter your height in the format feet'inches, e.g. 5'9";
+
+    const required = ['qualifications', 'employment', 'residentialStatus', 'city', 'county', 'localJamaat', 'preferenceLine', 'aboutYourself'];
+    for (const id of required) {
+      if (!document.getElementById(id).value.trim()) return 'Please fill in every field before saving.';
+    }
+    if (!document.getElementById('countryOfResidence').value) return 'Please select your country of residence.';
+    if (document.getElementById('countryOfResidence').value === 'Other' && !document.getElementById('countryOfResidenceOther').value.trim()) {
+      return 'Please specify your country of residence.';
+    }
+    if (!document.getElementById('countryLookingIn').value) return 'Please select which country you are looking in.';
+    if (document.getElementById('countryLookingIn').value === 'Other' && !document.getElementById('countryLookingInOther').value.trim()) {
+      return 'Please specify which country you are looking in.';
+    }
+
+    const previousChoice = document.querySelector('input[name="hadPrevious"]:checked');
+    if (!previousChoice) return 'Please let us know if you have had any previous engagement, Nikah, or marriage.';
+    if (previousChoice.value === 'Yes') {
+      if (!document.querySelector('input[name="previousType"]:checked')) return 'Please let us know which one (engagement, Nikah, or marriage).';
+      if (!document.getElementById('previousDuration').value.trim()) return 'Please let us know how long it lasted.';
+    }
+    if (!document.querySelector('input[name="hasChildren"]:checked')) return 'Please let us know if you have children.';
+    if (!document.querySelector('input[name="considerPakistan"]:checked')) return "Please let us know if you'd consider a match from Pakistan.";
+    return null;
+  }
+
+  async function handleSave(){
+    const errorEl = document.getElementById('editError');
+    const successEl = document.getElementById('editSuccess');
+    const btn = document.getElementById('saveBtn');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    const error = validateForm();
+    if (error) {
+      errorEl.textContent = error;
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    const previousChoice = document.querySelector('input[name="hadPrevious"]:checked')?.value === 'Yes';
+    const updates = {
+      gender: document.querySelector('input[name="gender"]:checked')?.value,
+      age: parseInt(document.getElementById('age').value, 10),
+      height: document.getElementById('height').value.trim(),
+      qualifications: document.getElementById('qualifications').value,
+      employment: document.getElementById('employment').value,
+      residential_status: document.getElementById('residentialStatus').value,
+      city: document.getElementById('city').value,
+      county: document.getElementById('county').value,
+      country: vrnResolveCountryValue(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther')),
+      local_jamaat: document.getElementById('localJamaat').value,
+      had_previous: previousChoice,
+      previous_type: previousChoice ? (document.querySelector('input[name="previousType"]:checked')?.value || null) : null,
+      previous_duration: previousChoice ? (document.getElementById('previousDuration').value || null) : null,
+      has_children: document.querySelector('input[name="hasChildren"]:checked')?.value === 'Yes',
+      preference_line: document.getElementById('preferenceLine').value,
+      country_looking_in: vrnResolveCountryValue(document.getElementById('countryLookingIn'), document.getElementById('countryLookingInOther')),
+      consider_pakistan: document.querySelector('input[name="considerPakistan"]:checked')?.value === 'Yes',
+      additional_note: document.getElementById('additionalNote').value,
+      about: document.getElementById('aboutYourself').value,
+    };
+
+    btn.setAttribute('disabled', '');
+    btn.textContent = 'Saving...';
+    try {
+      const user = await vrnCurrentUser();
+      const { error: updateError } = await sb.from('profiles').update(updates).eq('id', user.id);
+      if (updateError) throw updateError;
+      successEl.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      errorEl.textContent = err.message || 'Something went wrong — please try again.';
+      errorEl.style.display = 'block';
+    } finally {
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Save Changes';
+    }
+  }
+
+  loadProfile();
+</script>
+</body>
+</html>
