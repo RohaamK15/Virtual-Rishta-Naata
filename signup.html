@@ -18,7 +18,7 @@
 
   .wizard-wrap{max-width:640px;margin:0 auto;padding:0 24px 100px;}
   .progress-track{height:6px;background:rgba(19,75,53,.1);border-radius:999px;overflow:hidden;margin-bottom:10px;}
-  .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--green));border-radius:999px;transition:width .5s var(--ease-out);width:14.28%;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--green));border-radius:999px;transition:width .5s var(--ease-out);width:12.5%;}
   .progress-label{display:flex;justify-content:space-between;font-family:'Montserrat',sans-serif;font-size:.72rem;color:var(--ink-soft);letter-spacing:.03em;margin-bottom:34px;}
 
   .wizard-card{background:#fff;border-radius:var(--radius-l);box-shadow:var(--shadow-2);padding:44px 40px;}
@@ -97,7 +97,7 @@
 
 <main class="wizard-wrap">
   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-  <div class="progress-label"><span id="stepLabel">Step 1 of 7</span><span id="stepName">Basics</span></div>
+  <div class="progress-label"><span id="stepLabel">Step 1 of 8</span><span id="stepName">Basics</span></div>
 
   <form class="wizard-card" id="wizardForm" onsubmit="return false;">
 
@@ -125,7 +125,7 @@
       <div class="field-row">
         <div class="field">
           <label for="age">Age</label>
-          <input type="number" id="age" min="18" max="100" step="1" placeholder="e.g. 28">
+          <input type="number" id="age" min="18" max="90" step="1" placeholder="e.g. 28">
         </div>
         <div class="field">
           <label for="height">Height</label>
@@ -308,7 +308,7 @@
       <p class="step-error" style="display:none;color:#A85A3E;font-size:.85rem;margin-top:16px;"></p>
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" onclick="tryNextStep(4)">Continue</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(5)">Continue</button>
       </div>
     </div>
 
@@ -448,6 +448,16 @@
     }
   })();
 
+  // Pre-select whichever plan they clicked on the Pricing page
+  // (/signup.html?plan=annual) — without this it silently defaulted back to
+  // Monthly regardless of what they chose, only surfacing at Step 7.
+  (function preselectPlanFromQuery(){
+    const plan = new URLSearchParams(window.location.search).get('plan');
+    if (plan !== 'monthly' && plan !== 'annual') return;
+    const radio = document.querySelector(`input[name="plan"][value="${plan}"]`);
+    if (radio) radio.checked = true;
+  })();
+
   const TOTAL_STEPS = 8;
   const stepNames = ["Basics","Background","Community & History","Preferences","About You","Contact","Membership","Complete"];
   let current = 1;
@@ -546,7 +556,7 @@
     if (stepNum === 1) {
       if (!document.querySelector('input[name="gender"]:checked')) return 'Please select whether you are male or female.';
       const age = document.getElementById('age').value;
-      if (!age || !/^\d+$/.test(age) || age < 18 || age > 100) return 'Please enter a valid age (18 or over) using digits only.';
+      if (!age || !/^\d+$/.test(age) || age < 18 || age > 90) return 'Please enter a valid age (between 18 and 90) using digits only.';
       const height = document.getElementById('height').value.trim();
       const heightMatch = height.match(/^([3-8])'(\d{1,2})"?$/);
       if (!heightMatch || +heightMatch[2] > 11) return "Please enter your height in the format feet'inches, e.g. 5'9";

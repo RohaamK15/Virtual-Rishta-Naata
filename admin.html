@@ -226,6 +226,17 @@
 
   async function loadProfiles(){
     await vrnRequireAuth();
+    // Every admin-* Edge Function independently re-checks is_admin server-side
+    // (see _shared/requireAdmin.ts) so no data actually leaks without this —
+    // but without it, any signed-in member could load this whole dashboard
+    // shell and see "Admin access required" errors in every panel instead of
+    // being sent somewhere that makes sense for them.
+    let me;
+    try { me = await vrnMyProfile(); } catch (e) { me = null; }
+    if (!me?.is_admin) {
+      window.location.href = '/search.html';
+      return;
+    }
     const tbody = document.getElementById('adminTableBody');
     tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;">Loading…</td></tr>`;
     try {
@@ -366,7 +377,7 @@
     document.getElementById('notifList').innerHTML = recent.map(p => `
       <div class="notif-row">
         <div class="notif-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <div>New profile created: <strong>${p.ref_code}</strong> (${p.gender}, ${p.age}, ${p.country}) — ${p.subscription_status}.</div>
+        <div>New profile created: <strong>${p.ref_code}</strong> (${p.gender}, ${p.age}, ${escapeHtml(p.country)}) — ${p.subscription_status}.</div>
         <span class="notif-time">${new Date(p.created_at).toLocaleDateString('en-GB')}</span>
       </div>
     `).join('') || '<div class="notif-row">No signups yet.</div>';
@@ -381,10 +392,10 @@
         <td><strong>${p.ref_code}</strong></td>
         <td><span class="badge ${p.gender==='M'?'badge-m':'badge-f'}">${p.gender}</span></td>
         <td>${p.age}</td>
-        <td>${[p.city, p.county].filter(Boolean).join(', ') || '—'}</td>
-        <td>${p.country || '—'}</td>
-        <td>${p.country_looking_in || '—'}</td>
-        <td>${p.contact_email}</td>
+        <td>${escapeHtml([p.city, p.county].filter(Boolean).join(', ')) || '—'}</td>
+        <td>${escapeHtml(p.country) || '—'}</td>
+        <td>${escapeHtml(p.country_looking_in) || '—'}</td>
+        <td>${escapeHtml(p.contact_email)}</td>
         <td>${new Date(p.created_at).toLocaleDateString('en-GB')}</td>
         <td><span class="status-pill">${p.subscription_status}</span></td>
         <td>

@@ -192,6 +192,17 @@
   vrnRequireAuth();
 </script>
 <script>
+  // Every profile field below is free text someone typed during signup — it
+  // must never be interpolated into innerHTML unescaped, or a member could
+  // store a script/img-onerror payload in e.g. "About Yourself" or "Country"
+  // (via the Other-country specify field) that runs in every other member's
+  // browser who opens their profile.
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str ?? '';
+    return d.innerHTML;
+  }
+
   function filterFieldsHTML(prefix){
     return `
       <div class="filter-group">
@@ -205,9 +216,9 @@
       <div class="filter-group">
         <label>Age Range</label>
         <div class="range-row">
-          <input type="number" id="${prefix}ageMin" placeholder="Min" min="18" max="80">
+          <input type="number" id="${prefix}ageMin" placeholder="Min" min="18" max="90">
           <span style="color:var(--ink-soft);">–</span>
-          <input type="number" id="${prefix}ageMax" placeholder="Max" min="18" max="80">
+          <input type="number" id="${prefix}ageMax" placeholder="Max" min="18" max="90">
         </div>
       </div>
       <div class="filter-group">
@@ -295,7 +306,7 @@
         </div>
         <div class="pc-body">
           <div class="pc-stat"><strong>${p.age}</strong><span>Years</span></div>
-          <div class="pc-stat"><strong>${p.country}</strong><span>Country</span></div>
+          <div class="pc-stat"><strong>${escapeHtml(p.country)}</strong><span>Country</span></div>
         </div>
         <div class="pc-cta">View Full Profile <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
       </div>
@@ -339,31 +350,31 @@
         </div>
         <div class="detail-info">
           <h2>${p.ref_code}</h2>
-          <p class="detail-meta">${p.age} years old · ${p.city}, ${p.county}, ${p.country}</p>
+          <p class="detail-meta">${p.age} years old · ${escapeHtml(p.city)}, ${escapeHtml(p.county)}, ${escapeHtml(p.country)}</p>
         </div>
       </div>
 
       <div class="detail-grid">
-        <div class="detail-field"><span>Height</span><strong>${p.height || '—'}</strong></div>
-        <div class="detail-field"><span>Qualifications</span><strong>${p.qualifications || '—'}</strong></div>
-        <div class="detail-field"><span>Employment</span><strong>${p.employment || '—'}</strong></div>
-        <div class="detail-field"><span>Residential Status</span><strong>${p.residential_status || '—'}</strong></div>
-        <div class="detail-field"><span>Looking In</span><strong>${p.country_looking_in || '—'}</strong></div>
+        <div class="detail-field"><span>Height</span><strong>${escapeHtml(p.height) || '—'}</strong></div>
+        <div class="detail-field"><span>Qualifications</span><strong>${escapeHtml(p.qualifications) || '—'}</strong></div>
+        <div class="detail-field"><span>Employment</span><strong>${escapeHtml(p.employment) || '—'}</strong></div>
+        <div class="detail-field"><span>Residential Status</span><strong>${escapeHtml(p.residential_status) || '—'}</strong></div>
+        <div class="detail-field"><span>Looking In</span><strong>${escapeHtml(p.country_looking_in) || '—'}</strong></div>
         <div class="detail-field"><span>Considers Pakistan</span><strong>${p.consider_pakistan ? 'Yes' : 'No'}</strong></div>
         <div class="detail-field"><span>Ahmadi Muslim</span><strong>${p.is_ahmadi ? 'Yes' : 'No'}</strong></div>
-        <div class="detail-field"><span>Local Jamaat</span><strong>${p.local_jamaat || '—'}</strong></div>
-        <div class="detail-field"><span>Previously Engaged / Married</span><strong>${p.had_previous ? `Yes — ${p.previous_type || 'Not specified'}, ${p.previous_duration || 'duration not given'}` : 'No'}</strong></div>
+        <div class="detail-field"><span>Local Jamaat</span><strong>${escapeHtml(p.local_jamaat) || '—'}</strong></div>
+        <div class="detail-field"><span>Previously Engaged / Married</span><strong>${p.had_previous ? `Yes — ${escapeHtml(p.previous_type) || 'Not specified'}, ${escapeHtml(p.previous_duration) || 'duration not given'}` : 'No'}</strong></div>
         <div class="detail-field"><span>Children</span><strong>${p.has_children ? 'Yes' : 'No'}</strong></div>
       </div>
 
       <div class="detail-block">
         <h4>Their Preference</h4>
-        <p>${p.preference_line || '—'}</p>
+        <p>${escapeHtml(p.preference_line) || '—'}</p>
       </div>
-      ${p.additional_note ? `<div class="detail-block"><h4>Additional Note</h4><p>${p.additional_note}</p></div>` : ''}
+      ${p.additional_note ? `<div class="detail-block"><h4>Additional Note</h4><p>${escapeHtml(p.additional_note)}</p></div>` : ''}
       <div class="detail-block">
         <h4>About ${p.ref_code}</h4>
-        <p>${p.about || '—'}</p>
+        <p>${escapeHtml(p.about) || '—'}</p>
       </div>
 
       <a href="/chat.html?ref=${p.ref_code}" class="btn btn-primary btn-block" style="margin-top:28px;">
