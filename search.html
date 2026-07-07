@@ -183,6 +183,7 @@
 </nav>
 
 <script src="/assets/js/app.js"></script>
+<script src="/assets/js/countries.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase-client.js"></script>
@@ -211,17 +212,8 @@
       </div>
       <div class="filter-group">
         <label>Country of Residence</label>
-        <select id="${prefix}country">
-          <option value="">Any country</option>
-          <option>United Kingdom</option>
-          <option>Pakistan</option>
-          <option>Canada</option>
-          <option>United States</option>
-          <option>Australia</option>
-          <option>Germany</option>
-          <option>United Arab Emirates</option>
-          <option>Other</option>
-        </select>
+        <select id="${prefix}country"></select>
+        <input type="text" id="${prefix}countryOther" placeholder="Specify country" style="display:none;margin-top:10px;">
       </div>
       <div class="filter-group">
         <label>Considers Matches From Pakistan</label>
@@ -237,11 +229,16 @@
   document.getElementById('filterPanelDesktop').innerHTML = '<h3>Filters</h3>' + filterFieldsHTML('d_');
   document.getElementById('filterPanelMobile').innerHTML = filterFieldsHTML('m_');
 
+  for (const prefix of ['d_', 'm_']) {
+    vrnPopulateCountrySelect(document.getElementById(`${prefix}country`), { placeholder: 'Any country' });
+    vrnWireCountryOther(document.getElementById(`${prefix}country`), document.getElementById(`${prefix}countryOther`));
+  }
+
   function currentFilters(){
     const g = document.querySelector('input[name="d_gender"]:checked')?.value || '';
     const min = document.getElementById('d_ageMin').value;
     const max = document.getElementById('d_ageMax').value;
-    const country = document.getElementById('d_country').value;
+    const country = vrnResolveCountryValue(document.getElementById('d_country'), document.getElementById('d_countryOther'));
     const pak = document.querySelector('input[name="d_pak"]:checked')?.value || '';
     return {g, min, max, country, pak};
   }
@@ -257,6 +254,8 @@
     document.getElementById('d_ageMin').value = document.getElementById('m_ageMin').value;
     document.getElementById('d_ageMax').value = document.getElementById('m_ageMax').value;
     document.getElementById('d_country').value = document.getElementById('m_country').value;
+    document.getElementById('d_countryOther').value = document.getElementById('m_countryOther').value;
+    document.getElementById('d_countryOther').style.display = document.getElementById('m_countryOther').style.display;
     const pak = document.querySelector('input[name="m_pak"]:checked')?.value || '';
     document.querySelector(`input[name="d_pak"][value="${pak}"]`).checked = true;
   }
@@ -267,6 +266,8 @@
     document.getElementById('m_ageMin').value = document.getElementById('d_ageMin').value;
     document.getElementById('m_ageMax').value = document.getElementById('d_ageMax').value;
     document.getElementById('m_country').value = document.getElementById('d_country').value;
+    document.getElementById('m_countryOther').value = document.getElementById('d_countryOther').value;
+    document.getElementById('m_countryOther').style.display = document.getElementById('d_countryOther').style.display;
     const pak = document.querySelector('input[name="d_pak"]:checked')?.value || '';
     document.querySelector(`input[name="m_pak"][value="${pak}"]`).checked = true;
   }
@@ -401,8 +402,8 @@
     }
   }
 
-  ['d_ageMin','d_ageMax','d_country'].forEach(id => document.getElementById(id).addEventListener('input', () => { syncDesktopToMobile(); renderGrid(); }));
-  ['m_ageMin','m_ageMax','m_country'].forEach(id => document.getElementById(id).addEventListener('input', () => { syncMobileToDesktop(); renderGrid(); }));
+  ['d_ageMin','d_ageMax','d_country','d_countryOther'].forEach(id => document.getElementById(id).addEventListener('input', () => { syncDesktopToMobile(); renderGrid(); }));
+  ['m_ageMin','m_ageMax','m_country','m_countryOther'].forEach(id => document.getElementById(id).addEventListener('input', () => { syncMobileToDesktop(); renderGrid(); }));
   document.querySelectorAll('input[name="d_gender"],input[name="d_pak"]').forEach(el => el.addEventListener('change', () => { syncDesktopToMobile(); renderGrid(); }));
   document.querySelectorAll('input[name="m_gender"],input[name="m_pak"]').forEach(el => el.addEventListener('change', () => { syncMobileToDesktop(); renderGrid(); }));
 

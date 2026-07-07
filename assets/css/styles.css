@@ -182,6 +182,16 @@ input:focus,select:focus,textarea:focus{
 }
 .field{margin-bottom:22px;}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+
+.password-field{position:relative;}
+.password-field input{padding-right:46px;}
+.password-toggle{
+  position:absolute;top:50%;right:12px;transform:translateY(-50%);
+  background:none;border:none;padding:4px;cursor:pointer;color:var(--ink-soft);
+  display:flex;align-items:center;transition:color .2s;
+}
+.password-toggle:hover{color:var(--green);}
+.password-toggle:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px;}
 @media (max-width:640px){.field-row{grid-template-columns:1fr;}}
 
 .radio-pill-group{display:flex;gap:10px;flex-wrap:wrap;}

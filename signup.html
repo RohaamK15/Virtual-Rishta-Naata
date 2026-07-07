@@ -125,11 +125,12 @@
       <div class="field-row">
         <div class="field">
           <label for="age">Age</label>
-          <input type="number" id="age" min="18" max="80" placeholder="e.g. 28">
+          <input type="number" id="age" min="18" max="100" step="1" placeholder="e.g. 28">
         </div>
         <div class="field">
           <label for="height">Height</label>
-          <input type="text" id="height" placeholder="e.g. 5'9&quot;">
+          <input type="text" id="height" placeholder="e.g. 5'9" inputmode="numeric">
+          <p class="field-hint">Format: feet'inches, e.g. 5'9</p>
         </div>
       </div>
 
@@ -170,17 +171,8 @@
       </div>
       <div class="field">
         <label for="countryOfResidence">Country of Residence</label>
-        <select id="countryOfResidence">
-          <option value="">Select a country</option>
-          <option>United Kingdom</option>
-          <option>Pakistan</option>
-          <option>Canada</option>
-          <option>United States</option>
-          <option>Australia</option>
-          <option>Germany</option>
-          <option>United Arab Emirates</option>
-          <option>Other</option>
-        </select>
+        <select id="countryOfResidence"></select>
+        <input type="text" id="countryOfResidenceOther" placeholder="Please specify your country" style="display:none;margin-top:10px;">
         <p class="field-hint">This is shown alongside your age on the search page — your city and county are only visible once someone opens your full profile.</p>
       </div>
 
@@ -256,17 +248,8 @@
       </div>
       <div class="field">
         <label for="countryLookingIn">Which country are you looking in? (choose one)</label>
-        <select id="countryLookingIn">
-          <option value="">Select a country</option>
-          <option>United Kingdom</option>
-          <option>Pakistan</option>
-          <option>Canada</option>
-          <option>United States</option>
-          <option>Australia</option>
-          <option>Germany</option>
-          <option>United Arab Emirates</option>
-          <option>Other</option>
-        </select>
+        <select id="countryLookingIn"></select>
+        <input type="text" id="countryLookingInOther" placeholder="Please specify the country" style="display:none;margin-top:10px;">
       </div>
       <div class="field">
         <label>Would you consider a match from Pakistan?</label>
@@ -331,11 +314,23 @@
       </div>
       <div class="field">
         <label for="password">Create a Password</label>
-        <input type="password" id="password" placeholder="At least 8 characters">
+        <div class="password-field">
+          <input type="password" id="password" placeholder="At least 8 characters">
+          <button type="button" class="password-toggle" data-target="password" aria-label="Show password" onclick="vrnTogglePasswordVisibility(this)">
+            <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0112 19c-7 0-11-7-11-7a21.6 21.6 0 015.06-6.06M9.9 4.24A10.94 10.94 0 0112 4c7 0 11 7 11 7a21.6 21.6 0 01-2.68 3.68M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+          </button>
+        </div>
       </div>
       <div class="field">
         <label for="confirmPassword">Confirm Password</label>
-        <input type="password" id="confirmPassword" placeholder="Re-enter your password">
+        <div class="password-field">
+          <input type="password" id="confirmPassword" placeholder="Re-enter your password">
+          <button type="button" class="password-toggle" data-target="confirmPassword" aria-label="Show password" onclick="vrnTogglePasswordVisibility(this)">
+            <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="display:none;"><path d="M17.94 17.94A10.94 10.94 0 0112 19c-7 0-11-7-11-7a21.6 21.6 0 015.06-6.06M9.9 4.24A10.94 10.94 0 0112 4c7 0 11 7 11 7a21.6 21.6 0 01-2.68 3.68M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+          </button>
+        </div>
       </div>
       <p id="accountError" style="display:none;color:#A85A3E;font-size:.85rem;"></p>
 
@@ -411,6 +406,7 @@
 </main>
 
 <script src="/assets/js/app.js"></script>
+<script src="/assets/js/countries.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase-client.js"></script>
@@ -446,6 +442,26 @@
   const stepNames = ["Basics","Background","Community & History","Preferences","About You","Contact","Membership","Complete"];
   let current = 1;
   let selectedPhotoFile = null;
+
+  vrnPopulateCountrySelect(document.getElementById('countryOfResidence'), { placeholder: 'Select a country' });
+  vrnWireCountryOther(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther'));
+
+  // Pakistan is deliberately left out here — the "Would you consider a match
+  // from Pakistan?" Yes/No question right below already covers it, so
+  // listing it again in "which country are you looking in" would be
+  // redundant (and potentially contradictory if someone answered differently
+  // in each).
+  vrnPopulateCountrySelect(document.getElementById('countryLookingIn'), { placeholder: 'Select a country', anyLabel: 'Any Country', exclude: ['Pakistan'] });
+  vrnWireCountryOther(document.getElementById('countryLookingIn'), document.getElementById('countryLookingInOther'));
+
+  function vrnTogglePasswordVisibility(btn){
+    const input = document.getElementById(btn.dataset.target);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.querySelector('.eye-open').style.display = isHidden ? 'none' : '';
+    btn.querySelector('.eye-closed').style.display = isHidden ? '' : 'none';
+    btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+  }
 
   document.getElementById('photoInput').addEventListener('change', async (e) => {
     selectedPhotoFile = e.target.files[0] || null;
@@ -520,8 +536,10 @@
     if (stepNum === 1) {
       if (!document.querySelector('input[name="gender"]:checked')) return 'Please select whether you are male or female.';
       const age = document.getElementById('age').value;
-      if (!age || age < 18 || age > 90) return 'Please enter a valid age (18 or over).';
-      if (!document.getElementById('height').value.trim()) return 'Please enter your height.';
+      if (!age || !/^\d+$/.test(age) || age < 18 || age > 100) return 'Please enter a valid age (18 or over) using digits only.';
+      const height = document.getElementById('height').value.trim();
+      const heightMatch = height.match(/^([3-8])'(\d{1,2})"?$/);
+      if (!heightMatch || +heightMatch[2] > 11) return "Please enter your height in the format feet'inches, e.g. 5'9";
     }
     if (stepNum === 2) {
       const required = ['qualifications', 'employment', 'residentialStatus', 'city', 'county'];
@@ -529,6 +547,9 @@
         if (!document.getElementById(id).value.trim()) return 'Please fill in every field before continuing.';
       }
       if (!document.getElementById('countryOfResidence').value) return 'Please select your country of residence.';
+      if (document.getElementById('countryOfResidence').value === 'Other' && !document.getElementById('countryOfResidenceOther').value.trim()) {
+        return 'Please specify your country of residence.';
+      }
     }
     if (stepNum === 3) {
       if (!document.querySelector('input[name="isAhmadi"]:checked')) return 'Please let us know if you are an Ahmadi Muslim.';
@@ -544,6 +565,9 @@
     if (stepNum === 4) {
       if (!document.getElementById('preferenceLine').value.trim()) return 'Please describe your preference in a line.';
       if (!document.getElementById('countryLookingIn').value) return 'Please select which country you are looking in.';
+      if (document.getElementById('countryLookingIn').value === 'Other' && !document.getElementById('countryLookingInOther').value.trim()) {
+        return 'Please specify which country you are looking in.';
+      }
       if (!document.querySelector('input[name="considerPakistan"]:checked')) return 'Please let us know if you\'d consider a match from Pakistan.';
     }
     if (stepNum === 5) {
@@ -573,7 +597,7 @@
       residential_status: document.getElementById('residentialStatus').value,
       city: document.getElementById('city').value,
       county: document.getElementById('county').value,
-      country: document.getElementById('countryOfResidence').value,
+      country: vrnResolveCountryValue(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther')),
       is_ahmadi: document.querySelector('input[name="isAhmadi"]:checked')?.value === 'Yes',
       local_jamaat: document.getElementById('localJamaat').value,
       had_previous: document.querySelector('input[name="hadPrevious"]:checked')?.value === 'Yes',
@@ -581,7 +605,7 @@
       previous_duration: document.getElementById('previousDuration').value || null,
       has_children: document.querySelector('input[name="hasChildren"]:checked')?.value === 'Yes',
       preference_line: document.getElementById('preferenceLine').value,
-      country_looking_in: document.getElementById('countryLookingIn').value,
+      country_looking_in: vrnResolveCountryValue(document.getElementById('countryLookingIn'), document.getElementById('countryLookingInOther')),
       consider_pakistan: document.querySelector('input[name="considerPakistan"]:checked')?.value === 'Yes',
       additional_note: document.getElementById('additionalNote').value,
       about: document.getElementById('aboutYourself').value,
