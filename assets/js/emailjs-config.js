@@ -8,7 +8,7 @@
 // on your own account, it isn't a secret.
 window.EMAILJS_CONFIG = {
   publicKey: "OgOmel1OdnTJaWylP",
-  serviceId: "service_i15ivxr",
+  serviceId: "service_yodtqdo",
   templateId: "template_qisck9a",       // consultation request notification (services.html)
   signupTemplateId: "template_fbvt045",  // new member signup notification (signup.html) — see email-templates/new-signup.html
 };
