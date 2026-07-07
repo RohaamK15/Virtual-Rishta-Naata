@@ -14,18 +14,20 @@
 // intercepts navigation to these URLs before Chrome's gesture check ever
 // applies, as long as the app declares a matching autoVerify intent-filter
 // (see android/app/src/main/AndroidManifest.xml) and the domain serves a
-// matching /.well-known/assetlinks.json.
+// matching /.well-known/assetlinks.json. That manifest's intent-filter must
+// list every successPage/cancelPage this function is ever called with.
 export function buildReturnUrls(opts: {
   appUrl: string;
-  page: string;
+  successPage: string;
+  cancelPage: string;
   successParams: Record<string, string>;
   cancelParams: Record<string, string>;
 }) {
-  const { appUrl, page, successParams, cancelParams } = opts;
+  const { appUrl, successPage, cancelPage, successParams, cancelParams } = opts;
   const successQuery = new URLSearchParams(successParams).toString();
   const cancelQuery = new URLSearchParams(cancelParams).toString();
   return {
-    successUrl: `${appUrl}/${page}?${successQuery}`,
-    cancelUrl: `${appUrl}/${page}?${cancelQuery}`,
+    successUrl: `${appUrl}/${successPage}${successQuery ? `?${successQuery}` : ""}`,
+    cancelUrl: `${appUrl}/${cancelPage}${cancelQuery ? `?${cancelQuery}` : ""}`,
   };
 }

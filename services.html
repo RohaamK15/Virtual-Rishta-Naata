@@ -61,11 +61,6 @@
   .consult-form .radio-pill{border-color:rgba(255,249,242,.3);color:rgba(255,249,242,.75);}
   .consult-form .radio-pill:hover{border-color:var(--gold);}
   .consult-form .radio-pill:has(input:checked){background:var(--gold);border-color:var(--gold);color:var(--green-2);}
-  .consult-success{display:none;text-align:center;padding:30px 10px;}
-  .consult-success .check-circle{
-    width:56px;height:56px;border-radius:50%;background:rgba(255,249,242,.1);color:var(--gold);
-    display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
-  }
 </style>
 </head>
 <body>
@@ -229,25 +224,6 @@
             </div>
             <button type="button" class="btn btn-gold btn-block" id="consultSubmitBtn" onclick="submitConsultRequest()">Continue to Secure Payment</button>
           </form>
-          <div class="consult-success" id="consultSuccess">
-            <div class="check-circle">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-            </div>
-            <h3 style="color:var(--ivory);">Payment Received</h3>
-            <p style="margin-top:10px;color:rgba(255,249,242,.7);font-size:.9rem;">Thank you — your £35 consultation is booked and paid for.</p>
-
-            <div style="text-align:left;background:rgba(255,249,242,.06);border:1px solid rgba(255,249,242,.14);border-radius:var(--radius-m);padding:20px 22px;margin-top:22px;">
-              <span class="eyebrow" style="color:var(--gold);">What Happens Next</span>
-              <ol style="margin:12px 0 0;padding-left:18px;color:rgba(255,249,242,.75);font-size:.87rem;line-height:1.7;">
-                <li>Our team reviews your request — usually within one working day.</li>
-                <li>We'll reply by email to arrange a time that works for you.</li>
-                <li>Your session is held privately, over video or phone, with a neutral facilitator.</li>
-              </ol>
-            </div>
-
-            <a href="/home.html" class="btn btn-outline btn-block" style="margin-top:24px;">Back to Home</a>
-            <a href="#" id="consultSuccessSecondaryLink" class="btn btn-gold btn-block" style="margin-top:12px;">Browse Profiles</a>
-          </div>
         </div>
       </div>
     </div>
@@ -304,11 +280,7 @@
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="/assets/js/emailjs-config.js"></script>
 <script>
-  emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
-
   const CONSULT_PENDING_KEY = 'vrnConsultPending';
 
   function onConsultMemberChange(){
@@ -388,72 +360,43 @@
     });
   }
 
-  async function notifyConsultBooked(pending){
-    // EmailJS sends straight from the browser — its public key is designed to
-    // be exposed client-side, unlike a normal API secret. Only fired once
-    // Stripe has redirected back with ?consult=success, i.e. payment succeeded.
-    try {
-      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, {
-        user_email: pending.email,
-        ref_code: pending.refCode || '(not provided)',
-        phone: pending.phone || '(not provided)',
-        message: pending.message || '(no message provided)',
-      });
-    } catch (emailErr) {
-      console.warn('Consultation paid, but the notification email failed to send:', emailErr);
-    }
-  }
-
+  // A successful payment now redirects straight to the dedicated
+  // consultation-confirmed.html page (see create-consultation-checkout)
+  // instead of coming back here, so the only outcome this page still needs
+  // to handle itself is a cancelled/abandoned Checkout session.
   (function handleConsultReturn(){
     const params = new URLSearchParams(window.location.search);
-    const outcome = params.get('consult');
-    if (!outcome) return;
+    if (params.get('consult') !== 'cancelled') return;
 
     const raw = sessionStorage.getItem(CONSULT_PENDING_KEY);
     const pending = raw ? JSON.parse(raw) : null;
+    if (!pending) return;
 
-    if (outcome === 'success') {
-      sessionStorage.removeItem(CONSULT_PENDING_KEY);
-      document.getElementById('consultForm').style.display = 'none';
-      document.getElementById('consultSuccess').style.display = 'block';
-
-      const secondaryLink = document.getElementById('consultSuccessSecondaryLink');
-      if (pending?.isMember) {
-        secondaryLink.href = '/search.html';
-        secondaryLink.textContent = 'Browse Profiles';
-      } else {
-        secondaryLink.href = '/signup.html';
-        secondaryLink.textContent = 'Create Your Profile';
-      }
-
-      if (pending) notifyConsultBooked(pending);
-    } else if (outcome === 'cancelled' && pending) {
-      const notice = document.getElementById('consultNotice');
-      notice.textContent = "Payment wasn't completed — your details are saved. Click below whenever you're ready to pay.";
-      notice.style.display = 'block';
-      const btn = document.getElementById('consultSubmitBtn');
-      btn.textContent = 'Complete Payment';
-      btn.onclick = async () => {
-        btn.setAttribute('disabled', '');
-        btn.textContent = 'Redirecting to Stripe...';
-        try {
-          const { data, error } = await sb.functions.invoke('create-consultation-checkout', {
-            body: { requestId: pending.id }
-          });
-          if (error) throw error;
-          await vrnOpenCheckout(data.url, () => {
-            btn.removeAttribute('disabled');
-            btn.textContent = 'Complete Payment';
-          });
-        } catch (err) {
-          const errorEl = document.getElementById('consultError');
-          errorEl.textContent = await vrnFunctionErrorMessage(err);
-          errorEl.style.display = 'block';
+    const notice = document.getElementById('consultNotice');
+    notice.textContent = "Payment wasn't completed — your details are saved. Click below whenever you're ready to pay.";
+    notice.style.display = 'block';
+    const btn = document.getElementById('consultSubmitBtn');
+    btn.textContent = 'Complete Payment';
+    btn.onclick = async () => {
+      btn.setAttribute('disabled', '');
+      btn.textContent = 'Redirecting to Stripe...';
+      try {
+        const { data, error } = await sb.functions.invoke('create-consultation-checkout', {
+          body: { requestId: pending.id }
+        });
+        if (error) throw error;
+        await vrnOpenCheckout(data.url, () => {
           btn.removeAttribute('disabled');
           btn.textContent = 'Complete Payment';
-        }
-      };
-    }
+        });
+      } catch (err) {
+        const errorEl = document.getElementById('consultError');
+        errorEl.textContent = await vrnFunctionErrorMessage(err);
+        errorEl.style.display = 'block';
+        btn.removeAttribute('disabled');
+        btn.textContent = 'Complete Payment';
+      }
+    };
 
     // Clean the query string so a page refresh doesn't replay this.
     window.history.replaceState({}, '', window.location.pathname);

@@ -34,8 +34,9 @@ Deno.serve(async (req) => {
 
     const { successUrl, cancelUrl } = buildReturnUrls({
       appUrl: Deno.env.get("APP_URL")!,
-      page: "services.html",
-      successParams: { consult: "success" },
+      successPage: "consultation-confirmed.html",
+      cancelPage: "services.html",
+      successParams: {},
       cancelParams: { consult: "cancelled" },
     });
 

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<title>Consultation Booked — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<style>
+  body{background:var(--beige);min-height:100vh;display:flex;flex-direction:column;}
+  .confirm-wrap{max-width:560px;margin:0 auto;padding:60px 24px;flex:1;display:flex;align-items:center;}
+  .confirm-card{background:#fff;border-radius:var(--radius-l);box-shadow:var(--shadow-2);padding:48px 40px;text-align:center;width:100%;}
+  @media (max-width:600px){.confirm-card{padding:36px 26px;}}
+  .brand-mini{display:flex;align-items:center;justify-content:center;gap:10px;}
+  .brand-mini img{height:36px;width:auto;}
+  .brand-mini span{font-family:'Cinzel',serif;font-weight:600;color:var(--green);font-size:.95rem;}
+  .check-circle{
+    width:64px;height:64px;border-radius:50%;background:var(--green-soft);color:var(--green);
+    display:flex;align-items:center;justify-content:center;margin:22px auto 0;
+  }
+  .next-steps{text-align:left;background:var(--beige);border-radius:var(--radius-m);padding:20px 22px;margin-top:26px;}
+  .next-steps ol{margin:12px 0 0;padding-left:18px;color:var(--ink-soft);font-size:.87rem;line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="confirm-wrap">
+  <div class="confirm-card" data-reveal>
+    <a href="/home.html" class="brand-mini">
+      <img src="/assets/img/logo-icon.png" alt="">
+      <span>Virtual Rishta Naata</span>
+    </a>
+    <div class="check-circle">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h2 style="margin-top:22px;">Payment Received</h2>
+    <p class="step-desc" style="max-width:400px;margin:12px auto 0;">Thank you — your £35 consultation is booked and paid for.</p>
+
+    <div class="next-steps">
+      <span class="eyebrow" style="color:var(--gold);">What Happens Next</span>
+      <ol>
+        <li>Our team reviews your request — usually within one working day.</li>
+        <li>We'll reply by email to arrange a time that works for you.</li>
+        <li>Your session is held privately, over video or phone, with a neutral facilitator.</li>
+      </ol>
+    </div>
+
+    <a href="/home.html" class="btn btn-outline btn-block" style="margin-top:28px;">Back to Home</a>
+    <a href="#" id="secondaryLink" class="btn btn-primary btn-block" style="margin-top:12px;">Browse Profiles</a>
+  </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase-client.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="/assets/js/emailjs-config.js"></script>
+<script>
+  emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
+  const CONSULT_PENDING_KEY = 'vrnConsultPending';
+
+  // Best-effort, non-blocking — a failure here shouldn't hide that the
+  // booking itself succeeded (payment_status is already 'paid' server-side,
+  // set by stripe-webhook regardless of whether this email sends).
+  async function notifyConsultBooked(pending){
+    try {
+      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, {
+        user_email: pending.email,
+        ref_code: pending.refCode || '(not provided)',
+        phone: pending.phone || '(not provided)',
+        message: pending.message || '(no message provided)',
+      });
+    } catch (emailErr) {
+      console.warn('Consultation paid, but the notification email failed to send:', emailErr);
+    }
+  }
+
+  (function init(){
+    // sessionStorage can be lost across the redirect to Stripe and back in
+    // some mobile browsers — the booking is already paid and recorded
+    // server-side regardless, so just fall back to a generic secondary link
+    // rather than failing to show the confirmation at all.
+    const raw = sessionStorage.getItem(CONSULT_PENDING_KEY);
+    const pending = raw ? JSON.parse(raw) : null;
+    const secondaryLink = document.getElementById('secondaryLink');
+
+    if (pending && !pending.isMember) {
+      secondaryLink.href = '/signup.html';
+      secondaryLink.textContent = 'Create Your Profile';
+    } else {
+      secondaryLink.href = '/search.html';
+      secondaryLink.textContent = 'Browse Profiles';
+    }
+
+    if (pending) {
+      notifyConsultBooked(pending);
+      sessionStorage.removeItem(CONSULT_PENDING_KEY);
+    }
+  })();
+</script>
+</body>
+</html>
