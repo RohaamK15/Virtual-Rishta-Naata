@@ -1,19 +1,21 @@
 <!--
-  Paste this into EmailJS: Email Templates > your template > Code Editor (</> icon).
-  Sent only after Stripe confirms the £35 payment (see stripe-webhook + services.html),
-  using variables {{user_email}}, {{ref_code}}, {{phone}}, {{message}}.
+  Paste this into EmailJS: Email Templates > template_qisck9a (the existing
+  consultation notification template) > Code Editor (</> icon) — replacing
+  what's there now. This version is sent to BOTH you and the person who
+  booked, in one go.
 
-  In the template's settings (not the body), also set:
-  - Subject: Paid consultation booking from {{user_email}}
-  - To Email: your notification inbox
-  - Reply To: {{user_email}}  (so hitting "reply" in your inbox goes straight to the requester)
+  In the template's settings, change:
+  - To Email: uhameed53@hotmail.com, {{user_email}}
+    (comma-separated — sends the same email to both addresses in one send;
+    {{user_email}} is the person who just booked and paid)
+  - Subject: Your Virtual Rishta Naata consultation is confirmed
 -->
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>New Consultation Request</title>
+<title>Consultation Confirmed</title>
 </head>
 <body style="margin:0;padding:0;background-color:#F3E8D6;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F3E8D6;padding:40px 16px;">
@@ -31,7 +33,7 @@
                    style="display:block;width:160px;max-width:160px;height:auto;margin:0 auto 18px;">
               <!--<![endif]-->
               <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#134B35;font-weight:bold;">
-                Paid Consultation Booking
+                Consultation Confirmed
               </div>
             </td>
           </tr>
@@ -40,10 +42,10 @@
           <tr>
             <td style="padding:36px 40px;text-align:left;">
               <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#55604F;text-align:left;">
-                Someone has booked and paid £35 for a one-to-one consultation through the Services page. Details below:
+                A £35 one-to-one consultation has been booked and paid for. Details below, for your records:
               </p>
               <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#134B35;font-weight:bold;text-align:left;">
-                ✓ Payment received — no need to chase this before replying.
+                ✓ Payment received.
               </p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border-collapse:separate;">
@@ -89,15 +91,16 @@
                 </tr>
               </table>
 
-              <table role="presentation" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td style="background-color:#C59D52;border-radius:999px;">
-                    <a href="mailto:{{user_email}}" style="display:inline-block;padding:14px 30px;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:14px;color:#134B35;text-decoration:none;">
-                      Reply to {{user_email}}
-                    </a>
-                  </td>
-                </tr>
-              </table>
+              <div style="background-color:#E4EDE7;border-radius:10px;padding:20px 22px;margin-bottom:8px;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8A6A2E;font-weight:bold;margin-bottom:10px;">
+                  What Happens Next
+                </div>
+                <ol style="margin:0;padding-left:18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.7;color:#21311F;">
+                  <li>Our team reviews the request — usually within one working day.</li>
+                  <li>We'll reply to the contact email above to arrange a time.</li>
+                  <li>The session is held privately, over video or phone, with a neutral facilitator.</li>
+                </ol>
+              </div>
             </td>
           </tr>
 
@@ -105,7 +108,7 @@
           <tr>
             <td style="padding:20px 40px 32px;border-top:1px solid #E4DCC8;text-align:left;">
               <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9AA79A;text-align:left;">
-                This is an automated notification from the Virtual Rishta Naata Services page, sent once Stripe confirms payment. Please aim to respond to the requester within one working day.
+                This is an automated confirmation sent once Stripe confirms payment. Questions in the meantime? Just reply to this email.
               </p>
             </td>
           </tr>

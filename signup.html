@@ -729,30 +729,22 @@
   // Best-effort, non-blocking — same reasoning as the consultation email in
   // services.html: a failure here shouldn't hide that the account itself was
   // created successfully, and the admin dashboard is the source of truth
-  // regardless of whether this notification arrives.
+  // regardless of whether this notification arrives. The template's own "To
+  // Email" setting is two comma-separated addresses (admin inbox +
+  // {{contact_email}}), so this one send() reaches both.
   async function notifyNewSignup(profile, contactEmail){
-    const params = {
-      ref_code: profile.ref_code,
-      gender: profile.gender === 'M' ? 'Male' : 'Female',
-      age: profile.age,
-      city: profile.city || '(not provided)',
-      country: profile.country || '(not provided)',
-      plan: profile.plan === 'annual' ? 'Annual — £100/yr' : 'Monthly — £10/mo',
-      contact_email: contactEmail,
-    };
     try {
-      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.signupTemplateId, params);
+      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.signupTemplateId, {
+        ref_code: profile.ref_code,
+        gender: profile.gender === 'M' ? 'Male' : 'Female',
+        age: profile.age,
+        city: profile.city || '(not provided)',
+        country: profile.country || '(not provided)',
+        plan: profile.plan === 'annual' ? 'Annual — £100/yr' : 'Monthly — £10/mo',
+        contact_email: contactEmail,
+      });
     } catch (emailErr) {
-      console.warn('Signup completed, but the admin notification email failed to send:', emailErr);
-    }
-    // Member-facing welcome email — separate template with a dynamic
-    // {{contact_email}} "To Email" (see email-templates/new-signup-customer-welcome.html).
-    // Skipped entirely until that template exists and its ID is filled in.
-    if (!window.EMAILJS_CONFIG.welcomeTemplateId) return;
-    try {
-      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.welcomeTemplateId, params);
-    } catch (emailErr) {
-      console.warn('Signup completed, but the welcome email failed to send:', emailErr);
+      console.warn('Signup completed, but the confirmation email failed to send:', emailErr);
     }
   }
 

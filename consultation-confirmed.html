@@ -62,27 +62,19 @@
 
   // Best-effort, non-blocking — a failure here shouldn't hide that the
   // booking itself succeeded (payment_status is already 'paid' server-side,
-  // set by stripe-webhook regardless of whether either email sends).
+  // set by stripe-webhook regardless of whether this email sends). The
+  // template's own "To Email" setting is two comma-separated addresses
+  // (admin inbox + {{user_email}}), so this one send() reaches both.
   async function notifyConsultBooked(pending){
-    const params = {
-      user_email: pending.email,
-      ref_code: pending.refCode || '(not provided)',
-      phone: pending.phone || '(not provided)',
-      message: pending.message || '(no message provided)',
-    };
     try {
-      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, params);
+      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.templateId, {
+        user_email: pending.email,
+        ref_code: pending.refCode || '(not provided)',
+        phone: pending.phone || '(not provided)',
+        message: pending.message || '(no message provided)',
+      });
     } catch (emailErr) {
-      console.warn('Consultation paid, but the admin notification email failed to send:', emailErr);
-    }
-    // Customer-facing confirmation — separate template with a dynamic
-    // {{user_email}} "To Email" (see email-templates/consultation-confirmation-customer.html).
-    // Skipped entirely until that template exists and its ID is filled in.
-    if (!window.EMAILJS_CONFIG.consultCustomerTemplateId) return;
-    try {
-      await emailjs.send(window.EMAILJS_CONFIG.serviceId, window.EMAILJS_CONFIG.consultCustomerTemplateId, params);
-    } catch (emailErr) {
-      console.warn('Consultation paid, but the customer confirmation email failed to send:', emailErr);
+      console.warn('Consultation paid, but the confirmation email failed to send:', emailErr);
     }
   }
 

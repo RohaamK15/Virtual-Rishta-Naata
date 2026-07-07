@@ -1,21 +1,20 @@
 <!--
-  Paste this into EmailJS: Email Templates > New Template (or a fresh one
-  separate from the consultation template) > Code Editor (</> icon).
-  Sent once per new member, right after stripe-webhook confirms their
-  payment and creates their account — see signup.html's confirmation step.
+  Paste this into EmailJS: Email Templates > template_fbvt045 (the existing
+  signup notification template) > Code Editor (</> icon) — replacing what's
+  there now. This version is sent to BOTH you and the new member in one go.
 
-  In the template's settings, also set:
-  - Subject: New member: {{ref_code}}
-  - To Email: your notification inbox
-  - Copy the resulting Template ID into signupTemplateId in
-    assets/js/emailjs-config.js.
+  In the template's settings, change:
+  - To Email: uhameed53@hotmail.com, {{contact_email}}
+    (comma-separated — sends the same email to both addresses in one send;
+    {{contact_email}} is the new member's own address)
+  - Subject: Welcome to Virtual Rishta Naata — {{ref_code}}
 -->
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>New Member Signup</title>
+<title>Welcome to Virtual Rishta Naata</title>
 </head>
 <body style="margin:0;padding:0;background-color:#F3E8D6;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F3E8D6;padding:40px 16px;">
@@ -33,7 +32,7 @@
                    style="display:block;width:160px;max-width:160px;height:auto;margin:0 auto 18px;">
               <!--<![endif]-->
               <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#134B35;font-weight:bold;">
-                New Member Joined
+                Welcome to Virtual Rishta Naata
               </div>
             </td>
           </tr>
@@ -42,7 +41,7 @@
           <tr>
             <td style="padding:36px 40px;text-align:left;">
               <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#55604F;text-align:left;">
-                A new member has completed payment and their profile is now live. Details below:
+                A profile has been created and its subscription is active. Details below, for your records:
               </p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border-collapse:separate;">
@@ -98,11 +97,15 @@
                 </tr>
               </table>
 
+              <p style="margin:0 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#55604F;text-align:left;">
+                Your name is never shown to other members — only your reference code represents you, everywhere on the platform.
+              </p>
+
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="background-color:#C59D52;border-radius:999px;">
-                    <a href="https://virtual-rishta-naata.vercel.app/admin.html" style="display:inline-block;padding:14px 30px;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:14px;color:#134B35;text-decoration:none;">
-                      Open Admin Dashboard
+                    <a href="https://virtual-rishta-naata.vercel.app/search.html" style="display:inline-block;padding:14px 30px;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:14px;color:#134B35;text-decoration:none;">
+                      Start Browsing Profiles
                     </a>
                   </td>
                 </tr>
@@ -114,7 +117,7 @@
           <tr>
             <td style="padding:20px 40px 32px;border-top:1px solid #E4DCC8;text-align:left;">
               <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9AA79A;text-align:left;">
-                This is an automated notification sent once a new member's payment is confirmed and their profile goes live.
+                This is an automated confirmation sent once payment is confirmed and a profile goes live.
               </p>
             </td>
           </tr>
