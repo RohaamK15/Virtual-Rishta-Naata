@@ -192,47 +192,57 @@
       <div class="field" style="margin-top:28px;">
         <label>Are you an Ahmadi Muslim?</label>
         <div class="radio-pill-group">
-          <label class="radio-pill"><input type="radio" name="isAhmadi" value="Yes">Yes</label>
-          <label class="radio-pill"><input type="radio" name="isAhmadi" value="No">No</label>
+          <label class="radio-pill"><input type="radio" name="isAhmadi" value="Yes" onchange="onAhmadiChange()">Yes</label>
+          <label class="radio-pill"><input type="radio" name="isAhmadi" value="No" onchange="onAhmadiChange()">No</label>
         </div>
       </div>
-      <div class="field">
-        <label for="localJamaat">What is your Local Jamaat?</label>
-        <input type="text" id="localJamaat" placeholder="e.g. Baitul Futuh">
+
+      <div id="ahmadiNotEligible" style="display:none;text-align:center;padding:20px 0 0;">
+        <h3 style="margin-top:0;">This Service Is for Ahmadi Muslims</h3>
+        <p class="step-desc" style="max-width:420px;margin:12px auto 0;">Virtual Rishta Naata is a matrimonial service exclusively for members of the Ahmadiyya Muslim Community, so we're unable to continue with an application here.</p>
+        <p class="step-desc" style="max-width:420px;margin:10px auto 0;">To learn more about Islam Ahmadiyyat, please visit <a href="https://www.alislam.org" target="_blank" rel="noopener" style="color:var(--gold);font-weight:600;">alislam.org</a>.</p>
+        <a href="/home.html" class="btn btn-outline btn-block" style="margin-top:24px;">Back to Home</a>
       </div>
-      <div class="field">
-        <label>Have you had any previous engagement, Nikah, or marriage?</label>
-        <div class="radio-pill-group">
-          <label class="radio-pill"><input type="radio" name="hadPrevious" value="Yes" onchange="onPreviousChange()">Yes</label>
-          <label class="radio-pill"><input type="radio" name="hadPrevious" value="No" onchange="onPreviousChange()">No</label>
-        </div>
-      </div>
-      <div id="previousDetailsFields" style="display:none;">
+
+      <div id="ahmadiEligibleFields">
         <div class="field">
-          <label>Which one?</label>
+          <label for="localJamaat">What is your Local Jamaat?</label>
+          <input type="text" id="localJamaat" placeholder="e.g. Baitul Futuh">
+        </div>
+        <div class="field">
+          <label>Have you had any previous engagement, Nikah, or marriage?</label>
           <div class="radio-pill-group">
-            <label class="radio-pill"><input type="radio" name="previousType" value="Engagement">Engagement</label>
-            <label class="radio-pill"><input type="radio" name="previousType" value="Nikah">Nikah</label>
-            <label class="radio-pill"><input type="radio" name="previousType" value="Marriage">Marriage</label>
+            <label class="radio-pill"><input type="radio" name="hadPrevious" value="Yes" onchange="onPreviousChange()">Yes</label>
+            <label class="radio-pill"><input type="radio" name="hadPrevious" value="No" onchange="onPreviousChange()">No</label>
+          </div>
+        </div>
+        <div id="previousDetailsFields" style="display:none;">
+          <div class="field">
+            <label>Which one?</label>
+            <div class="radio-pill-group">
+              <label class="radio-pill"><input type="radio" name="previousType" value="Engagement">Engagement</label>
+              <label class="radio-pill"><input type="radio" name="previousType" value="Nikah">Nikah</label>
+              <label class="radio-pill"><input type="radio" name="previousType" value="Marriage">Marriage</label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="previousDuration">How long did it last?</label>
+            <input type="text" id="previousDuration" placeholder="e.g. 8 months">
           </div>
         </div>
         <div class="field">
-          <label for="previousDuration">How long did it last?</label>
-          <input type="text" id="previousDuration" placeholder="e.g. 8 months">
-        </div>
-      </div>
-      <div class="field">
-        <label>Do you have children?</label>
-        <div class="radio-pill-group">
-          <label class="radio-pill"><input type="radio" name="hasChildren" value="Yes">Yes</label>
-          <label class="radio-pill"><input type="radio" name="hasChildren" value="No">No</label>
+          <label>Do you have children?</label>
+          <div class="radio-pill-group">
+            <label class="radio-pill"><input type="radio" name="hasChildren" value="Yes">Yes</label>
+            <label class="radio-pill"><input type="radio" name="hasChildren" value="No">No</label>
+          </div>
         </div>
       </div>
 
       <p class="step-error" style="display:none;color:#A85A3E;font-size:.85rem;margin-top:16px;"></p>
-      <div class="step-actions">
+      <div class="step-actions" id="step3Actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" onclick="tryNextStep(3)">Continue</button>
+        <button type="button" class="btn btn-primary" id="step3ContinueBtn" onclick="tryNextStep(3)">Continue</button>
       </div>
     </div>
 
@@ -552,7 +562,9 @@
       }
     }
     if (stepNum === 3) {
-      if (!document.querySelector('input[name="isAhmadi"]:checked')) return 'Please let us know if you are an Ahmadi Muslim.';
+      const isAhmadi = document.querySelector('input[name="isAhmadi"]:checked');
+      if (!isAhmadi) return 'Please let us know if you are an Ahmadi Muslim.';
+      if (isAhmadi.value === 'No') return 'This service is only for Ahmadi Muslims — see the note above.';
       if (!document.getElementById('localJamaat').value.trim()) return 'Please enter your local Jamaat.';
       const previousChoice = document.querySelector('input[name="hadPrevious"]:checked');
       if (!previousChoice) return 'Please let us know if you have had any previous engagement, Nikah, or marriage.';
@@ -585,6 +597,17 @@
   function onPreviousChange(){
     const hadPrevious = document.querySelector('input[name="hadPrevious"]:checked')?.value === 'Yes';
     document.getElementById('previousDetailsFields').style.display = hadPrevious ? 'block' : 'none';
+  }
+
+  // This service is exclusively for Ahmadi Muslims — answering "No" here
+  // stops the application on the spot rather than letting it continue only
+  // to be rejected later, and points them to alislam.org instead.
+  function onAhmadiChange(){
+    const notAhmadi = document.querySelector('input[name="isAhmadi"]:checked')?.value === 'No';
+    document.getElementById('ahmadiNotEligible').style.display = notAhmadi ? 'block' : 'none';
+    document.getElementById('ahmadiEligibleFields').style.display = notAhmadi ? 'none' : 'block';
+    document.getElementById('step3ContinueBtn').style.display = notAhmadi ? 'none' : '';
+    clearStepError(3);
   }
 
   function collectProfileFields(){
