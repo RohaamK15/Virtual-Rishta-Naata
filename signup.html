@@ -96,22 +96,6 @@
 </nav>
 
 <main class="wizard-wrap">
-  <!-- Google Play's payments policy requires Play Billing for any purchase
-       that unlocks in-app content — creating a profile here ends in a paid
-       subscription, so on native builds this sends people to complete
-       signup on the website instead (same pattern as the Kindle/Audible
-       Android apps), rather than risk rejection for an in-app Stripe
-       checkout. Toggled by vrnGateNativeSignup() below, before anything
-       else on this page runs. -->
-  <div id="nativeRedirectPanel" style="display:none;text-align:center;padding:60px 0;">
-    <img src="/assets/img/logo-icon.png" alt="" style="height:48px;width:auto;margin-bottom:24px;">
-    <h2>Create Your Profile on Our Website</h2>
-    <p class="step-desc" style="max-width:420px;margin:14px auto 0;">To create a profile and subscribe, please continue on our website. Once you're set up, come straight back here to log in.</p>
-    <button type="button" class="btn btn-primary btn-block" style="margin-top:28px;max-width:320px;margin-left:auto;margin-right:auto;" onclick="vrnOpenWebsiteSignup()">Continue on Website</button>
-    <a href="/home.html" class="btn btn-outline btn-block" style="margin-top:12px;max-width:320px;margin-left:auto;margin-right:auto;">Back to Home</a>
-  </div>
-
-  <div id="wizardWrap">
   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
   <div class="progress-label"><span id="stepLabel">Step 1 of 8</span><span id="stepName">Basics</span></div>
 
@@ -429,7 +413,6 @@
     </div>
 
   </form>
-  </div>
 </main>
 
 <script src="/assets/js/app.js"></script>
@@ -442,29 +425,6 @@
 <script src="/assets/js/emailjs-config.js"></script>
 <script>
   emailjs.init({ publicKey: window.EMAILJS_CONFIG.publicKey });
-
-  // Google Play requires Play Billing for purchases that unlock in-app
-  // content, and creating a profile here always ends in a paid subscription
-  // — so on native builds, replace the wizard with a link out to finish
-  // signup on the website instead, rather than risk rejection for an in-app
-  // Stripe checkout. Runs synchronously, before anything else on this page,
-  // so the wizard is never even shown momentarily on native.
-  function vrnGateNativeSignup(){
-    if (!window.Capacitor?.isNativePlatform?.()) return false;
-    document.getElementById('wizardWrap').style.display = 'none';
-    document.getElementById('nativeRedirectPanel').style.display = 'block';
-    return true;
-  }
-  function vrnOpenWebsiteSignup(){
-    const url = 'https://virtual-rishta-naata.vercel.app/signup.html';
-    if (window.Capacitor?.Plugins?.Browser) {
-      window.Capacitor.Plugins.Browser.open({ url });
-    } else {
-      window.location.href = url;
-    }
-  }
-  const vrnNativeSignupBlocked = vrnGateNativeSignup();
-
   // One profile per account: if someone already signed up and is still logged
   // in, send them to their account instead of letting the wizard create a
   // second, separate profile.
