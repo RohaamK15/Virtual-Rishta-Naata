@@ -95,15 +95,26 @@ The admin dashboard and payments run through small server-side functions in
    declares a verified App Link intent-filter for `virtual-rishta-naata.vercel.app`,
    which Android only trusts once `/.well-known/assetlinks.json` (served from
    that same domain) lists the app's signing certificate fingerprint. That
-   file currently lists only the debug keystore's fingerprint (get it with
+   file currently lists the debug keystore's fingerprint (get it with
    `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey
-   -storepass android -keypass android`, look for `SHA256:`). **Before
-   publishing a release build (Play Store or a self-signed release APK), add
-   that build's SHA256 cert fingerprint as an additional entry in
-   `sha256_cert_fingerprints`** — otherwise the App Link (and the whole
-   "return to app after payment" flow) will silently stop working for anyone
-   using the release build. If the domain ever changes, update both the
-   `APP_URL` secret and the `android:host` values in the manifest to match.
+   -storepass android -keypass android`, look for `SHA256:`) and the release
+   upload key's fingerprint (`android/vrn-release.keystore`, alias
+   `vrn-upload` — same `keytool -list -v` command against that file instead).
+
+   **Play App Signing adds a third fingerprint you won't have until after the
+   first Play Console upload.** For any app enrolled in Play App Signing
+   (mandatory for new apps since 2021), Google strips the upload key's
+   signature and re-signs the app with its own managed key before it ever
+   reaches a real user's device — so the fingerprint that actually matters
+   for anyone who installed the app from the Play Store is Google's, not the
+   upload key's. After the first successful upload, go to Play Console →
+   your app → **Setup → App Integrity → App signing key certificate**, copy
+   its SHA-256, and add it as a third entry in `sha256_cert_fingerprints`.
+   Until that's done, the Stripe-return App Link will only work for
+   internal/sideloaded builds signed directly with the upload key, not for
+   anyone who actually installed the app from the Play Store. If the domain
+   ever changes, update both the `APP_URL` secret and the `android:host`
+   values in the manifest to match.
 
 ## 4. Firebase (push notifications for new chat messages — Android first)
 

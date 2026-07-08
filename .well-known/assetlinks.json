@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.virtualrishtanaata.app",
       "sha256_cert_fingerprints": [
-        "5B:94:2C:29:A2:F9:C9:94:EA:11:8B:9B:E6:B5:C2:F0:E5:41:9A:D6:93:3D:69:D1:B7:B4:F6:37:61:AF:94:21"
+        "5B:94:2C:29:A2:F9:C9:94:EA:11:8B:9B:E6:B5:C2:F0:E5:41:9A:D6:93:3D:69:D1:B7:B4:F6:37:61:AF:94:21",
+        "D1:9A:6D:85:9B:85:43:EB:BA:A4:E9:A8:91:D3:01:2A:DB:25:F6:97:19:A0:31:15:60:3A:88:E5:08:3D:F3:D8"
       ]
     }
   }
