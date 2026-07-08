@@ -23,6 +23,7 @@ android/app/*firebase-adminsdk*.json
 # losing the ability to publish updates to the app under the same listing.
 *.keystore
 *.jks
+android/keystore.properties
 
 # Android build artifacts (keep the project files, ignore generated output)
 android/app/build/
