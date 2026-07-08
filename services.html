@@ -192,6 +192,15 @@
           <p style="margin-top:14px;color:rgba(255,249,242,.75);">A one-to-one session with a neutral facilitator, for any part of the process — honest, private, and focused entirely on you, at £35 per session. Fill in the form and you'll be taken straight to secure payment; we'll reply by email within one working day to arrange a time.</p>
         </div>
         <div>
+          <!-- Google Play requires Play Billing for purchases that unlock
+               in-app content — booking here ends in a paid Stripe checkout,
+               so on native builds this links out to book on the website
+               instead, rather than risk rejection for an in-app checkout.
+               Toggled by vrnGateNativeConsult() below. -->
+          <div id="nativeConsultRedirect" style="display:none;text-align:center;padding:20px 0;">
+            <p style="color:rgba(255,249,242,.85);font-size:.95rem;line-height:1.6;">To book and pay for a consultation, please continue on our website.</p>
+            <button type="button" class="btn btn-gold btn-block" style="margin-top:20px;" onclick="vrnOpenWebsiteConsult()">Continue on Website</button>
+          </div>
           <form class="consult-form" id="consultForm" onsubmit="return false;">
             <div class="field">
               <label for="consultEmail">Your Contact Email</label>
@@ -282,6 +291,25 @@
 <script src="/assets/js/auth.js"></script>
 <script>
   const CONSULT_PENDING_KEY = 'vrnConsultPending';
+
+  // See the matching gate in signup.html for the full reasoning — same
+  // Google Play payments policy applies here, since booking ends in a paid
+  // Stripe checkout.
+  function vrnGateNativeConsult(){
+    if (!window.Capacitor?.isNativePlatform?.()) return false;
+    document.getElementById('consultForm').style.display = 'none';
+    document.getElementById('nativeConsultRedirect').style.display = 'block';
+    return true;
+  }
+  function vrnOpenWebsiteConsult(){
+    const url = 'https://virtual-rishta-naata.vercel.app/services.html';
+    if (window.Capacitor?.Plugins?.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url });
+    } else {
+      window.location.href = url;
+    }
+  }
+  const vrnNativeConsultBlocked = vrnGateNativeConsult();
 
   function onConsultMemberChange(){
     const isMember = document.querySelector('input[name="consultIsMember"]:checked')?.value === 'Yes';

@@ -12,6 +12,12 @@ e2e-test-creds.json
 # Codemagic's Android build to pick it up.)
 android/app/*firebase-adminsdk*.json
 
+# Safety net for any stray credential files dropped in the project root or
+# native folders during setup — should never actually live here permanently.
+*ecret*ey*.txt
+*.pem
+*.p12
+
 # Android build artifacts (keep the project files, ignore generated output)
 android/app/build/
 android/build/
