@@ -18,6 +18,12 @@ android/app/*firebase-adminsdk*.json
 *.pem
 *.p12
 
+# Release signing keystore — permanent credential, never committed. Back this
+# up (and its password) somewhere safe outside this repo; losing it means
+# losing the ability to publish updates to the app under the same listing.
+*.keystore
+*.jks
+
 # Android build artifacts (keep the project files, ignore generated output)
 android/app/build/
 android/build/
