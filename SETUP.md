@@ -92,7 +92,7 @@ The admin dashboard and payments run through small server-side functions in
    hand off to an external app for a navigation that isn't tied to a direct
    user gesture, and Stripe's redirect fires asynchronously after the
    original "Pay" click. Instead, `android/app/src/main/AndroidManifest.xml`
-   declares a verified App Link intent-filter for `virtual-rishta-naata.vercel.app`,
+   declares a verified App Link intent-filter for `virtualrishtanaata.com`,
    which Android only trusts once `/.well-known/assetlinks.json` (served from
    that same domain) lists the app's signing certificate fingerprint. That
    file currently lists the debug keystore's fingerprint (get it with

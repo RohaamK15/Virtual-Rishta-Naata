@@ -41,9 +41,9 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="virtual-rishta-naata.vercel.app" android:pathPrefix="/signup.html" />
-                <data android:scheme="https" android:host="virtual-rishta-naata.vercel.app" android:pathPrefix="/services.html" />
-                <data android:scheme="https" android:host="virtual-rishta-naata.vercel.app" android:pathPrefix="/consultation-confirmed.html" />
+                <data android:scheme="https" android:host="virtualrishtanaata.com" android:pathPrefix="/signup.html" />
+                <data android:scheme="https" android:host="virtualrishtanaata.com" android:pathPrefix="/services.html" />
+                <data android:scheme="https" android:host="virtualrishtanaata.com" android:pathPrefix="/consultation-confirmed.html" />
             </intent-filter>
 
         </activity>
