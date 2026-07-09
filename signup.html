@@ -359,14 +359,18 @@
       <div class="field" style="margin-top:28px;">
         <div class="plan-pick">
           <label class="plan-pick-card">
-            <input type="radio" name="plan" value="monthly" checked>
+            <input type="radio" name="plan" value="monthly" checked onchange="onPlanChange()">
             <div class="box"><span class="eyebrow eyebrow--green">Monthly</span><div class="amt">£10<span style="font-family:'Lato',sans-serif;font-size:.85rem;color:var(--ink-soft);">/mo</span></div></div>
           </label>
           <label class="plan-pick-card">
-            <input type="radio" name="plan" value="annual">
+            <input type="radio" name="plan" value="annual" onchange="onPlanChange()">
             <div class="box"><span class="eyebrow eyebrow--green">Annual</span><div class="amt">£100<span style="font-family:'Lato',sans-serif;font-size:.85rem;color:var(--ink-soft);">/yr</span></div></div>
           </label>
         </div>
+      </div>
+      <div class="photo-note">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 15h4"/></svg>
+        <span id="planRenewalNote">A membership is required to browse profiles and message other members. You'll be charged £10 today and every month after that, until you cancel — cancel anytime from your Account page.</span>
       </div>
       <div class="photo-note">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 15h4"/></svg>
@@ -607,6 +611,18 @@
   function onPreviousChange(){
     const hadPrevious = document.querySelector('input[name="hadPrevious"]:checked')?.value === 'Yes';
     document.getElementById('previousDetailsFields').style.display = hadPrevious ? 'block' : 'none';
+  }
+
+  // Google Play (and basic consumer-protection practice) requires renewal
+  // terms to be visible at the point of purchase itself, not just buried in
+  // a separate FAQ — this updates to match whichever plan is selected so the
+  // real billing terms are shown right next to the price, every time.
+  function onPlanChange(){
+    const plan = document.querySelector('input[name="plan"]:checked')?.value || 'monthly';
+    const note = document.getElementById('planRenewalNote');
+    note.textContent = plan === 'annual'
+      ? "A membership is required to browse profiles and message other members. You'll be charged £100 today and every year after that, until you cancel — cancel anytime from your Account page."
+      : "A membership is required to browse profiles and message other members. You'll be charged £10 today and every month after that, until you cancel — cancel anytime from your Account page.";
   }
 
   // This service is exclusively for Ahmadi Muslims — answering "No" here
