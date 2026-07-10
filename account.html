@@ -116,6 +116,13 @@
     </div>
 
     <div>
+      <div class="side-card" data-reveal id="profileStatusCard">
+        <h4>Profile Status</h4>
+        <p id="profile-status-badge" style="font-size:.82rem;margin-bottom:10px;"></p>
+        <p id="profile-rejection-note" style="display:none;font-size:.82rem;color:#A85A3E;margin-bottom:14px;"></p>
+        <p id="profile-resubmit-note" style="display:none;font-size:.82rem;color:var(--ink-soft);margin-bottom:14px;">Make the changes below and your profile will automatically be resubmitted for review — no need to pay again or start over.</p>
+        <a href="/edit-profile.html" id="profileEditCta" style="display:none;" class="btn btn-outline btn-sm btn-block">Edit Your Profile</a>
+      </div>
       <div class="side-card" data-reveal id="photoCard" style="display:none;">
         <h4>Your Photo</h4>
         <img id="photo-preview" style="display:none;max-width:100%;max-height:400px;width:auto;height:auto;border-radius:var(--radius-m);margin-bottom:14px;" alt="Your profile photo">
@@ -230,6 +237,31 @@
         avatar.src = signedPhotoUrl;
         avatar.style.display = 'block';
       }
+    }
+
+    const PROFILE_STATUS_COPY = {
+      pending: { text: '🕐 Pending review — you\'ll be able to browse and message once your profile is approved.', color: 'var(--gold)' },
+      approved: { text: '✓ Approved — you have full access to browse and message other members.', color: 'var(--green)' },
+      rejected: { text: '✕ Not approved.', color: '#A85A3E' },
+    };
+    const profileStatusInfo = PROFILE_STATUS_COPY[p.profile_status];
+    document.getElementById('profile-status-badge').textContent = profileStatusInfo ? profileStatusInfo.text : '';
+    document.getElementById('profile-status-badge').style.color = profileStatusInfo ? profileStatusInfo.color : 'var(--ink-soft)';
+
+    const profileRejectionNote = document.getElementById('profile-rejection-note');
+    const profileResubmitNote = document.getElementById('profile-resubmit-note');
+    const profileEditCta = document.getElementById('profileEditCta');
+    if (p.profile_status === 'rejected') {
+      if (p.profile_rejection_reason) {
+        profileRejectionNote.textContent = `Reason: ${p.profile_rejection_reason}`;
+        profileRejectionNote.style.display = 'block';
+      }
+      profileResubmitNote.style.display = 'block';
+      profileEditCta.style.display = 'block';
+    } else {
+      profileRejectionNote.style.display = 'none';
+      profileResubmitNote.style.display = 'none';
+      profileEditCta.style.display = 'none';
     }
 
     document.getElementById('photoCard').style.display = 'block';

@@ -103,6 +103,14 @@
       return;
     }
 
+    if (me.profile_status !== 'approved') {
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('emptyState').innerHTML = me.profile_status === 'rejected'
+        ? `<p>Your profile wasn't approved${me.profile_rejection_reason ? ': ' + escapeHtml(me.profile_rejection_reason) : '.'} <a href="/account.html">View details and edit your profile</a></p>`
+        : `<p>Your profile is pending review. You'll be able to message once it's approved. <a href="/account.html">Check your status</a></p>`;
+      return;
+    }
+
     const { data: convos, error } = await sb.from('conversations')
       .select('id, member_a, member_b, last_message_at')
       .order('last_message_at', { ascending: false });

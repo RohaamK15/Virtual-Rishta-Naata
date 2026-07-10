@@ -189,7 +189,10 @@
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
 <script>
-  vrnRequireAuth();
+  (async () => {
+    await vrnRequireAuth();
+    await vrnRequireApprovedProfile();
+  })();
 </script>
 <script>
   // Every profile field below is free text someone typed during signup — it

@@ -37,6 +37,16 @@ create table if not exists public.profiles (
   -- is never shown to other members — see get-profile-photo.
   photo_status text check (photo_status in ('pending','approved','rejected')),
   photo_rejection_reason text,
+  -- Whole-profile moderation, independent of photo_status. Starts 'pending' the
+  -- moment a profile is created (see stripe-webhook) and is reset back to
+  -- 'pending' automatically whenever any member-editable content field changes
+  -- (see trg_reset_profile_status below) — same reasoning as photo_status:
+  -- members never get direct write access, only admins via admin-review-profile.
+  -- Gates search visibility (profiles_select_active_members) AND the member's
+  -- own ability to browse/message/block/report (is_active_member()) — an
+  -- unapproved profile can't use those features either, not just be hidden.
+  profile_status text not null default 'pending' check (profile_status in ('pending','approved','rejected')),
+  profile_rejection_reason text,
   plan text check (plan in ('monthly','annual')),
   subscription_status text not null default 'pending' check (subscription_status in ('pending','active','cancelled','past_due')),
   stripe_customer_id text,
@@ -117,6 +127,39 @@ create trigger trg_reset_photo_status
   before update on public.profiles
   for each row execute function public.reset_photo_status_on_change();
 
+-- Same idea as reset_photo_status_on_change, but for the whole profile: any
+-- change to a field actually shown to other members sends it back to
+-- 'pending' for re-review. Deliberately excludes contact_email (private,
+-- never shown to other members), has_photo/photo_path (governed by the photo
+-- trigger above), and chat_guidelines_accepted_at/push_token/push_platform
+-- (operational metadata, not profile content — must never affect visibility).
+create or replace function public.reset_profile_status_on_change()
+returns trigger
+language plpgsql
+as $$
+begin
+  if (new.gender, new.age, new.height, new.qualifications, new.employment, new.residential_status,
+      new.city, new.county, new.country, new.is_ahmadi, new.local_jamaat, new.had_previous,
+      new.previous_type, new.previous_duration, new.has_children, new.preference_line,
+      new.country_looking_in, new.consider_pakistan, new.additional_note, new.about)
+     is distinct from
+     (old.gender, old.age, old.height, old.qualifications, old.employment, old.residential_status,
+      old.city, old.county, old.country, old.is_ahmadi, old.local_jamaat, old.had_previous,
+      old.previous_type, old.previous_duration, old.has_children, old.preference_line,
+      old.country_looking_in, old.consider_pakistan, old.additional_note, old.about)
+  then
+    new.profile_status := 'pending';
+    new.profile_rejection_reason := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_reset_profile_status on public.profiles;
+create trigger trg_reset_profile_status
+  before update on public.profiles
+  for each row execute function public.reset_profile_status_on_change();
+
 -- ============================================================
 -- 3. ROW LEVEL SECURITY POLICIES
 -- ============================================================
@@ -174,7 +217,7 @@ grant select (
   city, county, country, is_ahmadi, local_jamaat, had_previous, previous_type,
   previous_duration, has_children, preference_line, country_looking_in,
   consider_pakistan, additional_note, about, has_photo, photo_path,
-  photo_status, photo_rejection_reason,
+  photo_status, photo_rejection_reason, profile_status, profile_rejection_reason,
   plan, subscription_status, is_admin, chat_guidelines_accepted_at, created_at
 ) on public.profiles to authenticated;
 
@@ -186,6 +229,9 @@ grant select (
 -- on `profiles` that queries `profiles` again triggers the same policy for
 -- that inner query too, which recurses infinitely. A security definer
 -- function owned by the table owner bypasses RLS for just that inner lookup.
+-- Requires profile_status = 'approved' as well as an active subscription: a
+-- member whose own profile hasn't cleared review yet can't use paid features
+-- (browse, message, block, report) either — not just be hidden from others.
 create or replace function public.is_active_member()
 returns boolean
 language sql
@@ -194,7 +240,8 @@ set search_path = public
 stable
 as $$
   select exists (
-    select 1 from public.profiles where id = auth.uid() and subscription_status = 'active'
+    select 1 from public.profiles
+    where id = auth.uid() and subscription_status = 'active' and profile_status = 'approved'
   );
 $$;
 
@@ -228,7 +275,7 @@ $$;
 
 create policy "profiles_select_active_members" on public.profiles
   for select using (
-    subscription_status = 'active' and public.is_active_member()
+    subscription_status = 'active' and profile_status = 'approved' and public.is_active_member()
     and not public.is_blocked_pair(auth.uid(), id)
   );
 

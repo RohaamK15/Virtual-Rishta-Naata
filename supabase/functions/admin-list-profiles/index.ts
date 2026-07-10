@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
     const { admin } = await requireAdmin(req);
     const { data, error } = await admin
       .from("profiles")
-      .select("ref_code, gender, age, city, county, country, country_looking_in, contact_email, subscription_status, plan, created_at")
+      .select("id, ref_code, gender, age, city, county, country, country_looking_in, contact_email, subscription_status, profile_status, plan, created_at")
       .order("created_at", { ascending: false });
     if (error) throw error;
 

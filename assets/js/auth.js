@@ -44,6 +44,22 @@ async function vrnRequireAuth() {
   return user;
 }
 
+// Call after vrnRequireAuth() on any page needing full paid-feature access
+// (search, messages, chat). Without this, a pending/rejected member would
+// land on search.html and just silently see "0 profiles found" — RLS returns
+// an empty set, not an error, since is_active_member() now also requires
+// profile_status = 'approved'. Sends them to account.html instead, which
+// explains their status and, if rejected, links to edit-profile.html to fix
+// and automatically resubmit.
+async function vrnRequireApprovedProfile() {
+  const profile = await vrnMyProfile();
+  if (!profile || profile.profile_status !== "approved") {
+    window.location.href = "/account.html";
+    return null;
+  }
+  return profile;
+}
+
 // Postgres requires SELECT * to have table-wide privilege — with only the
 // column-level grant in schema.sql (contact_email and the Stripe IDs are
 // deliberately excluded from it), a bare select("*") fails outright with
@@ -55,6 +71,7 @@ const PROFILE_COLUMNS = [
   "had_previous", "previous_type", "previous_duration", "has_children",
   "preference_line", "country_looking_in", "consider_pakistan", "additional_note",
   "about", "has_photo", "photo_path", "photo_status", "photo_rejection_reason",
+  "profile_status", "profile_rejection_reason",
   "plan", "subscription_status", "is_admin", "chat_guidelines_accepted_at", "created_at",
 ].join(", ");
 

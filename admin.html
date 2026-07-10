@@ -136,6 +136,14 @@
       <div id="notifList"></div>
     </div>
 
+    <div class="panel" id="profileReview" data-reveal>
+      <div class="panel-head">
+        <h3>Profile Review</h3>
+        <span style="font-size:.78rem;color:var(--ink-soft);">New or edited profiles wait here until approved — never shown in search before that</span>
+      </div>
+      <div id="profileReviewList" style="display:grid;gap:16px;padding:20px 24px;"></div>
+    </div>
+
     <div class="panel" id="photoReview" data-reveal>
       <div class="panel-head">
         <h3>Photo Review</h3>
@@ -255,6 +263,50 @@
     loadFlaggedMessages();
     loadReportedProfiles();
     loadPendingPhotos();
+    loadPendingProfiles();
+  }
+
+  async function loadPendingProfiles(){
+    const list = document.getElementById('profileReviewList');
+    list.innerHTML = `<p style="padding:10px;color:var(--ink-soft);">Loading…</p>`;
+    try {
+      const { data, error } = await sb.functions.invoke('admin-list-pending-profiles');
+      if (error) throw error;
+      list.innerHTML = data.profiles.map(p => `
+        <div style="background:var(--beige);border-radius:var(--radius-m);padding:18px 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <strong>${p.ref_code}</strong>
+            <span style="font-size:.8rem;color:var(--ink-soft);">${p.gender}, ${p.age} · ${escapeHtml(p.city || '')}${p.city ? ', ' : ''}${escapeHtml(p.country || '')}</span>
+          </div>
+          <div style="font-size:.86rem;color:var(--ink-soft);display:grid;gap:6px;margin-bottom:14px;">
+            ${p.local_jamaat ? `<div><strong>Jamaat:</strong> ${escapeHtml(p.local_jamaat)}</div>` : ''}
+            ${p.preference_line ? `<div><strong>Preference:</strong> ${escapeHtml(p.preference_line)}</div>` : ''}
+            ${p.about ? `<div><strong>About:</strong> ${escapeHtml(p.about)}</div>` : ''}
+            ${p.additional_note ? `<div><strong>Additional note:</strong> ${escapeHtml(p.additional_note)}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','approve')">Approve</button>
+            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','reject')">Reject</button>
+          </div>
+        </div>
+      `).join('') || `<p style="padding:10px;color:var(--ink-soft);">No profiles waiting for review.</p>`;
+    } catch (err) {
+      list.innerHTML = `<p style="padding:10px;color:#A85A3E;">Couldn't load pending profiles (${await vrnFunctionErrorMessage(err)}).</p>`;
+    }
+  }
+
+  async function reviewProfileFull(profileId, action){
+    let reason = null;
+    if (action === 'reject') {
+      reason = prompt('Optional: reason to show the member (e.g. "Please tell us more about yourself in the About section")') || undefined;
+    }
+    try {
+      const { error } = await sb.functions.invoke('admin-review-profile', { body: { profile_id: profileId, action, reason } });
+      if (error) throw error;
+      await loadPendingProfiles();
+    } catch (err) {
+      alert('Could not review this profile: ' + await vrnFunctionErrorMessage(err));
+    }
   }
 
   async function loadPendingPhotos(){
@@ -397,7 +449,7 @@
         <td>${escapeHtml(p.country_looking_in) || '—'}</td>
         <td>${escapeHtml(p.contact_email)}</td>
         <td>${new Date(p.created_at).toLocaleDateString('en-GB')}</td>
-        <td><span class="status-pill">${p.subscription_status}</span></td>
+        <td><span class="status-pill">${p.subscription_status}</span> <span class="status-pill" style="background:var(--gold-soft);color:#8A6A2E;">${p.profile_status}</span></td>
         <td>
           <div class="row-actions">
             <button class="action-btn" title="View full record" onclick="openProfile('${p.ref_code}')">
