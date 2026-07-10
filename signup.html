@@ -477,15 +477,6 @@
   vrnPopulateCountrySelect(document.getElementById('countryLookingIn'), { placeholder: 'Select a country', anyLabel: 'Any Country', exclude: ['Pakistan'] });
   vrnWireCountryOther(document.getElementById('countryLookingIn'), document.getElementById('countryLookingInOther'));
 
-  function vrnTogglePasswordVisibility(btn){
-    const input = document.getElementById(btn.dataset.target);
-    const isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
-    btn.querySelector('.eye-open').style.display = isHidden ? 'none' : '';
-    btn.querySelector('.eye-closed').style.display = isHidden ? '' : 'none';
-    btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
-  }
-
   document.getElementById('photoInput').addEventListener('change', async (e) => {
     selectedPhotoFile = e.target.files[0] || null;
     if (!selectedPhotoFile) return;

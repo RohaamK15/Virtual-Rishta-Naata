@@ -1,3 +1,16 @@
+// Shared show/hide toggle for any password field wrapped in a
+// .password-field with a .password-toggle button (see styles.css). Used on
+// login, signup, and reset-password — kept in one place so all three stay
+// in sync instead of drifting copies.
+function vrnTogglePasswordVisibility(btn) {
+  const input = document.getElementById(btn.dataset.target);
+  const isHidden = input.type === "password";
+  input.type = isHidden ? "text" : "password";
+  btn.querySelector(".eye-open").style.display = isHidden ? "none" : "";
+  btn.querySelector(".eye-closed").style.display = isHidden ? "" : "none";
+  btn.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+}
+
 // The profile detail view displays photos in a fixed 4:5 portrait frame
 // (object-fit:cover) — a landscape or square photo gets cropped down to a
 // tiny sliver of itself to fill that shape, which is exactly the "you can
