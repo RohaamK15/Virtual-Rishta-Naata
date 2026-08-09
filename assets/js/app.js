@@ -123,9 +123,11 @@ async function vrnToggleTheme() {
 document.addEventListener('DOMContentLoaded', () => {
   // The inline anti-flash script in <head> already set data-theme from the
   // cookie before first paint — this just syncs the toggle button icon(s)
-  // to match, since the buttons didn't exist yet when that script ran.
+  // to match, since the buttons didn't exist yet when that script ran. Every
+  // .theme-toggle button already has its own inline onclick="vrnToggleTheme()"
+  // — don't also addEventListener here, or a real click fires the toggle
+  // twice (once per handler) and cancels itself out.
   vrnApplyTheme(document.documentElement.getAttribute('data-theme') || 'light');
-  document.querySelectorAll('.theme-toggle').forEach((btn) => btn.addEventListener('click', vrnToggleTheme));
 
   const toggle = document.querySelector('.nav-toggle');
   const menu = document.querySelector('.mobile-menu');
