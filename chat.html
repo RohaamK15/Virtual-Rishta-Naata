@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FFF9F2">
 <link rel="icon" type="image/png" href="/assets/img/favicon.png">
 <title>Chat — Virtual Rishta Naata</title>
 <link rel="stylesheet" href="/assets/css/styles.css">
-<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m)document.documentElement.setAttribute("data-theme",m[1]);})();</script>
+<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
 <style>
   html,body{height:100%;}
   body{display:flex;flex-direction:column;background:var(--beige);overflow:hidden;}
@@ -20,7 +21,7 @@
   .msg-row.mine .msg-col{align-items:flex-end;}
   .msg-col{display:flex;flex-direction:column;max-width:75%;}
   .msg-bubble{padding:11px 16px;border-radius:16px;font-size:.9rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
-  .msg-row.mine .msg-bubble{background:var(--green-2);color:var(--ivory);border-bottom-right-radius:4px;}
+  .msg-row.mine .msg-bubble{background:var(--green-2);color:var(--on-dark);border-bottom-right-radius:4px;}
   .msg-row.theirs .msg-bubble{background:var(--surface);color:var(--ink);border-bottom-left-radius:4px;box-shadow:var(--shadow-1);}
   .msg-meta{display:flex;gap:8px;align-items:center;font-size:.68rem;color:var(--ink-soft);margin-top:4px;padding:0 2px;}
   .msg-flag-btn{font-size:.68rem;color:var(--ink-soft);text-decoration:underline;background:none;border:none;padding:0;cursor:pointer;}

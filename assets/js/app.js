@@ -85,14 +85,20 @@ function vrnDownscaleImage(file, maxDimension = 1600, quality = 0.85) {
 // toggle icons afterward), since app.js itself loads too late to avoid a
 // flash of the wrong theme.
 function vrnApplyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+  const isDark = theme === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   document.querySelectorAll('.theme-toggle').forEach((btn) => {
-    const isDark = theme === 'dark';
     const light = btn.querySelector('.theme-icon-light');
     const dark = btn.querySelector('.theme-icon-dark');
     if (light) light.style.display = isDark ? 'none' : '';
     if (dark) dark.style.display = isDark ? '' : 'none';
   });
+  // Keeps the browser's own UI (mobile Chrome's address bar, the task
+  // switcher card background) matching the page instead of staying stuck
+  // light — the <head> anti-flash script sets this same value before first
+  // paint; this just keeps it in sync after a toggle.
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeColorMeta) themeColorMeta.setAttribute('content', isDark ? '#100E0B' : '#FFF9F2');
 }
 
 function vrnGetStoredTheme() {

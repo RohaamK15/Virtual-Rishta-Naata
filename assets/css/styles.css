@@ -31,6 +31,11 @@
   --warn-strong-text: #FBEDE7;
   --gold-gradient: #D4AF69;
   --surface-translucent: rgba(255,249,242,.92);
+  /* Fixed regardless of theme — for text/icons on surfaces that are always
+     dark green (footer, mobile nav, chat bubbles, admin sidebar, hero
+     bands) in both light and dark mode, unlike --ivory which is the page
+     background and DOES flip. Never override this in [data-theme="dark"]. */
+  --on-dark: #FFF9F2;
 
   --radius-s: 10px;
   --radius-m: 18px;
@@ -184,7 +189,7 @@ section{position:relative;}
 .btn:active{transform:scale(.97);}
 
 .btn-primary{
-  background:var(--green);color:var(--ivory);
+  background:var(--green);color:var(--on-dark);
   box-shadow:var(--shadow-2);
 }
 .btn-primary:hover{background:var(--green-2);transform:translateY(-2px);box-shadow:var(--shadow-3);}
@@ -203,8 +208,8 @@ section{position:relative;}
 .btn-outline:hover{border-color:var(--green);background:rgba(19,75,53,.05);transform:translateY(-2px);}
 .btn-outline:focus-visible{outline:2px solid var(--green);outline-offset:3px;}
 
-.btn-ghost{background:transparent;color:var(--ivory);border-color:rgba(255,249,242,.4);}
-.btn-ghost:hover{background:rgba(255,249,242,.12);border-color:var(--ivory);}
+.btn-ghost{background:transparent;color:var(--on-dark);border-color:rgba(255,249,242,.4);}
+.btn-ghost:hover{background:rgba(255,249,242,.12);border-color:var(--on-dark);}
 
 .btn-sm{padding:10px 20px;font-size:.76rem;}
 .btn-block{width:100%;}
@@ -273,13 +278,13 @@ input:focus,select:focus,textarea:focus{
   color:var(--ink-soft);transition:all .25s var(--ease-out);
 }
 .radio-pill:hover{border-color:var(--green);}
-.radio-pill:has(input:checked){background:var(--green);border-color:var(--green);color:var(--ivory);}
+.radio-pill:has(input:checked){background:var(--green);border-color:var(--green);color:var(--on-dark);}
 .radio-pill:has(input:focus-visible){outline:2px solid var(--gold);outline-offset:2px;}
 
 /* ---------- nav ---------- */
 .site-nav{
   position:sticky;top:0;z-index:50;
-  background:rgba(255,249,242,.88);backdrop-filter:blur(10px);
+  background:var(--surface-translucent);backdrop-filter:blur(10px);
   border-bottom:1px solid rgba(19,75,53,.08);
 }
 .site-nav .wrap{display:flex;align-items:center;justify-content:space-between;height:78px;}
@@ -306,7 +311,7 @@ input:focus,select:focus,textarea:focus{
 .nav-user-chip{display:flex;align-items:center;gap:9px;padding:5px 14px 5px 6px;border-radius:999px;background:var(--green-soft);transition:background .2s;}
 .nav-user-chip:hover{background:rgba(19,75,53,.14);}
 .nav-user-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;}
-.nav-user-avatar--placeholder{display:flex;align-items:center;justify-content:center;background:var(--green);color:var(--ivory);}
+.nav-user-avatar--placeholder{display:flex;align-items:center;justify-content:center;background:var(--green);color:var(--on-dark);}
 .nav-user-ref{font-family:'Montserrat',sans-serif;font-weight:700;font-size:.8rem;color:var(--green);white-space:nowrap;}
 
 .nav-toggle{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--green);}
@@ -325,15 +330,15 @@ input:focus,select:focus,textarea:focus{
 .mobile-menu.open{transform:translateX(0);}
 .mobile-menu-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:48px;}
 .mobile-menu a{
-  font-family:'Cinzel',serif;color:var(--ivory);font-size:1.5rem;padding:16px 0;
+  font-family:'Cinzel',serif;color:var(--on-dark);font-size:1.5rem;padding:16px 0;
   border-bottom:1px solid rgba(255,249,242,.12);
 }
-.mobile-menu-close{background:none;border:none;color:var(--ivory);cursor:pointer;padding:8px;}
+.mobile-menu-close{background:none;border:none;color:var(--on-dark);cursor:pointer;padding:8px;}
 
 /* ---------- app shell (bottom tab bar) ---------- */
 .app-bottom-nav{
   position:fixed;left:0;right:0;bottom:0;z-index:60;
-  background:rgba(255,249,242,.94);backdrop-filter:blur(14px);
+  background:var(--surface-translucent);backdrop-filter:blur(14px);
   border-top:1px solid rgba(19,75,53,.1);
   display:flex;justify-content:space-around;padding:10px 8px calc(10px + env(safe-area-inset-bottom));
   box-shadow:0 -8px 24px rgba(19,75,53,.06);

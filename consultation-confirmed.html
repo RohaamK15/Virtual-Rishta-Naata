@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FFF9F2">
 <link rel="icon" type="image/png" href="/assets/img/favicon.png">
 <title>Consultation Booked — Virtual Rishta Naata</title>
 <link rel="stylesheet" href="/assets/css/styles.css">
-<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m)document.documentElement.setAttribute("data-theme",m[1]);})();</script>
+<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
 <style>
   body{background:var(--beige);min-height:100vh;display:flex;flex-direction:column;}
   .confirm-wrap{max-width:560px;margin:0 auto;padding:60px 24px;flex:1;display:flex;align-items:center;}

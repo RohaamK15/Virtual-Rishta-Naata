@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FFF9F2">
 <link rel="icon" type="image/png" href="/assets/img/favicon.png">
 <title>Terms of Use — Virtual Rishta Naata</title>
 <link rel="stylesheet" href="/assets/css/styles.css">
-<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m)document.documentElement.setAttribute("data-theme",m[1]);})();</script>
+<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
 <style>
   .page-hero{padding:60px 0 50px;text-align:center;background:linear-gradient(160deg,var(--beige),var(--ivory));}
   .page-hero h1{margin-top:14px;}
@@ -199,12 +200,12 @@
       <div>
         <div class="brand" style="margin-bottom:16px;">
           <img src="/assets/img/logo-icon.png" alt="">
-          <span class="brand-word" style="color:var(--ivory);">Virtual<br>Rishta Naata</span>
+          <span class="brand-word" style="color:var(--on-dark);">Virtual<br>Rishta Naata</span>
         </div>
         <p style="font-size:.86rem;max-width:280px;">Connecting Ahmadi Muslim families worldwide, anonymously and respectfully.</p>
       </div>
       <div>
-        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Platform</h4>
+        <h4 style="color:var(--on-dark);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Platform</h4>
         <div style="display:grid;gap:12px;font-size:.86rem;">
           <a href="/home.html">Home</a>
           <a href="/search.html">Browse Profiles</a>
@@ -213,7 +214,7 @@
         </div>
       </div>
       <div>
-        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Support</h4>
+        <h4 style="color:var(--on-dark);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Support</h4>
         <div style="display:grid;gap:12px;font-size:.86rem;">
           <a href="/services.html">1-1 Consultation</a>
           <a href="/login.html">Log In</a>
@@ -221,7 +222,7 @@
         </div>
       </div>
       <div>
-        <h4 style="color:var(--ivory);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Trust</h4>
+        <h4 style="color:var(--on-dark);font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;font-family:'Montserrat',sans-serif;">Trust</h4>
         <div style="display:grid;gap:12px;font-size:.86rem;">
           <a href="/privacy.html">Privacy Policy</a>
           <a href="/terms.html">Terms of Use</a>

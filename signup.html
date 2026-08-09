@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FFF9F2">
 <link rel="icon" type="image/png" href="/assets/img/favicon.png">
 <title>Create Your Profile — Virtual Rishta Naata</title>
 <link rel="stylesheet" href="/assets/css/styles.css">
-<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m)document.documentElement.setAttribute("data-theme",m[1]);})();</script>
+<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
 <style>
   body{background:var(--beige);}
   .wizard-nav{padding:22px 0;}
@@ -71,7 +72,7 @@
   .confirm-panel{text-align:center;padding:20px 0 0;}
   .ref-badge{
     display:inline-flex;flex-direction:column;align-items:center;gap:6px;
-    background:var(--green-2);color:var(--ivory);padding:28px 46px;border-radius:var(--radius-l);margin:22px 0;
+    background:var(--green-2);color:var(--on-dark);padding:28px 46px;border-radius:var(--radius-l);margin:22px 0;
     box-shadow:var(--shadow-3);
   }
   .ref-badge .code{font-family:'Cinzel',serif;font-size:2rem;letter-spacing:.08em;color:var(--gold);}
