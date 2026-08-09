@@ -1,4 +1,4 @@
-import puppeteer from "file:///C:/Users/rohaa/AppData/Local/Temp/puppeteer-test/node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js";
+import puppeteer from "puppeteer-core";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

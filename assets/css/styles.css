@@ -16,6 +16,22 @@
   --ink: #21311F;
   --ink-soft: #55604F;
 
+  --surface: #FFFFFF;
+  --error: #A85A3E;
+  --gold-ink: #8A6A2E;
+  --status-dot: #7FCB9E;
+
+  /* Warm terracotta family used by warning/boundary/disclaimer boxes
+     (guidelines, terms, child-safety, index, chat) */
+  --warn-bg: #FBF1EC;
+  --warn-text: #7A3826;
+  --warn-icon: #C0654A;
+  --warn-soft: #F0B49C;
+  --warn-strong-bg: #7A3826;
+  --warn-strong-text: #FBEDE7;
+  --gold-gradient: #D4AF69;
+  --surface-translucent: rgba(255,249,242,.92);
+
   --radius-s: 10px;
   --radius-m: 18px;
   --radius-l: 28px;
@@ -27,6 +43,47 @@
 
   --ease-spring: cubic-bezier(.34,1.56,.64,1);
   --ease-out: cubic-bezier(.16,1,.3,1);
+}
+
+/* Dark theme — a warm ink-and-gold night palette, not a desaturated gray
+   theme: green brightens/desaturates so it still reads as brand-green
+   against near-black surfaces (raw #134B35 goes muddy on dark backgrounds),
+   gold lightens slightly for contrast, and shadows switch to true black
+   since a colour-tinted shadow only reads correctly on a light surface. */
+[data-theme="dark"]{
+  --green: #2E8A63;
+  --green-2: #16332A;
+  --green-soft: #1B3A2E;
+  --gold: #D9B872;
+  --gold-soft: #3A2E17;
+  --rose: #E39C82;
+  --rose-soft: #3B2620;
+  --beige: #1C1712;
+  --ivory: #100E0B;
+  --sage: #7C9A78;
+  --chocolate: #C9A67C;
+
+  --ink: #F3ECE0;
+  --ink-soft: #B9AF9E;
+
+  --surface: #241E17;
+  --error: #E08A6C;
+  --gold-ink: #F0D9A0;
+  --status-dot: #4FAE7C;
+
+  --warn-bg: #2A2019;
+  --warn-text: #F0D9CC;
+  --warn-icon: #E8A489;
+  --warn-soft: #C97A5C;
+  --warn-strong-bg: #C97A5C;
+  --warn-strong-text: #2A1810;
+  --gold-gradient: #E8CB8F;
+  --surface-translucent: rgba(16,14,11,.9);
+
+  --shadow-1: 0 1px 2px rgba(0,0,0,.35), 0 3px 10px rgba(0,0,0,.3);
+  --shadow-2: 0 6px 16px rgba(0,0,0,.4), 0 20px 44px rgba(0,0,0,.45);
+  --shadow-3: 0 12px 28px rgba(0,0,0,.45), 0 34px 72px rgba(217,184,114,.14);
+  --shadow-gold: 0 6px 20px rgba(217,184,114,.22);
 }
 
 *{box-sizing:border-box;}
@@ -134,7 +191,7 @@ section{position:relative;}
 .btn-primary:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
 
 .btn-gold{
-  background:linear-gradient(135deg,#D4AF69,var(--gold));
+  background:linear-gradient(135deg,var(--gold-gradient),var(--gold));
   color:var(--green-2);box-shadow:var(--shadow-gold);
 }
 .btn-gold:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(197,157,82,.42);}
@@ -153,16 +210,29 @@ section{position:relative;}
 .btn-block{width:100%;}
 .btn[disabled]{opacity:.45;cursor:not-allowed;transform:none !important;}
 
+/* Shared circular icon button — used for nav actions like the theme toggle.
+   Pages with their own app-header (search/account/messages) already define
+   an equivalent .icon-btn inline; this shared version lets pages without a
+   header stylesheet of their own (site-nav marketing pages, admin, chat,
+   wizard) use the same control without redefining it each time. */
+.icon-btn{
+  width:42px;height:42px;border-radius:50%;background:var(--surface);border:1px solid rgba(19,75,53,.14);
+  display:inline-flex;align-items:center;justify-content:center;color:var(--green);cursor:pointer;box-shadow:var(--shadow-1);
+  transition:transform .25s var(--ease-out), border-color .25s var(--ease-out);
+}
+.icon-btn:hover{border-color:var(--green);transform:translateY(-1px);}
+.icon-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+
 /* ---------- cards ---------- */
 .card{
-  background:#fff;border-radius:var(--radius-m);box-shadow:var(--shadow-1);
+  background:var(--surface);border-radius:var(--radius-m);box-shadow:var(--shadow-1);
   transition:transform .4s var(--ease-spring), box-shadow .4s var(--ease-out);
 }
 .card:hover{transform:translateY(-4px);box-shadow:var(--shadow-2);}
 
-.surface{background:#fff;border-radius:var(--radius-m);box-shadow:var(--shadow-1);}
-.surface-elevated{background:#fff;border-radius:var(--radius-m);box-shadow:var(--shadow-2);}
-.surface-floating{background:#fff;border-radius:var(--radius-l);box-shadow:var(--shadow-3);}
+.surface{background:var(--surface);border-radius:var(--radius-m);box-shadow:var(--shadow-1);}
+.surface-elevated{background:var(--surface);border-radius:var(--radius-m);box-shadow:var(--shadow-2);}
+.surface-floating{background:var(--surface);border-radius:var(--radius-l);box-shadow:var(--shadow-3);}
 
 /* ---------- forms ---------- */
 label{
@@ -304,8 +374,8 @@ input:focus,select:focus,textarea:focus{
   padding:5px 12px;border-radius:999px;text-transform:uppercase;
 }
 .badge-m{background:var(--green-soft);color:var(--green);}
-.badge-f{background:var(--rose-soft);color:#A85A3E;}
-.badge-gold{background:var(--gold-soft);color:#8A6A2E;}
+.badge-f{background:var(--rose-soft);color:var(--error);}
+.badge-gold{background:var(--gold-soft);color:var(--gold-ink);}
 
 /* ---------- animations ---------- */
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}

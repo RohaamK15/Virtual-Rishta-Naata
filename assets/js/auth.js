@@ -12,6 +12,42 @@ async function vrnSignIn(email, password) {
   return data.user;
 }
 
+// Entry point from login.html's "Continue with Google" button — reachable
+// while signed out. Google sign-in here is scoped to EXISTING paying members
+// only: Supabase's signInWithOAuth will happily create a brand-new auth user
+// for anyone, even someone who's never signed up, so it's auth-callback.html
+// (the redirectTo target) that guards against that ever becoming real access
+// — no matching active + approved profile there means an immediate sign-out.
+async function vrnSignInWithGoogle() {
+  const { data, error } = await sb.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}/auth-callback.html` },
+  });
+  if (error) throw error;
+  if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins?.Browser) {
+    await window.Capacitor.Plugins.Browser.open({ url: data.url });
+  } else {
+    window.location.href = data.url;
+  }
+}
+
+// Only ever called from account.html, by a member who is ALREADY signed in
+// with email/password — this links a Google identity onto their EXISTING
+// auth user so they can use either to log in from then on. Requires "Manual
+// Linking" to be enabled in Supabase Dashboard > Authentication > Settings.
+async function vrnLinkGoogleIdentity() {
+  const { data, error } = await sb.auth.linkIdentity({
+    provider: "google",
+    options: { redirectTo: `${window.location.origin}/account.html?googleLinked=1` },
+  });
+  if (error) throw error;
+  if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins?.Browser) {
+    await window.Capacitor.Plugins.Browser.open({ url: data.url });
+  } else {
+    window.location.href = data.url;
+  }
+}
+
 async function vrnRequestPasswordReset(email) {
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/reset-password.html`,
@@ -72,7 +108,8 @@ const PROFILE_COLUMNS = [
   "preference_line", "country_looking_in", "consider_pakistan", "additional_note",
   "about", "has_photo", "photo_path", "photo_status", "photo_rejection_reason",
   "profile_status", "profile_rejection_reason",
-  "plan", "subscription_status", "is_admin", "chat_guidelines_accepted_at", "created_at",
+  "plan", "subscription_status", "is_admin", "chat_guidelines_accepted_at",
+  "onboarding_completed_at", "theme_preference", "created_at",
 ].join(", ");
 
 async function vrnMyProfile() {

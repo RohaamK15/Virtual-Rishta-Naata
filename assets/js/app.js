@@ -74,8 +74,59 @@ function vrnDownscaleImage(file, maxDimension = 1600, quality = 0.85) {
   });
 }
 
+// Dark mode. Applied via a data-theme attribute on <html> (not
+// prefers-color-scheme alone) so it can be explicitly toggled regardless of
+// OS setting. Signed-out visitors get a first-party cookie, since they have
+// no profiles row yet (e.g. mid-signup, pre-payment); signed-in members also
+// get it written to profiles.theme_preference so the choice follows them
+// across devices — see the cookie-vs-DB fallback in vrnRenderNavAuthState.
+// The actual attribute-setting for first paint happens in a tiny inline
+// <script> at the top of each page's <head> (this function only re-syncs
+// toggle icons afterward), since app.js itself loads too late to avoid a
+// flash of the wrong theme.
+function vrnApplyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+  document.querySelectorAll('.theme-toggle').forEach((btn) => {
+    const isDark = theme === 'dark';
+    const light = btn.querySelector('.theme-icon-light');
+    const dark = btn.querySelector('.theme-icon-dark');
+    if (light) light.style.display = isDark ? 'none' : '';
+    if (dark) dark.style.display = isDark ? '' : 'none';
+  });
+}
+
+function vrnGetStoredTheme() {
+  const match = document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);
+  return match ? match[1] : null;
+}
+
+function vrnSetStoredTheme(theme) {
+  document.cookie = `vrn_theme=${theme}; path=/; max-age=31536000; samesite=lax`;
+}
+
+async function vrnToggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  vrnApplyTheme(next);
+  vrnSetStoredTheme(next);
+  // Best-effort: silently ignored if signed out, or mid-signup with no
+  // profiles row yet — the cookie above already applied the choice either way.
+  if (typeof vrnCurrentUser === 'function') {
+    try {
+      const user = await vrnCurrentUser();
+      if (user) await sb.from('profiles').update({ theme_preference: next }).eq('id', user.id);
+    } catch (e) { /* not signed in, or column not migrated yet */ }
+  }
+}
+
 // Shared behaviours: mobile nav toggle, reveal-on-scroll, generic sheet/overlay helpers
 document.addEventListener('DOMContentLoaded', () => {
+  // The inline anti-flash script in <head> already set data-theme from the
+  // cookie before first paint — this just syncs the toggle button icon(s)
+  // to match, since the buttons didn't exist yet when that script ran.
+  vrnApplyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+  document.querySelectorAll('.theme-toggle').forEach((btn) => btn.addEventListener('click', vrnToggleTheme));
+
   const toggle = document.querySelector('.nav-toggle');
   const menu = document.querySelector('.mobile-menu');
   const close = document.querySelector('.mobile-menu-close');
@@ -158,6 +209,15 @@ async function vrnRenderNavAuthState(){
   let profile = null;
   try { profile = await vrnMyProfile(); } catch (e) {}
   if (!profile) return;
+
+  // A signed-in member's DB-stored theme choice only needs to apply when
+  // there's no cookie yet (e.g. first login on a new device/browser) — once
+  // set, the cookie is the faster, synchronous source of truth used by the
+  // anti-flash <head> script on every subsequent page load.
+  if (!vrnGetStoredTheme() && profile.theme_preference) {
+    vrnApplyTheme(profile.theme_preference);
+    vrnSetStoredTheme(profile.theme_preference);
+  }
 
   let avatarUrl = null;
   if (profile.has_photo && profile.photo_path && profile.photo_status === 'approved') {

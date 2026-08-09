@@ -61,6 +61,14 @@ create table if not exists public.profiles (
   -- Set once the member has acknowledged the in-app messaging guidelines —
   -- see the CHAT & MESSAGING section below. Shown once, not on every chat.
   chat_guidelines_accepted_at timestamptz,
+  -- Set once the member has completed (or skipped) the first-visit onboarding
+  -- tour on search.html. Shown once, not on every visit — separate from
+  -- chat_guidelines_accepted_at, which gates a different, later flow.
+  onboarding_completed_at timestamptz,
+  -- Member's manual light/dark choice, persisted so it follows them across
+  -- devices. Signed-out visitors get a cookie-based fallback instead (see
+  -- vrnApplyTheme in app.js) since they have no profile row yet.
+  theme_preference text check (theme_preference in ('light','dark')),
   created_at timestamptz not null default now()
 );
 
@@ -131,8 +139,9 @@ create trigger trg_reset_photo_status
 -- change to a field actually shown to other members sends it back to
 -- 'pending' for re-review. Deliberately excludes contact_email (private,
 -- never shown to other members), has_photo/photo_path (governed by the photo
--- trigger above), and chat_guidelines_accepted_at/push_token/push_platform
--- (operational metadata, not profile content — must never affect visibility).
+-- trigger above), and chat_guidelines_accepted_at/onboarding_completed_at/
+-- theme_preference/push_token/push_platform (operational metadata, not
+-- profile content — must never affect visibility).
 create or replace function public.reset_profile_status_on_change()
 returns trigger
 language plpgsql
@@ -201,7 +210,8 @@ grant update (
   previous_type, previous_duration, has_children,
   preference_line, country_looking_in,
   consider_pakistan, additional_note, about, contact_email,
-  has_photo, photo_path, chat_guidelines_accepted_at, push_token, push_platform
+  has_photo, photo_path, chat_guidelines_accepted_at, onboarding_completed_at,
+  theme_preference, push_token, push_platform
 ) on public.profiles to authenticated;
 
 -- Supabase grants SELECT on every column of every new table to `authenticated`
@@ -218,7 +228,8 @@ grant select (
   previous_duration, has_children, preference_line, country_looking_in,
   consider_pakistan, additional_note, about, has_photo, photo_path,
   photo_status, photo_rejection_reason, profile_status, profile_rejection_reason,
-  plan, subscription_status, is_admin, chat_guidelines_accepted_at, created_at
+  plan, subscription_status, is_admin, chat_guidelines_accepted_at,
+  onboarding_completed_at, theme_preference, created_at
 ) on public.profiles to authenticated;
 
 -- Any active, paying member can view the full details of another active member.

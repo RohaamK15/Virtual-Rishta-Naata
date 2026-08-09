@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<title>Signing You In — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m)document.documentElement.setAttribute("data-theme",m[1]);})();</script>
+<style>
+  body{background:var(--beige);min-height:100vh;display:flex;flex-direction:column;}
+  .confirm-wrap{max-width:480px;margin:0 auto;padding:60px 24px;flex:1;display:flex;align-items:center;}
+  .confirm-card{background:var(--surface);border-radius:var(--radius-l);box-shadow:var(--shadow-2);padding:48px 40px;text-align:center;width:100%;}
+  @media (max-width:600px){.confirm-card{padding:36px 26px;}}
+  .brand-mini{display:flex;align-items:center;justify-content:center;gap:10px;}
+  .brand-mini img{height:36px;width:auto;}
+  .brand-mini span{font-family:'Cinzel',serif;font-weight:600;color:var(--green);font-size:.95rem;}
+  .spinner{
+    width:40px;height:40px;border-radius:50%;border:3px solid var(--green-soft);border-top-color:var(--green);
+    margin:26px auto 0;animation:vrnSpin .8s linear infinite;
+  }
+  @keyframes vrnSpin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="confirm-wrap">
+  <div class="confirm-card" data-reveal>
+    <a href="/home.html" class="brand-mini">
+      <img src="/assets/img/logo-icon.png" alt="">
+      <span>Virtual Rishta Naata</span>
+    </a>
+    <div id="statusPanel">
+      <div class="spinner"></div>
+      <h2 style="margin-top:22px;">Signing you in…</h2>
+      <p class="step-desc" style="max-width:360px;margin:12px auto 0;">One moment while we confirm your Google account.</p>
+    </div>
+    <div id="errorPanel" style="display:none;">
+      <h2 style="margin-top:22px;">Couldn't sign you in</h2>
+      <p id="errorText" class="step-desc" style="max-width:360px;margin:12px auto 0;"></p>
+      <a href="/login.html" class="btn btn-primary btn-block" style="margin-top:24px;">Back to Log In</a>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase-client.js"></script>
+<script src="/assets/js/auth.js"></script>
+<script>
+  // Single landing point for every Google OAuth return (see
+  // vrnSignInWithGoogle in auth.js). Google sign-in is scoped to existing
+  // paying members only — Supabase's signInWithOAuth will happily create a
+  // brand-new auth user for anyone, even someone who's never signed up, so
+  // this page is the one place that guards against that ever turning into
+  // real access: no matching active + approved profile means an immediate
+  // sign-out, never a working session.
+  function showError(message) {
+    document.getElementById('statusPanel').style.display = 'none';
+    document.getElementById('errorPanel').style.display = 'block';
+    document.getElementById('errorText').textContent = message;
+  }
+
+  (async function init(){
+    let user;
+    try {
+      // supabase-js completes the OAuth code exchange from the URL before
+      // getSession()/getUser() resolve — no manual parsing needed here.
+      const { data: { session } } = await sb.auth.getSession();
+      user = session?.user || null;
+    } catch (e) { user = null; }
+
+    if (!user) {
+      showError('Something went wrong signing you in with Google — please try again.');
+      return;
+    }
+
+    let profile = null;
+    try {
+      const { data } = await sb.from('profiles').select('subscription_status, profile_status').eq('id', user.id).maybeSingle();
+      profile = data || null;
+    } catch (e) { profile = null; }
+
+    const isActiveMember = profile && profile.subscription_status === 'active' && profile.profile_status === 'approved';
+    if (!isActiveMember) {
+      await sb.auth.signOut();
+      window.location.href = '/login.html?googleNoAccount=1';
+      return;
+    }
+
+    window.location.href = '/search.html';
+  })();
+</script>
+</body>
+</html>
