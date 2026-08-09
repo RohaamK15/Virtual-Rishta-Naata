@@ -48,6 +48,21 @@ async function vrnLinkGoogleIdentity() {
   }
 }
 
+// Called from account.html once a Google identity is already linked.
+// Supabase's unlinkIdentity() needs the actual identity object (not just a
+// provider name), and refuses to remove the last remaining identity on an
+// account — neither is a real risk here, since every VRN account always has
+// its original email/password identity from signup, so unlinking Google
+// just removes that one alternative sign-in path, never the account itself.
+async function vrnUnlinkGoogleIdentity() {
+  const { data, error: listError } = await sb.auth.getUserIdentities();
+  if (listError) throw listError;
+  const googleIdentity = data?.identities?.find((i) => i.provider === "google");
+  if (!googleIdentity) throw new Error("No linked Google account found.");
+  const { error } = await sb.auth.unlinkIdentity(googleIdentity);
+  if (error) throw error;
+}
+
 async function vrnRequestPasswordReset(email) {
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/reset-password.html`,

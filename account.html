@@ -145,7 +145,10 @@
         <h4>Sign-In Methods</h4>
         <p style="font-size:.82rem;color:var(--ink-soft);margin-bottom:14px;">Link your Google account so you can log in either way.</p>
         <button type="button" class="btn btn-outline btn-sm btn-block" id="googleLinkBtn" onclick="handleLinkGoogle()">Link Google Account</button>
-        <p id="googleLinkedNote" style="display:none;font-size:.82rem;color:var(--green);margin-top:10px;">&#10003; Google account linked.</p>
+        <div id="googleLinkedNote" style="display:none;">
+          <p style="font-size:.82rem;color:var(--green);margin-bottom:10px;">&#10003; Google account linked.</p>
+          <button type="button" class="btn btn-outline btn-sm btn-block" onclick="handleUnlinkGoogle()">Unlink Google Account</button>
+        </div>
       </div>
       <div class="side-card" data-reveal id="blockedCard" style="display:none;">
         <h4>Blocked Members</h4>
@@ -386,6 +389,18 @@
   async function handleLinkGoogle(){
     try { await vrnLinkGoogleIdentity(); }
     catch (err) { alert('Could not start Google linking: ' + (err.message || 'please try again.')); }
+    return false;
+  }
+
+  async function handleUnlinkGoogle(){
+    if (!confirm('Unlink your Google account? You can still log in with your email and password, and link Google again later if you change your mind.')) return false;
+    try {
+      await vrnUnlinkGoogleIdentity();
+      document.getElementById('googleLinkedNote').style.display = 'none';
+      document.getElementById('googleLinkBtn').style.display = 'block';
+    } catch (err) {
+      alert('Could not unlink Google: ' + (err.message || 'please try again.'));
+    }
     return false;
   }
 
