@@ -21,6 +21,11 @@ const VRN_TOUR_STEPS = [
     body: "Once you've found someone interesting, send them a message directly from their profile — no phone number needed.",
   },
   {
+    selectors: ['.app-bottom-nav a[href="/home.html"]'],
+    title: "Explore more from Home",
+    body: "Head back Home anytime to book a 1-1 Consultation, review pricing, or revisit what makes Virtual Rishta Naata different.",
+  },
+  {
     selectors: ['.icon-btn[aria-label="My account"]'],
     title: "Manage your account",
     body: "Edit your profile, check your membership, or update your details any time from My Account.",
