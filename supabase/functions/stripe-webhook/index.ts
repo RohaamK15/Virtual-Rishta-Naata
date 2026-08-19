@@ -8,30 +8,66 @@
 //   customer.subscription.deleted, invoice.payment_failed
 // Then copy the "Signing secret" it gives you into STRIPE_WEBHOOK_SECRET.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "https://esm.sh/stripe@14?target=deno";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" });
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+// Deliberately does NOT import the stripe npm package — just constructing a
+// Stripe client from esm.sh's Deno build (stripe@14) crashes this function
+// outright on every real invocation with "Deno.core.runMicrotasks() is not
+// supported in this environment" (a long-removed internal Deno API that an
+// old transitive std@0.177.1 shim inside the SDK still calls), confirmed in
+// the function's own logs — nothing to do with which SDK method is called,
+// simply importing/constructing it is enough to crash. The event body is
+// plain JSON and the signature is standard HMAC-SHA256, so neither actually
+// needs the SDK: verified here with Deno's native Web Crypto API instead.
+// Tolerance matches Stripe's own SDK default (5 min).
+async function verifyStripeSignature(payload: string, sigHeader: string, secret: string): Promise<boolean> {
+  const parts = Object.fromEntries(sigHeader.split(",").map((p) => p.split("=") as [string, string]));
+  const timestamp = parts["t"];
+  const v1 = parts["v1"];
+  if (!timestamp || !v1) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sigBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${payload}`));
+  const expectedHex = [...new Uint8Array(sigBuffer)].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+  if (expectedHex.length !== v1.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expectedHex.length; i++) diff |= expectedHex.charCodeAt(i) ^ v1.charCodeAt(i);
+  return diff === 0;
+}
 
 Deno.serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
 
-  let event: Stripe.Event;
+  if (!signature) {
+    return new Response("Webhook signature verification failed: No stripe-signature header value was provided.", { status: 400 });
+  }
+  const valid = await verifyStripeSignature(body, signature, Deno.env.get("STRIPE_WEBHOOK_SECRET")!);
+  if (!valid) {
+    return new Response("Webhook signature verification failed.", { status: 400 });
+  }
+
+  // deno-lint-ignore no-explicit-any
+  let event: any;
   try {
-    event = await stripe.webhooks.constructEventAsync(
-      body,
-      signature!,
-      Deno.env.get("STRIPE_WEBHOOK_SECRET")!
-    );
+    event = JSON.parse(body);
   } catch (err) {
-    return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
+    return new Response(`Invalid JSON payload: ${err.message}`, { status: 400 });
   }
 
   try {
     switch (event.type) {
       case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
+        const session = event.data.object;
 
         if (session.mode === "payment") {
           // The £35 one-to-one consultation — a single payment, not a subscription.
@@ -129,20 +165,20 @@ Deno.serve(async (req) => {
         break;
       }
       case "customer.subscription.updated": {
-        const sub = event.data.object as Stripe.Subscription;
+        const sub = event.data.object;
         const status = sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : "cancelled";
         await admin.from("profiles").update({ subscription_status: status }).eq("stripe_subscription_id", sub.id);
         break;
       }
       case "customer.subscription.deleted": {
-        const sub = event.data.object as Stripe.Subscription;
+        const sub = event.data.object;
         await admin.from("profiles").update({ subscription_status: "cancelled" }).eq("stripe_subscription_id", sub.id);
         break;
       }
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object;
         if (invoice.subscription) {
-          await admin.from("profiles").update({ subscription_status: "past_due" }).eq("stripe_subscription_id", invoice.subscription as string);
+          await admin.from("profiles").update({ subscription_status: "past_due" }).eq("stripe_subscription_id", invoice.subscription);
         }
         break;
       }

@@ -525,15 +525,24 @@
 
   // Stripe's webhook usually lands within a second of this redirect, but not
   // always instantly — retry briefly rather than showing a stale "not yet
-  // subscribed" state right after a successful payment.
+  // subscribed" state right after a successful payment. Polls with
+  // vrnMyProfile() (never redirects on a transient hiccup) rather than the
+  // full loadAccount() — calling vrnRequireAuth()'s hard login-page redirect
+  // up to 5 times in a row was bouncing members straight back to login.html
+  // moments after a successful payment on nothing more than a momentary
+  // getUser() blip. A single, final loadAccount() re-render below is enough.
   (async function handleMembershipReturn(){
     const membership = new URLSearchParams(window.location.search).get('membership');
     if (membership !== 'success') return;
     for (let attempt = 0; attempt < 5; attempt++) {
-      if (currentProfile?.subscription_status === 'active') return;
+      if (currentProfile?.subscription_status === 'active') break;
       await new Promise((r) => setTimeout(r, 1200));
-      try { await loadAccount(); } catch (e) { /* keep retrying */ }
+      try {
+        const p = await vrnMyProfile();
+        if (p) currentProfile = p;
+      } catch (e) { /* keep retrying */ }
     }
+    try { await loadAccount(); } catch (e) { /* leave the last-rendered state as-is */ }
   })();
 </script>
 </body>
