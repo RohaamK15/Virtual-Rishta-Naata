@@ -140,6 +140,7 @@
         <div class="plan-row"><span>Plan</span><strong id="f-plan">—</strong></div>
         <div class="plan-row"><span>Status</span><strong style="font-family:'Lato',sans-serif;font-weight:700;color:var(--ink);" id="f-substatus">—</strong></div>
         <p id="membershipCompNote" style="display:none;font-size:.82rem;color:var(--green);margin-top:14px;">You have complimentary access to Virtual Rishta Naata — thank you for being part of our community.</p>
+        <p id="membershipWhyFee" style="display:none;font-size:.8rem;line-height:1.6;color:var(--ink-soft);margin-top:14px;background:var(--beige);border-radius:var(--radius-s);padding:12px 14px;">Why is there a fee? It keeps this a serious community of people genuinely looking to get married, not time-wasters — and covers our running costs. It's a standard service charge, not a matchmaking commission, and applies the same to everyone.</p>
         <button type="button" id="membershipCta" class="btn btn-primary btn-sm btn-block" style="display:none;margin-top:16px;" onclick="handleCompleteMembership()">Complete Your Membership</button>
         <a href="/pricing.html" class="btn btn-outline btn-sm btn-block" style="margin-top:16px;">View Plans &amp; Pricing</a>
       </div>
@@ -243,15 +244,19 @@
 
     const compNote = document.getElementById('membershipCompNote');
     const membershipCta = document.getElementById('membershipCta');
+    const whyFee = document.getElementById('membershipWhyFee');
     if (p.is_comped) {
       compNote.style.display = 'block';
       membershipCta.style.display = 'none';
+      whyFee.style.display = 'none';
     } else if (p.profile_status === 'approved' && p.subscription_status !== 'active') {
       compNote.style.display = 'none';
       membershipCta.style.display = 'block';
+      whyFee.style.display = 'block';
     } else {
       compNote.style.display = 'none';
       membershipCta.style.display = 'none';
+      whyFee.style.display = 'none';
     }
 
     // Fetching this directly via Storage (not the get-profile-photo edge
