@@ -134,6 +134,7 @@
         <p id="photo-rejection-note" style="display:none;font-size:.82rem;color:var(--error);margin-bottom:14px;"></p>
         <input type="file" id="photoUploadInput" accept="image/*" style="display:none;">
         <button type="button" class="btn btn-outline btn-sm btn-block" onclick="document.getElementById('photoUploadInput').click()" id="photoUploadBtn">Upload a Photo</button>
+        <button type="button" class="btn btn-outline btn-sm btn-block" style="display:none;margin-top:10px;color:var(--error);border-color:var(--error);" id="photoRemoveBtn" onclick="handleRemovePhoto()">Remove Photo</button>
       </div>
       <div class="side-card" data-reveal>
         <h4>Membership</h4>
@@ -328,6 +329,7 @@
     }
 
     photoUploadBtn.textContent = p.has_photo ? 'Change Photo' : 'Upload a Photo';
+    document.getElementById('photoRemoveBtn').style.display = p.has_photo ? 'block' : 'none';
   }
 
   document.getElementById('photoUploadInput').addEventListener('change', async (e) => {
@@ -374,6 +376,31 @@
       e.target.value = '';
     }
   });
+
+  async function handleRemovePhoto(){
+    if (!confirm('Remove your profile photo? You can upload a new one any time — it will need to be reviewed again before it\'s shown to other members.')) return;
+    const btn = document.getElementById('photoRemoveBtn');
+    btn.setAttribute('disabled', '');
+    btn.textContent = 'Removing...';
+    try {
+      const user = await vrnCurrentUser();
+      if (currentProfile?.photo_path) {
+        await sb.storage.from('profile-photos').remove([currentProfile.photo_path]);
+      }
+      // Setting photo_path to null is what clears photo_status too — see
+      // trg_reset_photo_status in schema.sql — and a later re-upload goes
+      // through trg_reset_photo_status again, so it always comes back as
+      // 'pending' for a fresh review, never carrying over the old approval.
+      const { error } = await sb.from('profiles').update({ has_photo: false, photo_path: null }).eq('id', user.id);
+      if (error) throw error;
+      await loadAccount();
+    } catch (err) {
+      alert(err.message || 'Could not remove this photo — please try again.');
+    } finally {
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Remove Photo';
+    }
+  }
 
   async function loadBlockedMembers(){
     const { data: blocks, error } = await sb.from('blocks').select('id, blocked_id').order('created_at', { ascending: false });
