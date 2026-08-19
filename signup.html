@@ -137,7 +137,7 @@
         </div>
         <div class="field">
           <label for="height">Height</label>
-          <input type="text" id="height" placeholder="e.g. 5'9" inputmode="numeric">
+          <input type="text" id="height" placeholder="e.g. 5'9">
           <p class="field-hint">Format: feet'inches, e.g. 5'9</p>
         </div>
       </div>
@@ -362,7 +362,7 @@
     <div class="step" data-step="7">
       <span class="eyebrow step-eyebrow">Almost There</span>
       <h2>Choose Your Membership</h2>
-      <p class="step-desc">Your reference code will be generated the moment your subscription is confirmed.</p>
+      <p class="step-desc">Your reference code will be generated the moment you submit — payment only happens after our team approves your profile.</p>
 
       <div class="field" style="margin-top:28px;">
         <div class="plan-pick">
@@ -380,46 +380,33 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 15h4"/></svg>
         <span id="planRenewalNote">A membership is required to browse profiles and message other members. You'll be charged £10 today and every month after that, until you cancel — cancel anytime from your Account page.</span>
       </div>
-      <div class="photo-note">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 15h4"/></svg>
-        <span>Payment is handled securely by Stripe on their own page — we never see or store your card details.</span>
-      </div>
       <p id="planError" style="display:none;color:var(--error);font-size:.85rem;margin-top:16px;"></p>
 
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-gold" id="checkoutBtn" onclick="handleCheckout()">Continue to Secure Payment</button>
+        <button type="button" class="btn btn-gold" id="submitReviewBtn" onclick="handleSubmitForReview()">Submit for Review</button>
       </div>
     </div>
 
     <!-- STEP 8: Confirmation -->
     <div class="step" data-step="8">
-      <div class="confirm-panel" id="confirmFinalizing">
-        <div class="check-circle" style="background:var(--gold-soft);color:var(--gold);">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:vrnSpin 1s linear infinite;"><path d="M21 12a9 9 0 11-9-9"/></svg>
-        </div>
-        <h2 style="margin-top:22px;">Finalizing Your Account</h2>
-        <p class="step-desc" style="max-width:400px;margin-left:auto;margin-right:auto;">Payment received — we're setting up your profile now. This usually only takes a few seconds.</p>
-      </div>
-
-      <div class="confirm-panel" id="confirmDone" style="display:none;">
+      <div class="confirm-panel" id="confirmDone">
         <div class="check-circle">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
         </div>
-        <h2 style="margin-top:22px;">Welcome to Virtual Rishta Naata</h2>
-        <p class="step-desc" style="max-width:400px;margin-left:auto;margin-right:auto;">Your profile has been created and your subscription is active. Our team reviews every new profile before it appears in search — usually within a day. From now on, this is how the community will know you:</p>
+        <h2 style="margin-top:22px;">Submitted for Review</h2>
+        <p class="step-desc" style="max-width:400px;margin-left:auto;margin-right:auto;">Your profile has been submitted. Our team reviews every new profile — usually within a day. Once approved, you'll be asked to complete your membership before you can browse and message. From now on, this is how the community will know you:</p>
         <div class="ref-badge">
           <span class="eyebrow" style="color:var(--gold);">Your Reference Code</span>
           <div class="code" id="refCodeOut">VRN-7364</div>
         </div>
-        <p class="step-desc">We've also notified our team so we can keep the community safe and well-matched.</p>
         <a href="/account.html" class="btn btn-primary btn-block" style="margin-top:24px;">View My Account</a>
         <a href="/home.html" class="btn btn-outline btn-block" style="margin-top:12px;">Back to Home</a>
       </div>
 
       <div class="confirm-panel" id="confirmError" style="display:none;">
-        <h2>Almost There</h2>
-        <p class="step-desc" style="max-width:420px;margin-left:auto;margin-right:auto;">Your payment went through, but we're having trouble finalizing your account automatically. Please email <a href="mailto:uhameed53@hotmail.com">uhameed53@hotmail.com</a> with your payment confirmation and we'll sort it out right away.</p>
+        <h2>Something Went Wrong</h2>
+        <p class="step-desc" style="max-width:420px;margin-left:auto;margin-right:auto;">We couldn't submit your profile. Please go back and try again, or email <a href="mailto:uhameed53@hotmail.com">uhameed53@hotmail.com</a> if the problem continues.</p>
       </div>
     </div>
 
@@ -619,8 +606,8 @@
     const plan = document.querySelector('input[name="plan"]:checked')?.value || 'monthly';
     const note = document.getElementById('planRenewalNote');
     note.textContent = plan === 'annual'
-      ? "A membership is required to browse profiles and message other members. You'll be charged £100 today and every year after that, until you cancel — cancel anytime from your Account page."
-      : "A membership is required to browse profiles and message other members. You'll be charged £10 today and every month after that, until you cancel — cancel anytime from your Account page.";
+      ? "A membership is required to browse profiles and message other members. You won't be charged today — once your profile is approved, you'll complete payment (£100/year, cancel anytime) from your Account page."
+      : "A membership is required to browse profiles and message other members. You won't be charged today — once your profile is approved, you'll complete payment (£10/month, cancel anytime) from your Account page.";
   }
 
   // This service is exclusively for Ahmadi Muslims — answering "No" here
@@ -659,14 +646,12 @@
     };
   }
 
-  const SIGNUP_PENDING_KEY = 'vrnSignupPending';
-
   // No account exists yet at this point in the wizard — this step only
   // validates the chosen email/password client-side. The actual account is
-  // created by stripe-webhook, only once Stripe confirms payment (see
-  // handleCheckout below and create-signup-checkout). This is deliberate:
-  // nobody should have a working login — let alone search access — without
-  // having actually paid.
+  // created by submit-profile-for-review on Step 7, immediately, before any
+  // payment — an admin must approve the profile's content AND payment (or an
+  // admin comp grant) must follow before is_active_member() ever returns
+  // true for it. See supabase/schema.sql's is_active_member().
   function handleContinueFromContact(){
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -701,13 +686,13 @@
     });
   }
 
-  async function handleCheckout(){
+  async function handleSubmitForReview(){
     const plan = document.querySelector('input[name="plan"]:checked')?.value || 'monthly';
     const errorEl = document.getElementById('planError');
-    const btn = document.getElementById('checkoutBtn');
+    const btn = document.getElementById('submitReviewBtn');
     errorEl.style.display = 'none';
     btn.setAttribute('disabled', '');
-    btn.textContent = 'Redirecting to Stripe...';
+    btn.textContent = 'Submitting...';
     try {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
@@ -718,25 +703,27 @@
         photoDataUrl = await readFileAsDataUrl(selectedPhotoFile);
       }
 
-      // create-signup-checkout stages everything in pending_signups and
-      // returns a Stripe-hosted Checkout URL — we never handle card details
-      // ourselves, and no account/profile exists until stripe-webhook creates
-      // one after payment is actually confirmed.
-      const { data, error } = await sb.functions.invoke('create-signup-checkout', {
+      // submit-profile-for-review creates the account + profile immediately,
+      // no payment involved — profile_status/subscription_status start at
+      // their column defaults ('pending'/'pending'), so this alone never
+      // grants access. See is_active_member() in supabase/schema.sql.
+      const { error } = await sb.functions.invoke('submit-profile-for-review', {
         body: { email, password, profileData, photoDataUrl, plan }
       });
       if (error) throw error;
 
-      sessionStorage.setItem(SIGNUP_PENDING_KEY, JSON.stringify({ email, password }));
-      await vrnOpenCheckout(data.url, () => {
-        btn.removeAttribute('disabled');
-        btn.textContent = 'Continue to Secure Payment';
-      });
+      await vrnSignIn(email, password);
+      const profile = await vrnMyProfile();
+      document.getElementById('refCodeOut').textContent = profile.ref_code;
+      goToStep(8);
+      document.getElementById('confirmDone').style.display = 'block';
+      document.getElementById('confirmError').style.display = 'none';
+      notifyNewSignup(profile, email);
     } catch (err) {
       errorEl.textContent = await vrnFunctionErrorMessage(err);
       errorEl.style.display = 'block';
       btn.removeAttribute('disabled');
-      btn.textContent = 'Continue to Secure Payment';
+      btn.textContent = 'Submit for Review';
     }
   }
 
@@ -762,52 +749,6 @@
     }
   }
 
-  async function showConfirmationIfReturningFromStripe(){
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('checkout') !== 'success') return;
-
-    const pendingRaw = sessionStorage.getItem(SIGNUP_PENDING_KEY);
-    if (!pendingRaw) {
-      // sessionStorage can be lost across the redirect to Stripe and back in
-      // some mobile browsers (e.g. the tab being reloaded in the background
-      // while the user is on Stripe's page). Payment already succeeded and
-      // stripe-webhook already created the account by this point regardless
-      // — silently resetting to Step 1 here would make a real member think
-      // signup failed and re-enter everything, when they actually just need
-      // to log in.
-      window.location.href = '/login.html?justPaid=1';
-      return;
-    }
-    const { email, password } = JSON.parse(pendingRaw);
-
-    goToStep(8);
-    document.getElementById('confirmFinalizing').style.display = 'block';
-    document.getElementById('confirmDone').style.display = 'none';
-    document.getElementById('confirmError').style.display = 'none';
-
-    // The account is created by stripe-webhook asynchronously, so it may not
-    // exist the instant Stripe redirects back here — retry sign-in for a few
-    // seconds rather than failing on the first attempt.
-    for (let attempt = 0; attempt < 10; attempt++) {
-      try {
-        await vrnSignIn(email, password);
-        const profile = await vrnMyProfile();
-        if (profile) {
-          sessionStorage.removeItem(SIGNUP_PENDING_KEY);
-          document.getElementById('refCodeOut').textContent = profile.ref_code;
-          document.getElementById('confirmFinalizing').style.display = 'none';
-          document.getElementById('confirmDone').style.display = 'block';
-          notifyNewSignup(profile, email);
-          return;
-        }
-      } catch (e) { /* account not created yet — stripe-webhook may still be processing */ }
-      await new Promise(r => setTimeout(r, 1500));
-    }
-
-    document.getElementById('confirmFinalizing').style.display = 'none';
-    document.getElementById('confirmError').style.display = 'block';
-  }
-  showConfirmationIfReturningFromStripe();
 </script>
 </body>
 </html>

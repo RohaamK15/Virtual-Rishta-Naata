@@ -39,7 +39,13 @@ Deno.serve(async (req) => {
       ? Deno.env.get("STRIPE_PRICE_ANNUAL")!
       : Deno.env.get("STRIPE_PRICE_MONTHLY")!;
 
-    const { data: profile } = await supabase.from("profiles").select("stripe_customer_id, contact_email").eq("id", user.id).single();
+    // stripe_customer_id and contact_email are deliberately excluded from the
+    // member-facing SELECT grant (see schema.sql) — the anon+JWT client above
+    // can't read them, only identify who's calling. Service-role only past
+    // this point, for exactly those two columns.
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: profile } = await admin.from("profiles").select("stripe_customer_id, contact_email, profile_status").eq("id", user.id).single();
+    if (profile?.profile_status !== "approved") throw new Error("Your profile must be approved before you can subscribe");
 
     let customerId = profile?.stripe_customer_id;
     if (!customerId) {
@@ -48,17 +54,15 @@ Deno.serve(async (req) => {
         metadata: { supabase_user_id: user.id },
       });
       customerId = customer.id;
-      // Service-role client only for the one column a member can't write themselves.
-      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
       await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
     }
 
     const { successUrl, cancelUrl } = buildReturnUrls({
       appUrl: Deno.env.get("APP_URL")!,
-      successPage: "signup.html",
-      cancelPage: "signup.html",
-      successParams: { checkout: "success" },
-      cancelParams: { checkout: "cancelled" },
+      successPage: "account.html",
+      cancelPage: "account.html",
+      successParams: { membership: "success" },
+      cancelParams: { membership: "cancelled" },
     });
 
     const session = await stripe.checkout.sessions.create({

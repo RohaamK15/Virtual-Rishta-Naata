@@ -113,8 +113,10 @@ Deno.serve(async (req) => {
           break;
         }
 
-        // Legacy path (create-checkout-session): an already-authenticated
-        // member changing/renewing plan, not used by the signup wizard anymore.
+        // create-checkout-session: an already-authenticated, already-approved
+        // member completing their membership payment — the primary payment
+        // path now that approval happens before payment (see account.html's
+        // "Complete Your Membership" CTA and submit-profile-for-review).
         const userId = session.client_reference_id || session.metadata?.supabase_user_id;
         const plan = session.metadata?.plan;
         if (userId) {

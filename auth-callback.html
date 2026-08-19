@@ -78,11 +78,11 @@
 
     let profile = null;
     try {
-      const { data } = await sb.from('profiles').select('subscription_status, profile_status').eq('id', user.id).maybeSingle();
+      const { data } = await sb.from('profiles').select('subscription_status, profile_status, is_comped').eq('id', user.id).maybeSingle();
       profile = data || null;
     } catch (e) { profile = null; }
 
-    const isActiveMember = profile && profile.subscription_status === 'active' && profile.profile_status === 'approved';
+    const isActiveMember = profile && profile.profile_status === 'approved' && (profile.subscription_status === 'active' || profile.is_comped);
     if (!isActiveMember) {
       await sb.auth.signOut();
       window.location.href = '/login.html?googleNoAccount=1';

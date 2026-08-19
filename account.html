@@ -139,6 +139,8 @@
         <h4>Membership</h4>
         <div class="plan-row"><span>Plan</span><strong id="f-plan">—</strong></div>
         <div class="plan-row"><span>Status</span><strong style="font-family:'Lato',sans-serif;font-weight:700;color:var(--ink);" id="f-substatus">—</strong></div>
+        <p id="membershipCompNote" style="display:none;font-size:.82rem;color:var(--green);margin-top:14px;">You have complimentary access to Virtual Rishta Naata — thank you for being part of our community.</p>
+        <button type="button" id="membershipCta" class="btn btn-primary btn-sm btn-block" style="display:none;margin-top:16px;" onclick="handleCompleteMembership()">Complete Your Membership</button>
         <a href="/pricing.html" class="btn btn-outline btn-sm btn-block" style="margin-top:16px;">View Plans &amp; Pricing</a>
       </div>
       <div class="side-card" data-reveal>
@@ -194,7 +196,8 @@
 <script src="/assets/js/auth.js"></script>
 <script>
   const PLAN_LABEL = { monthly: 'Monthly — £10/mo', annual: 'Annual — £100/yr' };
-  const STATUS_LABEL = { active: 'Active', pending: 'Pending Payment', cancelled: 'Cancelled', past_due: 'Past Due' };
+  const STATUS_LABEL = { active: 'Active', pending: 'Not Subscribed', cancelled: 'Cancelled', past_due: 'Past Due' };
+  let currentProfile = null;
 
   async function loadAccount(){
     await vrnRequireAuth();
@@ -206,6 +209,7 @@
       return;
     }
     if (!p) return;
+    currentProfile = p;
 
     document.getElementById('f-ref').textContent = p.ref_code || '—';
     document.getElementById('f-joined').textContent = 'Member since ' + new Date(p.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -236,6 +240,19 @@
 
     document.getElementById('f-plan').textContent = PLAN_LABEL[p.plan] || 'No plan selected';
     document.getElementById('f-substatus').textContent = STATUS_LABEL[p.subscription_status] || p.subscription_status;
+
+    const compNote = document.getElementById('membershipCompNote');
+    const membershipCta = document.getElementById('membershipCta');
+    if (p.is_comped) {
+      compNote.style.display = 'block';
+      membershipCta.style.display = 'none';
+    } else if (p.profile_status === 'approved' && p.subscription_status !== 'active') {
+      compNote.style.display = 'none';
+      membershipCta.style.display = 'block';
+    } else {
+      compNote.style.display = 'none';
+      membershipCta.style.display = 'none';
+    }
 
     // Fetching this directly via Storage (not the get-profile-photo edge
     // function) is fine here — profile_photos_select_own in schema.sql
@@ -386,6 +403,25 @@
     return false;
   }
 
+  async function handleCompleteMembership(){
+    const btn = document.getElementById('membershipCta');
+    btn.setAttribute('disabled', '');
+    btn.textContent = 'Redirecting to Stripe...';
+    try {
+      const plan = currentProfile?.plan || 'monthly';
+      const { data, error } = await sb.functions.invoke('create-checkout-session', { body: { plan } });
+      if (error) throw error;
+      await vrnOpenCheckout(data.url, () => {
+        btn.removeAttribute('disabled');
+        btn.textContent = 'Complete Your Membership';
+      });
+    } catch (err) {
+      alert('Could not start checkout: ' + await vrnFunctionErrorMessage(err));
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Complete Your Membership';
+    }
+  }
+
   async function handleLinkGoogle(){
     try { await vrnLinkGoogleIdentity(); }
     catch (err) { alert('Could not start Google linking: ' + (err.message || 'please try again.')); }
@@ -454,6 +490,19 @@
     document.getElementById('googleLinkBtn').style.display = 'none';
     document.getElementById('googleLinkedNote').style.display = 'block';
   }
+
+  // Stripe's webhook usually lands within a second of this redirect, but not
+  // always instantly — retry briefly rather than showing a stale "not yet
+  // subscribed" state right after a successful payment.
+  (async function handleMembershipReturn(){
+    const membership = new URLSearchParams(window.location.search).get('membership');
+    if (membership !== 'success') return;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (currentProfile?.subscription_status === 'active') return;
+      await new Promise((r) => setTimeout(r, 1200));
+      try { await loadAccount(); } catch (e) { /* keep retrying */ }
+    }
+  })();
 </script>
 </body>
 </html>

@@ -45,6 +45,7 @@
                 <data android:scheme="https" android:host="virtualrishtanaata.com" android:pathPrefix="/services.html" />
                 <data android:scheme="https" android:host="virtualrishtanaata.com" android:pathPrefix="/consultation-confirmed.html" />
                 <data android:scheme="https" android:host="virtualrishtanaata.com" android:pathPrefix="/auth-callback.html" />
+                <data android:scheme="https" android:host="virtualrishtanaata.com" android:pathPrefix="/account.html" />
             </intent-filter>
 
         </activity>

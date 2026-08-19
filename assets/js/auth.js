@@ -96,15 +96,18 @@ async function vrnRequireAuth() {
 }
 
 // Call after vrnRequireAuth() on any page needing full paid-feature access
-// (search, messages, chat). Without this, a pending/rejected member would
-// land on search.html and just silently see "0 profiles found" — RLS returns
-// an empty set, not an error, since is_active_member() now also requires
-// profile_status = 'approved'. Sends them to account.html instead, which
-// explains their status and, if rejected, links to edit-profile.html to fix
-// and automatically resubmit.
-async function vrnRequireApprovedProfile() {
+// (search, messages, chat). Without this, a member who isn't fully active
+// yet — not approved, or approved but not paid/comped — would land on
+// search.html and just silently see "0 profiles found": RLS returns an
+// empty set, not an error, since is_active_member() requires both
+// profile_status = 'approved' AND (subscription_status = 'active' or
+// is_comped). Sends them to account.html instead, which explains exactly
+// which of those is missing and what to do next (edit + resubmit if
+// rejected, or complete payment if approved but unpaid).
+async function vrnRequireActiveMembership() {
   const profile = await vrnMyProfile();
-  if (!profile || profile.profile_status !== "approved") {
+  const isActive = profile && profile.profile_status === "approved" && (profile.subscription_status === "active" || profile.is_comped);
+  if (!isActive) {
     window.location.href = "/account.html";
     return null;
   }
@@ -123,7 +126,7 @@ const PROFILE_COLUMNS = [
   "preference_line", "country_looking_in", "consider_pakistan", "additional_note",
   "about", "has_photo", "photo_path", "photo_status", "photo_rejection_reason",
   "profile_status", "profile_rejection_reason",
-  "plan", "subscription_status", "is_admin", "chat_guidelines_accepted_at",
+  "plan", "subscription_status", "is_comped", "is_admin", "chat_guidelines_accepted_at",
   "onboarding_completed_at", "theme_preference", "created_at",
 ].join(", ");
 

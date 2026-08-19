@@ -103,17 +103,17 @@
     try { me = await vrnMyProfile(); } catch (e) { me = null; }
     if (!me) { window.location.href = '/signup.html'; return; }
 
-    if (me.subscription_status !== 'active') {
-      document.getElementById('emptyState').style.display = 'block';
-      document.getElementById('emptyState').innerHTML = `<p>An active membership is required to use messages. <a href="/pricing.html">View plans</a></p>`;
-      return;
-    }
-
     if (me.profile_status !== 'approved') {
       document.getElementById('emptyState').style.display = 'block';
       document.getElementById('emptyState').innerHTML = me.profile_status === 'rejected'
         ? `<p>Your profile wasn't approved${me.profile_rejection_reason ? ': ' + escapeHtml(me.profile_rejection_reason) : '.'} <a href="/account.html">View details and edit your profile</a></p>`
         : `<p>Your profile is pending review. You'll be able to message once it's approved. <a href="/account.html">Check your status</a></p>`;
+      return;
+    }
+
+    if (me.subscription_status !== 'active' && !me.is_comped) {
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('emptyState').innerHTML = `<p>Your profile is approved — complete your membership to start messaging. <a href="/account.html">Complete your membership</a></p>`;
       return;
     }
 

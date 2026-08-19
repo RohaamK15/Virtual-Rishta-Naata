@@ -38,7 +38,7 @@ create table if not exists public.profiles (
   photo_status text check (photo_status in ('pending','approved','rejected')),
   photo_rejection_reason text,
   -- Whole-profile moderation, independent of photo_status. Starts 'pending' the
-  -- moment a profile is created (see stripe-webhook) and is reset back to
+  -- moment a profile is created (see submit-profile-for-review) and is reset back to
   -- 'pending' automatically whenever any member-editable content field changes
   -- (see trg_reset_profile_status below) — same reasoning as photo_status:
   -- members never get direct write access, only admins via admin-review-profile.
@@ -69,6 +69,12 @@ create table if not exists public.profiles (
   -- devices. Signed-out visitors get a cookie-based fallback instead (see
   -- vrnApplyTheme in app.js) since they have no profile row yet.
   theme_preference text check (theme_preference in ('light','dark')),
+  -- Admin-granted free access — bypasses the payment requirement only, never
+  -- the content-approval requirement. See is_active_member() below: a comped
+  -- member still needs profile_status = 'approved' like everyone else, this
+  -- just means subscription_status never has to become 'active'. Only ever
+  -- set by admin-set-comped (service role) — never in the update grant.
+  is_comped boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -140,8 +146,8 @@ create trigger trg_reset_photo_status
 -- 'pending' for re-review. Deliberately excludes contact_email (private,
 -- never shown to other members), has_photo/photo_path (governed by the photo
 -- trigger above), and chat_guidelines_accepted_at/onboarding_completed_at/
--- theme_preference/push_token/push_platform (operational metadata, not
--- profile content — must never affect visibility).
+-- theme_preference/is_comped/push_token/push_platform (operational metadata,
+-- not profile content — must never affect visibility).
 create or replace function public.reset_profile_status_on_change()
 returns trigger
 language plpgsql
@@ -228,7 +234,7 @@ grant select (
   previous_duration, has_children, preference_line, country_looking_in,
   consider_pakistan, additional_note, about, has_photo, photo_path,
   photo_status, photo_rejection_reason, profile_status, profile_rejection_reason,
-  plan, subscription_status, is_admin, chat_guidelines_accepted_at,
+  plan, subscription_status, is_comped, is_admin, chat_guidelines_accepted_at,
   onboarding_completed_at, theme_preference, created_at
 ) on public.profiles to authenticated;
 
@@ -240,9 +246,11 @@ grant select (
 -- on `profiles` that queries `profiles` again triggers the same policy for
 -- that inner query too, which recurses infinitely. A security definer
 -- function owned by the table owner bypasses RLS for just that inner lookup.
--- Requires profile_status = 'approved' as well as an active subscription: a
--- member whose own profile hasn't cleared review yet can't use paid features
--- (browse, message, block, report) either — not just be hidden from others.
+-- Requires profile_status = 'approved' as well as (an active subscription OR
+-- admin-granted comped access): a member whose own profile hasn't cleared
+-- review yet can't use paid features (browse, message, block, report)
+-- either — not just be hidden from others. Comping only ever substitutes for
+-- payment, never for approval.
 create or replace function public.is_active_member()
 returns boolean
 language sql
@@ -252,7 +260,8 @@ stable
 as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and subscription_status = 'active' and profile_status = 'approved'
+    where id = auth.uid() and profile_status = 'approved'
+      and (subscription_status = 'active' or is_comped = true)
   );
 $$;
 
@@ -286,7 +295,8 @@ $$;
 
 create policy "profiles_select_active_members" on public.profiles
   for select using (
-    subscription_status = 'active' and profile_status = 'approved' and public.is_active_member()
+    (subscription_status = 'active' or is_comped = true) and profile_status = 'approved'
+    and public.is_active_member()
     and not public.is_blocked_pair(auth.uid(), id)
   );
 
@@ -475,7 +485,11 @@ begin
   if not public.is_active_member() then
     raise exception 'An active membership is required to message other members';
   end if;
-  if not exists (select 1 from public.profiles where id = other_user_id and subscription_status = 'active') then
+  if not exists (
+    select 1 from public.profiles
+    where id = other_user_id and profile_status = 'approved'
+      and (subscription_status = 'active' or is_comped = true)
+  ) then
     raise exception 'That member is not currently active';
   end if;
   if public.is_blocked_pair(me, other_user_id) then

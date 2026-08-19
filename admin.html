@@ -294,6 +294,7 @@
           <div style="display:flex;gap:8px;">
             <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','approve')">Approve</button>
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','reject')">Reject</button>
+            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="grantCompedAccess('${p.id}')" title="Grant free access — they won't be asked to pay">Comp (Free)</button>
           </div>
         </div>
       `).join('') || `<p style="padding:10px;color:var(--ink-soft);">No profiles waiting for review.</p>`;
@@ -313,6 +314,30 @@
       await loadPendingProfiles();
     } catch (err) {
       alert('Could not review this profile: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+
+  async function grantCompedAccess(profileId){
+    if (!confirm('Grant this member free access? They will never be asked to pay, but still need their profile approved separately.')) return;
+    try {
+      const { error } = await sb.functions.invoke('admin-set-comped', { body: { profile_id: profileId, comped: true } });
+      if (error) throw error;
+      alert('Free access granted.');
+      if (typeof loadProfiles === 'function') await loadProfiles();
+    } catch (err) {
+      alert('Could not grant free access: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+
+  async function toggleComped(profileId, next){
+    try {
+      const { error } = await sb.functions.invoke('admin-set-comped', { body: { profile_id: profileId, comped: next } });
+      if (error) throw error;
+      const p = ALL_PROFILES.find((x) => x.id === profileId);
+      if (p) p.is_comped = next;
+      renderTable(document.getElementById('adminSearch').value);
+    } catch (err) {
+      alert('Could not update free-access status: ' + await vrnFunctionErrorMessage(err));
     }
   }
 
@@ -456,11 +481,14 @@
         <td>${escapeHtml(p.country_looking_in) || '—'}</td>
         <td>${escapeHtml(p.contact_email)}</td>
         <td>${new Date(p.created_at).toLocaleDateString('en-GB')}</td>
-        <td><span class="status-pill">${p.subscription_status}</span> <span class="status-pill" style="background:var(--gold-soft);color:var(--gold-ink);">${p.profile_status}</span></td>
+        <td><span class="status-pill">${p.subscription_status}</span> <span class="status-pill" style="background:var(--gold-soft);color:var(--gold-ink);">${p.profile_status}</span>${p.is_comped ? ' <span class="status-pill" style="background:var(--green-soft);color:var(--green);">comped</span>' : ''}</td>
         <td>
           <div class="row-actions">
             <button class="action-btn" title="View full record" onclick="openProfile('${p.ref_code}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="action-btn" title="${p.is_comped ? 'Revoke free access' : 'Grant free access'}" onclick="toggleComped('${p.id}', ${!p.is_comped})">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             </button>
             <button class="action-btn danger" title="Delete account" onclick="askDelete('${p.ref_code}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
