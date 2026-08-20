@@ -336,6 +336,17 @@ create policy "profile_photos_select_own" on storage.objects
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+-- Without this, re-uploading to a path that already has an object (the
+-- "Change Photo" flow's upsert:true, or re-uploading right after Remove
+-- Photo if the delete hasn't fully propagated yet) fails with "new row
+-- violates row-level security policy" — upsert updates the existing row
+-- rather than inserting a fresh one once an object exists at that path.
+create policy "profile_photos_update_own" on storage.objects
+  for update using (
+    bucket_id = 'profile-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
 create policy "profile_photos_delete_own" on storage.objects
   for delete using (
     bucket_id = 'profile-photos'
