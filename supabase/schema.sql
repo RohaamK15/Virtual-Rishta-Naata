@@ -296,6 +296,7 @@ $$;
 create policy "profiles_select_active_members" on public.profiles
   for select using (
     (subscription_status = 'active' or is_comped = true) and profile_status = 'approved'
+    and not is_admin
     and public.is_active_member()
     and not public.is_blocked_pair(auth.uid(), id)
   );
@@ -500,6 +501,7 @@ begin
     select 1 from public.profiles
     where id = other_user_id and profile_status = 'approved'
       and (subscription_status = 'active' or is_comped = true)
+      and not is_admin
   ) then
     raise exception 'That member is not currently active';
   end if;

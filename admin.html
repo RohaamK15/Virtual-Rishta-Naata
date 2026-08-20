@@ -229,6 +229,17 @@
   </div>
 </div>
 
+<div class="overlay" id="profileDetailModal-overlay" onclick="closeSheet('profileDetailModal')"></div>
+<div class="sheet" id="profileDetailModal" style="max-width:560px;padding:32px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;">
+    <h3 id="profileDetailTitle">Profile</h3>
+    <button type="button" class="action-btn" onclick="closeSheet('profileDetailModal')" aria-label="Close">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div id="profileDetailBody" style="display:grid;gap:10px;font-size:.86rem;color:var(--ink-soft);max-height:70vh;overflow-y:auto;"></div>
+</div>
+
 <script src="/assets/js/app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/assets/js/supabase-config.js"></script>
@@ -520,8 +531,54 @@
     }
     closeSheet('confirmModal');
   }
-  function openProfile(ref){
-    alert('Full internal record view for ' + ref + ' would open here, including billing history and moderation notes.');
+  async function openProfile(ref){
+    document.getElementById('profileDetailTitle').textContent = ref;
+    const body = document.getElementById('profileDetailBody');
+    body.innerHTML = '<p>Loading…</p>';
+    openSheet('profileDetailModal');
+    try {
+      const { data, error } = await sb.functions.invoke('admin-get-profile', { body: { ref_code: ref } });
+      if (error) throw error;
+      const p = data.profile;
+      const row = (label, value) => `
+        <div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid rgba(19,75,53,.08);">
+          <span style="font-family:'Montserrat',sans-serif;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--green);flex-shrink:0;">${escapeHtml(label)}</span>
+          <span style="text-align:right;color:var(--ink);">${value === null || value === undefined || value === '' ? '—' : escapeHtml(String(value))}</span>
+        </div>`;
+      body.innerHTML = `
+        ${p.photo_url ? `<img src="${p.photo_url}" alt="${escapeHtml(p.ref_code)}" style="width:100%;max-width:220px;margin:0 auto 12px;border-radius:var(--radius-m);display:block;">` : ''}
+        ${row('Gender', p.gender)}
+        ${row('Age', p.age)}
+        ${row('Height', p.height)}
+        ${row('Qualifications', p.qualifications)}
+        ${row('Employment', p.employment)}
+        ${row('Residential Status', p.residential_status)}
+        ${row('City', p.city)}
+        ${row('County', p.county)}
+        ${row('Country', p.country)}
+        ${row('Ahmadi Muslim', p.is_ahmadi === null ? null : (p.is_ahmadi ? 'Yes' : 'No'))}
+        ${row('Local Jamaat', p.local_jamaat)}
+        ${row('Previously Engaged/Married', p.had_previous === null ? null : (p.had_previous ? 'Yes' : 'No'))}
+        ${p.had_previous ? row('Previous Type', p.previous_type) : ''}
+        ${p.had_previous ? row('Previous Duration', p.previous_duration) : ''}
+        ${row('Has Children', p.has_children === null ? null : (p.has_children ? 'Yes' : 'No'))}
+        ${row('Preference', p.preference_line)}
+        ${row('Looking In', p.country_looking_in)}
+        ${row('Considers Pakistan', p.consider_pakistan === null ? null : (p.consider_pakistan ? 'Yes' : 'No'))}
+        ${row('Additional Note', p.additional_note)}
+        ${row('About', p.about)}
+        ${row('Contact Email', p.contact_email)}
+        ${row('Plan', p.plan)}
+        ${row('Profile Status', p.profile_status)}
+        ${row('Subscription Status', p.subscription_status)}
+        ${row('Comped', p.is_comped ? 'Yes' : 'No')}
+        ${row('Admin', p.is_admin ? 'Yes' : 'No')}
+        ${row('Photo Status', p.photo_status)}
+        ${row('Joined', p.created_at ? new Date(p.created_at).toLocaleString('en-GB') : null)}
+      `;
+    } catch (err) {
+      body.innerHTML = `<p style="color:var(--error);">Couldn't load this profile (${await vrnFunctionErrorMessage(err)}).</p>`;
+    }
   }
 
   document.getElementById('adminSearch').addEventListener('input', e => renderTable(e.target.value));

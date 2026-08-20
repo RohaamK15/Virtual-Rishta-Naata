@@ -48,6 +48,7 @@ The admin dashboard and payments run through small server-side functions in
    `supabase functions deploy stripe-webhook --no-verify-jwt`
    `supabase functions deploy get-profile-photo`
    `supabase functions deploy admin-list-profiles`
+   `supabase functions deploy admin-get-profile`
    `supabase functions deploy admin-delete-profile`
    `supabase functions deploy admin-list-flagged-messages`
    `supabase functions deploy admin-mark-message-reviewed`
