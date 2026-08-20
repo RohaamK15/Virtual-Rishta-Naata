@@ -101,7 +101,7 @@
           <div class="info-field"><span>Height</span><strong id="f-height">—</strong></div>
           <div class="info-field"><span>Qualifications</span><strong id="f-qualifications">—</strong></div>
           <div class="info-field"><span>Employment</span><strong id="f-employment">—</strong></div>
-          <div class="info-field"><span>Residential Status</span><strong id="f-residentialStatus">—</strong></div>
+          <div class="info-field"><span>Immigration Status</span><strong id="f-immigrationStatus">—</strong></div>
           <div class="info-field"><span>Residency</span><strong id="f-residency">—</strong></div>
           <div class="info-field"><span>Country of Residence</span><strong id="f-country">—</strong></div>
           <div class="info-field"><span>Looking In</span><strong id="f-lookingIn">—</strong></div>
@@ -222,7 +222,7 @@
     document.getElementById('f-height').textContent = p.height || '—';
     document.getElementById('f-qualifications').textContent = p.qualifications || '—';
     document.getElementById('f-employment').textContent = p.employment || '—';
-    document.getElementById('f-residentialStatus').textContent = p.residential_status || '—';
+    document.getElementById('f-immigrationStatus').textContent = p.immigration_status || '—';
     document.getElementById('f-residency').textContent = [p.city, p.county].filter(Boolean).join(', ') || '—';
     document.getElementById('f-country').textContent = p.country || '—';
     document.getElementById('f-lookingIn').textContent = p.country_looking_in || '—';

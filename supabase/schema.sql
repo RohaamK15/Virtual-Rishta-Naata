@@ -12,7 +12,7 @@ create table if not exists public.profiles (
   height text,
   qualifications text,
   employment text,
-  residential_status text,
+  immigration_status text check (immigration_status in ('Citizen','Permanent Resident / ILR','Work Visa','Student Visa','Spouse/Family Visa','Asylum Seeker/Refugee','Other')),
   city text,
   county text,
   country text,                 -- country of residence (shown on search card)
@@ -153,12 +153,12 @@ returns trigger
 language plpgsql
 as $$
 begin
-  if (new.gender, new.age, new.height, new.qualifications, new.employment, new.residential_status,
+  if (new.gender, new.age, new.height, new.qualifications, new.employment, new.immigration_status,
       new.city, new.county, new.country, new.is_ahmadi, new.local_jamaat, new.had_previous,
       new.previous_type, new.previous_duration, new.has_children, new.preference_line,
       new.country_looking_in, new.consider_pakistan, new.additional_note, new.about)
      is distinct from
-     (old.gender, old.age, old.height, old.qualifications, old.employment, old.residential_status,
+     (old.gender, old.age, old.height, old.qualifications, old.employment, old.immigration_status,
       old.city, old.county, old.country, old.is_ahmadi, old.local_jamaat, old.had_previous,
       old.previous_type, old.previous_duration, old.has_children, old.preference_line,
       old.country_looking_in, old.consider_pakistan, old.additional_note, old.about)
@@ -211,7 +211,7 @@ create policy "profiles_update_own" on public.profiles
 -- the set_ref_code trigger.
 revoke update on public.profiles from authenticated;
 grant update (
-  gender, age, height, qualifications, employment, residential_status,
+  gender, age, height, qualifications, employment, immigration_status,
   city, county, country, is_ahmadi, local_jamaat, had_previous,
   previous_type, previous_duration, has_children,
   preference_line, country_looking_in,
@@ -229,7 +229,7 @@ grant update (
 -- are dropped too since nothing client-side legitimately needs them.
 revoke select on public.profiles from authenticated;
 grant select (
-  id, ref_code, gender, age, height, qualifications, employment, residential_status,
+  id, ref_code, gender, age, height, qualifications, employment, immigration_status,
   city, county, country, is_ahmadi, local_jamaat, had_previous, previous_type,
   previous_duration, has_children, preference_line, country_looking_in,
   consider_pakistan, additional_note, about, has_photo, photo_path,

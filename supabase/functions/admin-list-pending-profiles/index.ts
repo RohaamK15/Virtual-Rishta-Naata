@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
     const { data: profiles, error } = await admin
       .from("profiles")
       .select(
-        "id, ref_code, gender, age, height, qualifications, employment, residential_status, " +
+        "id, ref_code, gender, age, height, qualifications, employment, immigration_status, " +
         "city, county, country, is_ahmadi, local_jamaat, had_previous, previous_type, " +
         "previous_duration, has_children, preference_line, country_looking_in, " +
         "consider_pakistan, additional_note, about, created_at"

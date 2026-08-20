@@ -121,7 +121,7 @@ async function vrnRequireActiveMembership() {
 // columns. Every client-side profile read has to name its columns explicitly.
 const PROFILE_COLUMNS = [
   "id", "ref_code", "gender", "age", "height", "qualifications", "employment",
-  "residential_status", "city", "county", "country", "is_ahmadi", "local_jamaat",
+  "immigration_status", "city", "county", "country", "is_ahmadi", "local_jamaat",
   "had_previous", "previous_type", "previous_duration", "has_children",
   "preference_line", "country_looking_in", "consider_pakistan", "additional_note",
   "about", "has_photo", "photo_path", "photo_status", "photo_rejection_reason",

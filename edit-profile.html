@@ -113,8 +113,17 @@
           <input type="text" id="employment" placeholder="e.g. Design Engineer, Automotive sector">
         </div>
         <div class="field">
-          <label for="residentialStatus">Residential Status</label>
-          <input type="text" id="residentialStatus" placeholder="e.g. Lives with parents / independently">
+          <label for="immigrationStatus">Immigration Status</label>
+          <select id="immigrationStatus">
+            <option value="" disabled>Select your immigration status</option>
+            <option value="Citizen">Citizen</option>
+            <option value="Permanent Resident / ILR">Permanent Resident / ILR</option>
+            <option value="Work Visa">Work Visa</option>
+            <option value="Student Visa">Student Visa</option>
+            <option value="Spouse/Family Visa">Spouse/Family Visa</option>
+            <option value="Asylum Seeker/Refugee">Asylum Seeker/Refugee</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
         <div class="field-row">
           <div class="field">
@@ -300,7 +309,7 @@
 
     document.getElementById('qualifications').value = p.qualifications || '';
     document.getElementById('employment').value = p.employment || '';
-    document.getElementById('residentialStatus').value = p.residential_status || '';
+    document.getElementById('immigrationStatus').value = p.immigration_status || '';
     document.getElementById('city').value = p.city || '';
     document.getElementById('county').value = p.county || '';
     setCountryField(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther'), p.country);
@@ -328,7 +337,7 @@
     const heightMatch = height.match(/^([3-8])'(\d{1,2})"?$/);
     if (!heightMatch || +heightMatch[2] > 11) return "Please enter your height in the format feet'inches, e.g. 5'9";
 
-    const required = ['qualifications', 'employment', 'residentialStatus', 'city', 'county', 'localJamaat', 'preferenceLine', 'aboutYourself'];
+    const required = ['qualifications', 'employment', 'immigrationStatus', 'city', 'county', 'localJamaat', 'preferenceLine', 'aboutYourself'];
     for (const id of required) {
       if (!document.getElementById(id).value.trim()) return 'Please fill in every field before saving.';
     }
@@ -373,7 +382,7 @@
       height: document.getElementById('height').value.trim(),
       qualifications: document.getElementById('qualifications').value,
       employment: document.getElementById('employment').value,
-      residential_status: document.getElementById('residentialStatus').value,
+      immigration_status: document.getElementById('immigrationStatus').value,
       city: document.getElementById('city').value,
       county: document.getElementById('county').value,
       country: vrnResolveCountryValue(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther')),
