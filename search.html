@@ -351,9 +351,10 @@
     let photoUrl = null;
     if (p.has_photo) {
       try {
-        const { data } = await sb.functions.invoke('get-profile-photo', { body: { ref_code: refCode } });
+        const { data, error } = await sb.functions.invoke('get-profile-photo', { body: { ref_code: refCode } });
+        if (error) throw error;
         photoUrl = data?.url || null;
-      } catch (e) { /* photo function not deployed yet — fall back to placeholder icon */ }
+      } catch (e) { console.error('get-profile-photo failed:', await vrnFunctionErrorMessage(e)); }
     }
 
     detailEl.innerHTML = `

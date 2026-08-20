@@ -21,13 +21,13 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error("Not authenticated");
 
-    const { data: me } = await supabase.from("profiles").select("subscription_status").eq("id", user.id).single();
-    if (me?.subscription_status !== "active") throw new Error("Membership not active");
+    const { data: me } = await supabase.from("profiles").select("subscription_status, is_comped").eq("id", user.id).single();
+    if (me?.subscription_status !== "active" && !me?.is_comped) throw new Error("Membership not active");
 
     const { ref_code } = await req.json();
     const { data: target, error: targetError } = await supabase
       .from("profiles")
-      .select("has_photo, photo_path, photo_status, subscription_status")
+      .select("has_photo, photo_path, photo_status, subscription_status, is_comped")
       .eq("ref_code", ref_code)
       .single();
     if (targetError || !target) throw new Error("Profile not found");
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (target.subscription_status !== "active") throw new Error("Profile not active");
+    if (target.subscription_status !== "active" && !target.is_comped) throw new Error("Profile not active");
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: signed, error: signError } = await admin.storage
