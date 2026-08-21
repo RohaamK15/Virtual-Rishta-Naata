@@ -201,14 +201,7 @@
               <input type="email" id="consultEmail" placeholder="you@example.com">
             </div>
             <div class="field">
-              <label>Are you already a Virtual Rishta Naata member?</label>
-              <div class="radio-pill-group">
-                <label class="radio-pill"><input type="radio" name="consultIsMember" value="Yes" onchange="onConsultMemberChange()">Yes</label>
-                <label class="radio-pill"><input type="radio" name="consultIsMember" value="No" onchange="onConsultMemberChange()">No</label>
-              </div>
-            </div>
-            <div class="field" id="consultRefField" style="display:none;">
-              <label for="consultRef">Reference Code</label>
+              <label for="consultRef">Your VRN Reference Code</label>
               <input type="text" id="consultRef" placeholder="e.g. VRN-2481">
             </div>
             <div class="field">
@@ -285,20 +278,27 @@
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
 <script>
+  // Booking a consultation now requires an active membership — see
+  // account.html's "Complete Your Membership" flow for anyone not yet
+  // approved/paid. vrnRequireActiveMembership() redirects there with an
+  // explanation if the signed-in member isn't active yet.
+  (async () => {
+    const user = await vrnRequireAuth();
+    const me = await vrnRequireActiveMembership();
+    if (me) {
+      document.getElementById('consultEmail').value = user?.email || '';
+      document.getElementById('consultRef').value = me.ref_code || '';
+    }
+  })();
+</script>
+<script>
   const CONSULT_PENDING_KEY = 'vrnConsultPending';
-
-  function onConsultMemberChange(){
-    const isMember = document.querySelector('input[name="consultIsMember"]:checked')?.value === 'Yes';
-    document.getElementById('consultRefField').style.display = isMember ? 'block' : 'none';
-    if (!isMember) document.getElementById('consultRef').value = '';
-  }
 
   async function submitConsultRequest(){
     const email = document.getElementById('consultEmail').value.trim();
     const refCode = document.getElementById('consultRef').value.trim();
     const phone = document.getElementById('consultPhone').value.trim();
     const message = document.getElementById('consultMessage').value.trim();
-    const memberChoice = document.querySelector('input[name="consultIsMember"]:checked');
     const errorEl = document.getElementById('consultError');
     const btn = document.getElementById('consultSubmitBtn');
     errorEl.style.display = 'none';
@@ -308,13 +308,8 @@
       errorEl.style.display = 'block';
       return;
     }
-    if (!memberChoice) {
-      errorEl.textContent = "Please let us know if you're already a member.";
-      errorEl.style.display = 'block';
-      return;
-    }
-    if (memberChoice.value === 'Yes' && !refCode) {
-      errorEl.textContent = 'Please enter your reference code.';
+    if (!refCode) {
+      errorEl.textContent = 'Please enter your VRN reference code.';
       errorEl.style.display = 'block';
       return;
     }
@@ -322,7 +317,7 @@
     btn.setAttribute('disabled', '');
     btn.textContent = 'Redirecting to Stripe...';
     try {
-      await startConsultCheckout({ email, refCode, phone, message, isMember: memberChoice.value === 'Yes' });
+      await startConsultCheckout({ email, refCode, phone, message });
     } catch (err) {
       errorEl.textContent = (err && err.text) || await vrnFunctionErrorMessage(err);
       errorEl.style.display = 'block';
@@ -331,7 +326,7 @@
     }
   }
 
-  async function startConsultCheckout({ email, refCode, phone, message, isMember }){
+  async function startConsultCheckout({ email, refCode, phone, message }){
     // Generated client-side so we never need to read the row back — the
     // insert-only RLS policy on consultation_requests (see schema.sql) means
     // anon can write but not select, which is intentional: only admins should
@@ -355,7 +350,7 @@
     if (error) throw error;
 
     sessionStorage.setItem(CONSULT_PENDING_KEY, JSON.stringify({
-      id: requestId, email, refCode, phone, message, isMember
+      id: requestId, email, refCode, phone, message
     }));
     const btn = document.getElementById('consultSubmitBtn');
     await vrnOpenCheckout(data.url, () => {

@@ -87,15 +87,11 @@
     // rather than failing to show the confirmation at all.
     const raw = sessionStorage.getItem(CONSULT_PENDING_KEY);
     const pending = raw ? JSON.parse(raw) : null;
+    // Booking a consultation now requires an active membership (see
+    // services.html), so this always points back into the app.
     const secondaryLink = document.getElementById('secondaryLink');
-
-    if (pending && !pending.isMember) {
-      secondaryLink.href = '/signup.html';
-      secondaryLink.textContent = 'Create Your Profile';
-    } else {
-      secondaryLink.href = '/search.html';
-      secondaryLink.textContent = 'Browse Profiles';
-    }
+    secondaryLink.href = '/search.html';
+    secondaryLink.textContent = 'Browse Profiles';
 
     if (pending) {
       notifyConsultBooked(pending);
