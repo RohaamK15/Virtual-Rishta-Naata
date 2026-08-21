@@ -100,7 +100,13 @@
   }
   .reverence-caption span{display:block;margin-top:7px;font-size:.9rem;color:var(--gold-ink);letter-spacing:.04em;}
 
-  .reverence-body > p{color:var(--ink-soft);line-height:1.8;margin-bottom:22px;}
+  .reverence-body{position:relative;}
+  .reverence-body > p{color:var(--ink-soft);line-height:1.8;margin-bottom:22px;font-style:italic;}
+  .reverence-quote-mark{
+    font-family:Georgia,'Cinzel',serif;font-size:5.5rem;line-height:1;color:var(--gold);
+    opacity:.4;height:34px;display:block;
+  }
+  .reverence-quote-mark.close{text-align:left;transform:scaleX(-1);margin-top:6px;}
 
   .ilham-block{text-align:center;margin:0 0 30px;}
   .ilham-label{
@@ -139,6 +145,7 @@
     text-align:center;margin-top:38px;font-family:'Cinzel',serif;
     font-size:.85rem;letter-spacing:.06em;color:var(--gold-ink);
   }
+  .reverence-cta{text-align:center;margin-top:34px;}
 
   @media (max-width:600px){
     .reverence-portrait{max-width:260px;}
@@ -293,13 +300,14 @@
         </div>
 
         <div class="reverence-body" data-reveal>
+        <span class="reverence-quote-mark" aria-hidden="true">"</span>
         <div class="ilham-block">
           <span class="ilham-label">An Ilhām of the Promised Messiah (as)</span>
           <p class="ilham-text">نرمی کرو۔ نرمی کرو<br>کہ تمام نیکیوں کا سر نرمی ہے</p>
           <p class="ilham-translation">"Be gentle. Be gentle — for gentleness is the root of all virtues."</p>
         </div>
 
-        <p>This ilhām contains guidance for the whole Jamā‘at to treat their wives with kindness and courtesy. Your wives are not your slaves. As a matter of fact, nikāh [marriage] is a covenant between man and woman. Therefore, strive not to be false to your covenant, God Almighty says in the Holy Qur'an:</p>
+        <p>"This ilhām contains guidance for the whole Jamā‘at to treat their wives with kindness and courtesy. Your wives are not your slaves. As a matter of fact, nikāh [marriage] is a covenant between man and woman. Therefore, strive not to be false to your covenant, God Almighty says in the Holy Qur'an:</p>
 
         <div class="ayah-block quran">
           <p class="ayah-arabic">وَعَاشِرُوهُنَّ بِالْمَعْرُوفِ</p>
@@ -313,9 +321,17 @@
           <p class="ayah-meaning">Meaning that: <em>the best among you is he who is best towards his wife</em> [Sunan Tirmidhī, Abwāb al-Manāqib, Bābun fī faḍl Azwāj an-Nabiyy ṣallallāhu ‘alaihi wa sallam, Hadith 3895].</p>
         </div>
 
-        <p>Therefore, be good to your wives both spiritually and physically. Keep praying for them, and avoid divorce. A person who is hasty in divorce is sinful in the eyes of God. Do not hasten to break — like a dirty vessel — that which God has affixed together.</p>
+        <p>Therefore, be good to your wives both spiritually and physically. Keep praying for them, and avoid divorce. A person who is hasty in divorce is sinful in the eyes of God. Do not hasten to break — like a dirty vessel — that which God has affixed together."</p>
+        <span class="reverence-quote-mark close" aria-hidden="true">"</span>
 
         <p class="reverence-citation">— Arba‘īn, Page 121</p>
+
+        <div class="reverence-cta">
+          <a href="/guidelines.html#jamaat-resources" class="btn btn-outline">
+            More Guidance From the Jamaat on Marriage
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
         </div>
       </div>
     </div>
