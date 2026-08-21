@@ -596,31 +596,12 @@ create policy "messages_update_report_own_conversation" on public.messages
 revoke update on public.messages from authenticated;
 grant update (reported, reported_reason) on public.messages to authenticated;
 
--- Auto-flags messages that look like an attempt to share contact details —
--- email addresses, phone-number-like digit runs, or spelled-out obfuscations
--- like "name at gmail dot com". Deliberately loose/over-inclusive: false
--- positives just mean an admin reviews an innocent message, but a missed
--- real one defeats the entire point of moving off email in the first place.
-create or replace function public.flag_contact_info_in_message()
-returns trigger
-language plpgsql
-as $$
-begin
-  if new.body ~* '[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}'
-     or new.body ~* '(\+?\d[\d\s().-]{7,}\d)'
-     or new.body ~* '[a-z0-9._%-]+\s*[\(\[]?\s*at\s*[\)\]]?\s*[a-z0-9.-]+\s*[\(\[]?\s*dot\s*[\)\]]?\s*[a-z]{2,}'
-  then
-    new.flagged := true;
-    new.flag_reason := coalesce(new.flag_reason, 'auto: message looks like it may contain contact details');
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists trg_flag_contact_info on public.messages;
-create trigger trg_flag_contact_info
-  before insert on public.messages
-  for each row execute function public.flag_contact_info_in_message();
+-- Contact details in messages are no longer restricted or auto-flagged —
+-- sharing them (email first, then further details once both parties are
+-- comfortable) is now advised in chat.html's Messaging Guidelines rather
+-- than policed. flagged/flag_reason stay on the table for members'
+-- self-reports (see messages_update_report_own_conversation) and any future
+-- manual admin use; nothing sets them automatically anymore.
 
 create or replace function public.touch_conversation_last_message()
 returns trigger
