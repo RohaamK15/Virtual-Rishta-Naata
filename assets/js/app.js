@@ -238,6 +238,12 @@ async function vrnRenderNavAuthState(){
     ? `<img src="${avatarUrl}" alt="" class="nav-user-avatar">`
     : `<span class="nav-user-avatar nav-user-avatar--placeholder"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg></span>`;
 
+  // A separate visible button per feature (Messages, Admin Console, Log Out)
+  // doesn't scale — even at a full 1280px desktop width, four items plus the
+  // marketing nav-links forced the brand wordmark to wrap onto three lines
+  // and other nav items to wrap awkwardly. One dropdown off the avatar chip
+  // keeps the header's width constant regardless of how many account
+  // actions exist.
   document.querySelectorAll('.nav-cta').forEach(navCta => {
     const loginLink = navCta.querySelector('a[href="/login.html"]');
     const signupLink = navCta.querySelector('a[href="/signup.html"]');
@@ -245,32 +251,37 @@ async function vrnRenderNavAuthState(){
     loginLink?.remove();
     signupLink?.remove();
 
-    const chip = document.createElement('a');
-    chip.href = '/account.html';
+    const menu = document.createElement('div');
+    menu.className = 'nav-user-menu';
+
+    const chip = document.createElement('button');
+    chip.type = 'button';
     chip.className = 'nav-user-chip';
+    chip.setAttribute('aria-haspopup', 'true');
     chip.innerHTML = avatarHtml + `<span class="nav-user-ref">${profile.ref_code}</span>`;
 
-    const messagesLink = document.createElement('a');
-    messagesLink.href = '/messages.html';
-    messagesLink.className = 'btn btn-outline btn-sm';
-    messagesLink.textContent = 'Messages';
+    const dropdown = document.createElement('div');
+    dropdown.className = 'nav-user-dropdown';
+    dropdown.innerHTML = `
+      <a href="/account.html">My Account</a>
+      <a href="/messages.html">Messages</a>
+      ${profile.is_admin ? '<a href="/admin.html" class="nav-user-dropdown-admin">Admin Console</a>' : ''}
+    `;
+    const logoutItem = document.createElement('button');
+    logoutItem.type = 'button';
+    logoutItem.textContent = 'Log Out';
+    logoutItem.onclick = () => vrnSignOut();
+    dropdown.appendChild(logoutItem);
 
-    const logoutBtn = document.createElement('button');
-    logoutBtn.type = 'button';
-    logoutBtn.className = 'btn btn-outline btn-sm';
-    logoutBtn.textContent = 'Log Out';
-    logoutBtn.onclick = () => vrnSignOut();
+    chip.onclick = (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('open');
+    };
+    document.addEventListener('click', () => dropdown.classList.remove('open'));
 
-    navCta.insertBefore(logoutBtn, navCta.firstChild);
-    if (profile.is_admin) {
-      const adminLink = document.createElement('a');
-      adminLink.href = '/admin.html';
-      adminLink.className = 'btn btn-primary btn-sm';
-      adminLink.textContent = 'Admin Console';
-      navCta.insertBefore(adminLink, logoutBtn);
-    }
-    navCta.insertBefore(messagesLink, navCta.firstChild);
-    navCta.insertBefore(chip, navCta.firstChild);
+    menu.appendChild(chip);
+    menu.appendChild(dropdown);
+    navCta.insertBefore(menu, navCta.firstChild);
   });
 
   // Mobile menu shows the same links in a simple vertical list — swap them
