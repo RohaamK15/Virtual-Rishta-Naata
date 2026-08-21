@@ -164,7 +164,7 @@
           <li><a href="#" onclick="return replayOnboardingTour()">Replay Onboarding Tour <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="/search.html">Browse Profiles <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="/services.html">Book a Consultation <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
-          <li><a href="#">Notification Preferences <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
+          <li><a href="#" id="pushToggleLink" onclick="return toggleNotificationPreference()">Turn Off Push Notifications <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="#" style="color:var(--error);" onclick="return handleDeactivate()">Deactivate My Account <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="#" style="color:var(--error);" onclick="return handleDeleteAccount()">Delete My Account &amp; Data <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
         </ul>
@@ -212,6 +212,7 @@
     }
     if (!p) return;
     currentProfile = p;
+    renderPushToggleLabel();
 
     document.getElementById('f-ref').textContent = p.ref_code || '—';
     document.getElementById('f-joined').textContent = 'Member since ' + new Date(p.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -483,6 +484,27 @@
       document.getElementById('googleLinkBtn').style.display = 'none';
       document.getElementById('googleLinkedNote').style.display = 'block';
     }
+  }
+
+  function renderPushToggleLabel(){
+    const link = document.getElementById('pushToggleLink');
+    if (!link || !currentProfile) return;
+    const on = currentProfile.push_enabled !== false;
+    link.childNodes[0].textContent = on ? 'Turn Off Push Notifications ' : 'Turn On Push Notifications ';
+  }
+
+  async function toggleNotificationPreference(){
+    const next = !(currentProfile?.push_enabled !== false);
+    try {
+      const user = await vrnCurrentUser();
+      const { error } = await sb.from('profiles').update({ push_enabled: next }).eq('id', user.id);
+      if (error) throw error;
+      currentProfile.push_enabled = next;
+      renderPushToggleLabel();
+    } catch (err) {
+      alert('Could not update your notification preference — please try again.');
+    }
+    return false;
   }
 
   async function handleDeactivate(){

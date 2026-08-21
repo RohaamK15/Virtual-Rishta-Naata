@@ -44,10 +44,15 @@ Deno.serve(async (req) => {
     const recipientId = conversation.member_a === user.id ? conversation.member_b : conversation.member_a;
 
     const { data: sender } = await admin.from("profiles").select("ref_code").eq("id", user.id).single();
-    const { data: recipient } = await admin.from("profiles").select("push_token, push_platform").eq("id", recipientId).single();
+    const { data: recipient } = await admin.from("profiles").select("push_token, push_platform, push_enabled").eq("id", recipientId).single();
 
     if (!recipient?.push_token) {
       return new Response(JSON.stringify({ skipped: "recipient has no push token" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (recipient.push_enabled === false) {
+      return new Response(JSON.stringify({ skipped: "recipient has push notifications turned off" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

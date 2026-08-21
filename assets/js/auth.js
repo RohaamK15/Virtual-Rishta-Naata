@@ -127,7 +127,7 @@ const PROFILE_COLUMNS = [
   "about", "has_photo", "photo_path", "photo_status", "photo_rejection_reason",
   "profile_status", "profile_rejection_reason",
   "plan", "subscription_status", "is_comped", "is_admin", "chat_guidelines_accepted_at",
-  "onboarding_completed_at", "theme_preference", "created_at",
+  "onboarding_completed_at", "theme_preference", "push_enabled", "created_at",
 ].join(", ");
 
 async function vrnMyProfile() {

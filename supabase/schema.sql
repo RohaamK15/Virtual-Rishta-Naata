@@ -58,6 +58,11 @@ create table if not exists public.profiles (
   -- deliver a push for a new chat message.
   push_token text,
   push_platform text check (push_platform in ('android','ios')),
+  -- Member-controlled: unlike push_token/push_platform above, this one IS
+  -- both readable and writable by the owner — it's the "Notification
+  -- Preferences" toggle on account.html, checked by send-message-push
+  -- before delivering a new-message push.
+  push_enabled boolean not null default true,
   -- Set once the member has acknowledged the in-app messaging guidelines —
   -- see the CHAT & MESSAGING section below. Shown once, not on every chat.
   chat_guidelines_accepted_at timestamptz,
@@ -146,7 +151,7 @@ create trigger trg_reset_photo_status
 -- 'pending' for re-review. Deliberately excludes contact_email (private,
 -- never shown to other members), has_photo/photo_path (governed by the photo
 -- trigger above), and chat_guidelines_accepted_at/onboarding_completed_at/
--- theme_preference/is_comped/push_token/push_platform (operational metadata,
+-- theme_preference/is_comped/push_token/push_platform/push_enabled (operational metadata,
 -- not profile content — must never affect visibility).
 create or replace function public.reset_profile_status_on_change()
 returns trigger
@@ -217,7 +222,7 @@ grant update (
   preference_line, country_looking_in,
   consider_pakistan, additional_note, about, contact_email,
   has_photo, photo_path, chat_guidelines_accepted_at, onboarding_completed_at,
-  theme_preference, push_token, push_platform
+  theme_preference, push_token, push_platform, push_enabled
 ) on public.profiles to authenticated;
 
 -- Supabase grants SELECT on every column of every new table to `authenticated`
@@ -235,7 +240,7 @@ grant select (
   consider_pakistan, additional_note, about, has_photo, photo_path,
   photo_status, photo_rejection_reason, profile_status, profile_rejection_reason,
   plan, subscription_status, is_comped, is_admin, chat_guidelines_accepted_at,
-  onboarding_completed_at, theme_preference, created_at
+  onboarding_completed_at, theme_preference, push_enabled, created_at
 ) on public.profiles to authenticated;
 
 -- Any active, paying member can view the full details of another active member.
