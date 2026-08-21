@@ -10,6 +10,14 @@
 <link rel="stylesheet" href="/assets/css/styles.css">
 <script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
 <style>
+  /* Noto Nastaliq Urdu stands in for Jameel Noori Nastaleeq (not a webfont —
+     no CDN hosts it, and no copy of it exists in this project to self-host;
+     swap this @import and the .ilham-text font-family for a @font-face rule
+     if a licensed copy of Jameel Noori Nastaleeq is added under assets/fonts).
+     Scheherazade New is a genuine Quranic-typesetting typeface (built for
+     classical Arabic with full tashkīl), used for both the ayah and hadith. */
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap');
+
   .hero{
     padding:64px 0 90px;position:relative;overflow:hidden;
     background:
@@ -50,6 +58,81 @@
   .section-head{text-align:center;max-width:600px;margin:0 auto 56px;}
   .section-head h2{margin-top:14px;}
   .section-head p{margin-top:16px;color:var(--ink-soft);}
+
+  /* ---------- reverence section (Promised Messiah (as) on marriage) ---------- */
+  .reverence{
+    padding:96px 0;position:relative;overflow:hidden;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(197,157,82,.16), transparent),
+      radial-gradient(ellipse 70% 60% at 50% 100%, rgba(197,157,82,.10), transparent),
+      var(--ivory);
+  }
+  .reverence-portrait-wrap{display:flex;flex-direction:column;align-items:center;}
+  .reverence-frame{
+    position:relative;padding:14px;background:var(--surface);
+    border-radius:50% 50% 8px 8px / 30% 30% 8px 8px;
+    box-shadow:var(--shadow-3);
+    border:1px solid rgba(197,157,82,.35);
+  }
+  .reverence-frame::before{
+    content:'';position:absolute;inset:6px;
+    border:1px solid var(--gold);border-radius:50% 50% 6px 6px / 28% 28% 6px 6px;
+    pointer-events:none;
+  }
+  .reverence-portrait{
+    width:240px;height:320px;object-fit:cover;object-position:top center;
+    border-radius:50% 50% 4px 4px / 26% 26% 4px 4px;display:block;
+    filter:sepia(.18) contrast(1.02);
+  }
+  .reverence-caption{margin-top:22px;text-align:center;}
+  .reverence-caption strong{
+    display:block;font-family:'Cinzel',serif;font-size:1.02rem;color:var(--green);
+  }
+  .reverence-caption span{display:block;margin-top:5px;font-size:.8rem;color:var(--gold-ink);letter-spacing:.04em;}
+
+  .reverence-body{max-width:720px;margin:56px auto 0;}
+  .reverence-body > p{color:var(--ink-soft);line-height:1.8;margin-bottom:22px;}
+
+  .ilham-block{text-align:center;margin:0 0 30px;}
+  .ilham-label{
+    display:block;font-family:'Montserrat',sans-serif;font-weight:600;font-size:.72rem;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:16px;
+  }
+  .ilham-text{
+    font-family:'Noto Nastaliq Urdu','Scheherazade New',serif;
+    font-weight:700;font-size:2.1rem;line-height:2.3;color:var(--green);
+    direction:rtl;
+  }
+  .ilham-translation{
+    margin-top:14px;font-family:'Lato',sans-serif;font-style:italic;
+    color:var(--ink-soft);font-size:1rem;
+  }
+
+  .ayah-block{
+    text-align:center;background:var(--surface);border-radius:var(--radius-m);
+    box-shadow:var(--shadow-1);padding:34px 30px;margin:28px 0;
+  }
+  .ayah-arabic{
+    font-family:'Scheherazade New',serif;font-weight:700;color:var(--green);
+    direction:rtl;line-height:2;
+  }
+  .ayah-block.quran .ayah-arabic{font-size:2rem;}
+  .ayah-block.hadith .ayah-arabic{font-size:1.6rem;}
+  .ayah-meaning{margin-top:16px;color:var(--ink-soft);font-size:.94rem;line-height:1.7;}
+  .ayah-meaning em{font-style:normal;color:var(--gold-ink);}
+
+  .reverence-citation{
+    text-align:center;margin-top:38px;font-family:'Cinzel',serif;
+    font-size:.85rem;letter-spacing:.06em;color:var(--gold-ink);
+  }
+
+  @media (max-width:600px){
+    .reverence-portrait{width:190px;height:254px;}
+    .ilham-text{font-size:1.6rem;line-height:2;}
+    .ayah-block.quran .ayah-arabic{font-size:1.6rem;}
+    .ayah-block.hadith .ayah-arabic{font-size:1.35rem;}
+    .ayah-block{padding:26px 20px;}
+  }
 
   .steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;}
   @media (max-width:900px){.steps-grid{grid-template-columns:1fr 1fr;}}
@@ -176,11 +259,51 @@
         </div>
         <div class="hero-float f2">
           <div class="dot" style="background:var(--rose-soft);color:var(--error);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 10-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg></div>
-          <div><strong>1,200+</strong><span>Active members</span></div>
+          <div><strong id="activeMemberCount">—</strong><span>Active members</span></div>
         </div>
       </div>
     </div>
   </header>
+
+  <section class="reverence">
+    <div class="wrap">
+      <div class="reverence-portrait-wrap" data-reveal>
+        <div class="reverence-frame">
+          <img src="/assets/img/promised-messiah.webp" alt="Hazrat Mirza Ghulam Ahmad (as), the Promised Messiah and Imam Mahdi" class="reverence-portrait">
+        </div>
+        <div class="reverence-caption">
+          <strong>Hazrat Mirza Ghulam Ahmad&nbsp;(as)</strong>
+          <span>The Promised Messiah &amp; Imam Mahdi</span>
+        </div>
+      </div>
+
+      <div class="reverence-body" data-reveal>
+        <div class="ilham-block">
+          <span class="ilham-label">An Ilhām of the Promised Messiah (as)</span>
+          <p class="ilham-text">نرمی کرو۔ نرمی کرو<br>کہ تمام نیکیوں کا سر نرمی ہ</p>
+          <p class="ilham-translation">"Be gentle. Be gentle — for gentleness is the root of all virtues."</p>
+        </div>
+
+        <p>This ilhām contains guidance for the whole Jamā‘at to treat their wives with kindness and courtesy. Your wives are not your slaves. As a matter of fact, nikāh [marriage] is a covenant between man and woman. Therefore, strive not to be false to your covenant, God Almighty says in the Holy Qur'an:</p>
+
+        <div class="ayah-block quran">
+          <p class="ayah-arabic">وَعَاشِرُوهُنَّ بِالْمَعْرُوفِ</p>
+          <p class="ayah-meaning">Meaning that: <em>And consort with them in kindness</em> [Sūrah an-Nisā', 4:20].</p>
+        </div>
+
+        <p>And it is mentioned in a hadith:</p>
+
+        <div class="ayah-block hadith">
+          <p class="ayah-arabic">خَيْرُكُمْ خَيْرُكُمْ لِأَهْلِهِ</p>
+          <p class="ayah-meaning">Meaning that: <em>the best among you is he who is best towards his wife</em> [Sunan Tirmidhī, Abwāb al-Manāqib, Bābun fī faḍl Azwāj an-Nabiyy ṣallallāhu ‘alaihi wa sallam, Hadith 3895].</p>
+        </div>
+
+        <p>Therefore, be good to your wives both spiritually and physically. Keep praying for them, and avoid divorce. A person who is hasty in divorce is sinful in the eyes of God. Do not hasten to break — like a dirty vessel — that which God has affixed together.</p>
+
+        <p class="reverence-citation">— Arba‘īn, Page 121</p>
+      </div>
+    </div>
+  </section>
 
   <section class="section">
     <div class="wrap">
@@ -384,5 +507,21 @@
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
+<script>
+  // Public aggregate count (see get-active-member-count) — no auth required,
+  // safe for signed-out visitors, and reflects the real number instead of a
+  // hardcoded marketing figure.
+  (async function loadActiveMemberCount(){
+    const el = document.getElementById('activeMemberCount');
+    if (!el) return;
+    try {
+      const { data, error } = await sb.functions.invoke('get-active-member-count');
+      if (error) throw error;
+      el.textContent = (data.count ?? 0).toLocaleString('en-GB');
+    } catch (e) {
+      el.textContent = '—';
+    }
+  })();
+</script>
 </body>
 </html>
