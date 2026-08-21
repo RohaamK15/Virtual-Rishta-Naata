@@ -238,12 +238,10 @@ async function vrnRenderNavAuthState(){
     ? `<img src="${avatarUrl}" alt="" class="nav-user-avatar">`
     : `<span class="nav-user-avatar nav-user-avatar--placeholder"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 016-6h4a6 6 0 016 6v1"/></svg></span>`;
 
-  // A separate visible button per feature (Messages, Admin Console, Log Out)
-  // doesn't scale — even at a full 1280px desktop width, four items plus the
-  // marketing nav-links forced the brand wordmark to wrap onto three lines
-  // and other nav items to wrap awkwardly. One dropdown off the avatar chip
-  // keeps the header's width constant regardless of how many account
-  // actions exist.
+  // Messages/Admin Console as small round icon buttons (matching the
+  // .icon-btn used for the theme toggle elsewhere) rather than labelled
+  // buttons or a dropdown — compact enough to sit directly in the header
+  // without crowding the brand wordmark or nav-links at any desktop width.
   document.querySelectorAll('.nav-cta').forEach(navCta => {
     const loginLink = navCta.querySelector('a[href="/login.html"]');
     const signupLink = navCta.querySelector('a[href="/signup.html"]');
@@ -251,37 +249,34 @@ async function vrnRenderNavAuthState(){
     loginLink?.remove();
     signupLink?.remove();
 
-    const menu = document.createElement('div');
-    menu.className = 'nav-user-menu';
-
-    const chip = document.createElement('button');
-    chip.type = 'button';
+    const chip = document.createElement('a');
+    chip.href = '/account.html';
     chip.className = 'nav-user-chip';
-    chip.setAttribute('aria-haspopup', 'true');
     chip.innerHTML = avatarHtml + `<span class="nav-user-ref">${profile.ref_code}</span>`;
 
-    const dropdown = document.createElement('div');
-    dropdown.className = 'nav-user-dropdown';
-    dropdown.innerHTML = `
-      <a href="/account.html">My Account</a>
-      <a href="/messages.html">Messages</a>
-      ${profile.is_admin ? '<a href="/admin.html" class="nav-user-dropdown-admin">Admin Console</a>' : ''}
-    `;
-    const logoutItem = document.createElement('button');
-    logoutItem.type = 'button';
-    logoutItem.textContent = 'Log Out';
-    logoutItem.onclick = () => vrnSignOut();
-    dropdown.appendChild(logoutItem);
+    const messagesLink = document.createElement('a');
+    messagesLink.href = '/messages.html';
+    messagesLink.className = 'icon-btn nav-cta-icon';
+    messagesLink.setAttribute('aria-label', 'Messages');
+    messagesLink.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>';
 
-    chip.onclick = (e) => {
-      e.stopPropagation();
-      dropdown.classList.toggle('open');
-    };
-    document.addEventListener('click', () => dropdown.classList.remove('open'));
+    const logoutBtn = document.createElement('button');
+    logoutBtn.type = 'button';
+    logoutBtn.className = 'btn btn-outline btn-sm nav-cta-icon';
+    logoutBtn.textContent = 'Log Out';
+    logoutBtn.onclick = () => vrnSignOut();
 
-    menu.appendChild(chip);
-    menu.appendChild(dropdown);
-    navCta.insertBefore(menu, navCta.firstChild);
+    navCta.insertBefore(logoutBtn, navCta.firstChild);
+    if (profile.is_admin) {
+      const adminLink = document.createElement('a');
+      adminLink.href = '/admin.html';
+      adminLink.className = 'icon-btn nav-cta-icon';
+      adminLink.setAttribute('aria-label', 'Admin Console');
+      adminLink.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>';
+      navCta.insertBefore(adminLink, logoutBtn);
+    }
+    navCta.insertBefore(messagesLink, navCta.firstChild);
+    navCta.insertBefore(chip, navCta.firstChild);
   });
 
   // Mobile menu shows the same links in a simple vertical list — swap them
