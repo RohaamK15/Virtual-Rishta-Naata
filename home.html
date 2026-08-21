@@ -10,13 +10,16 @@
 <link rel="stylesheet" href="/assets/css/styles.css">
 <script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
 <style>
-  /* Noto Nastaliq Urdu stands in for Jameel Noori Nastaleeq (not a webfont —
-     no CDN hosts it, and no copy of it exists in this project to self-host;
-     swap this @import and the .ilham-text font-family for a @font-face rule
-     if a licensed copy of Jameel Noori Nastaleeq is added under assets/fonts).
+  /* Jameel Noori Nastaleeq, self-hosted (assets/fonts) — Noto Nastaliq Urdu
+     stays in the stack as a fallback in case the local font fails to load.
      Scheherazade New is a genuine Quranic-typesetting typeface (built for
      classical Arabic with full tashkīl), used for both the ayah and hadith. */
   @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap');
+  @font-face{
+    font-family:'Jameel Noori Nastaleeq';
+    src:url('/assets/fonts/jameel-noori-nastaleeq.woff2') format('woff2');
+    font-weight:400;font-style:normal;font-display:swap;
+  }
 
   .hero{
     padding:64px 0 90px;position:relative;overflow:hidden;
@@ -99,8 +102,13 @@
     letter-spacing:.2em;text-transform:uppercase;color:var(--gold-ink);margin-bottom:16px;
   }
   .ilham-text{
-    font-family:'Noto Nastaliq Urdu','Scheherazade New',serif;
-    font-weight:700;font-size:2.1rem;line-height:2.3;color:var(--green);
+    /* Only the Regular weight of Jameel Noori Nastaleeq was supplied — real
+       bold isn't available, and browser-synthesized "fake bold" distorts
+       Nastaliq's cursive joins badly, so size carries the emphasis instead
+       of font-weight here (the calligraphic style itself already reads as
+       prominent at regular weight). */
+    font-family:'Jameel Noori Nastaleeq','Noto Nastaliq Urdu','Scheherazade New',serif;
+    font-weight:400;font-size:2.3rem;line-height:2.4;color:var(--green);
     direction:rtl;
   }
   .ilham-translation{
