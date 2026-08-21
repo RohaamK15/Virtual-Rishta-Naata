@@ -250,6 +250,11 @@ async function vrnRenderNavAuthState(){
     chip.className = 'nav-user-chip';
     chip.innerHTML = avatarHtml + `<span class="nav-user-ref">${profile.ref_code}</span>`;
 
+    const messagesLink = document.createElement('a');
+    messagesLink.href = '/messages.html';
+    messagesLink.className = 'btn btn-outline btn-sm';
+    messagesLink.textContent = 'Messages';
+
     const logoutBtn = document.createElement('button');
     logoutBtn.type = 'button';
     logoutBtn.className = 'btn btn-outline btn-sm';
@@ -264,14 +269,20 @@ async function vrnRenderNavAuthState(){
       adminLink.textContent = 'Admin Console';
       navCta.insertBefore(adminLink, logoutBtn);
     }
+    navCta.insertBefore(messagesLink, navCta.firstChild);
     navCta.insertBefore(chip, navCta.firstChild);
   });
 
-  // Mobile menu shows the same two links in a simple vertical list — swap
-  // them the same way rather than trying to fit the avatar chip in there.
+  // Mobile menu shows the same links in a simple vertical list — swap them
+  // the same way rather than trying to fit the avatar chip in there.
   document.querySelectorAll('.mobile-menu a[href="/login.html"]').forEach(a => {
     a.textContent = 'My Account (' + profile.ref_code + ')';
     a.href = '/account.html';
+
+    const messagesItem = document.createElement('a');
+    messagesItem.textContent = 'Messages';
+    messagesItem.href = '/messages.html';
+    a.insertAdjacentElement('afterend', messagesItem);
   });
   document.querySelectorAll('.mobile-menu a[href="/signup.html"]').forEach(a => {
     if (profile.is_admin) {
