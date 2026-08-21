@@ -182,7 +182,11 @@
     try {
       const user = await vrnSignIn(email, password);
       const { data: profile } = await sb.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
-      window.location.href = profile?.is_admin ? '/admin.html' : '/search.html';
+      // Admins land on the regular home page first, not the console directly —
+      // vrnRenderNavAuthState() (see app.js) shows an "Admin Console" button
+      // in the nav for is_admin accounts, so the console is one click away
+      // without forcing every admin login straight into it.
+      window.location.href = profile?.is_admin ? '/home.html' : '/search.html';
     } catch (err) {
       errorEl.textContent = err.message || 'Could not log in. Please check your details.';
       errorEl.style.display = 'block';

@@ -257,7 +257,14 @@ async function vrnRenderNavAuthState(){
     logoutBtn.onclick = () => vrnSignOut();
 
     navCta.insertBefore(logoutBtn, navCta.firstChild);
-    navCta.insertBefore(chip, logoutBtn);
+    if (profile.is_admin) {
+      const adminLink = document.createElement('a');
+      adminLink.href = '/admin.html';
+      adminLink.className = 'btn btn-primary btn-sm';
+      adminLink.textContent = 'Admin Console';
+      navCta.insertBefore(adminLink, logoutBtn);
+    }
+    navCta.insertBefore(chip, navCta.firstChild);
   });
 
   // Mobile menu shows the same two links in a simple vertical list — swap
@@ -267,9 +274,20 @@ async function vrnRenderNavAuthState(){
     a.href = '/account.html';
   });
   document.querySelectorAll('.mobile-menu a[href="/signup.html"]').forEach(a => {
-    a.textContent = 'Log Out';
-    a.href = '#';
-    a.onclick = (e) => { e.preventDefault(); vrnSignOut(); };
+    if (profile.is_admin) {
+      a.textContent = 'Admin Console';
+      a.href = '/admin.html';
+      a.onclick = null;
+      const logoutItem = document.createElement('a');
+      logoutItem.textContent = 'Log Out';
+      logoutItem.href = '#';
+      logoutItem.onclick = (e) => { e.preventDefault(); vrnSignOut(); };
+      a.insertAdjacentElement('afterend', logoutItem);
+    } else {
+      a.textContent = 'Log Out';
+      a.href = '#';
+      a.onclick = (e) => { e.preventDefault(); vrnSignOut(); };
+    }
   });
 }
 
