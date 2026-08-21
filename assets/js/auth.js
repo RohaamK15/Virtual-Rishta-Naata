@@ -147,9 +147,20 @@ async function vrnGetProfileByRef(refCode) {
 }
 
 // Search-page listing. RLS already restricts this to active members viewing
-// active members; we only select the fields the card actually shows.
+// active members, but it deliberately can't exclude people the caller has
+// blocked here: profiles_select_blocked_by_me (needed so account.html can
+// show "who have I blocked") is OR'd together with every other SELECT
+// policy, and RLS has no way to tell "this is the blocked-list widget" apart
+// from "this is a normal search" — both are just a select on profiles. So a
+// blocked member would otherwise still appear in search results, directly
+// contradicting what blocking a member promises. Filtered here instead.
 async function vrnSearchProfiles(filters = {}) {
-  let query = sb.from("profiles").select("ref_code, gender, age, country, consider_pakistan");
+  const me = await vrnCurrentUser();
+  const { data: myBlocks } = await sb.from("blocks").select("blocked_id").eq("blocker_id", me.id);
+  const blockedIds = (myBlocks || []).map((b) => b.blocked_id);
+
+  let query = sb.from("profiles").select("id, ref_code, gender, age, country, consider_pakistan").neq("id", me.id);
+  if (blockedIds.length) query = query.not("id", "in", `(${blockedIds.join(",")})`);
   if (filters.gender) query = query.eq("gender", filters.gender);
   if (filters.minAge) query = query.gte("age", filters.minAge);
   if (filters.maxAge) query = query.lte("age", filters.maxAge);
