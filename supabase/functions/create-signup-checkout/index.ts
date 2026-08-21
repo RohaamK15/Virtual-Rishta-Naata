@@ -13,6 +13,25 @@ import { buildReturnUrls } from "../_shared/checkoutUrls.ts";
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" });
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+// Sanitize at the point of staging too (stripe-webhook re-sanitizes again at
+// the point of use — defense in depth): profile_data is later upserted into
+// profiles with the service-role key, bypassing RLS entirely, so it must
+// never carry anything beyond plain profile content.
+const ALLOWED_PROFILE_FIELDS = [
+  "gender", "age", "height", "qualifications", "employment", "immigration_status",
+  "city", "county", "country", "is_ahmadi", "local_jamaat", "had_previous",
+  "previous_type", "previous_duration", "has_children", "preference_line",
+  "country_looking_in", "consider_pakistan", "additional_note", "about",
+];
+
+function pickAllowedFields(profileData: Record<string, unknown>) {
+  const picked: Record<string, unknown> = {};
+  for (const key of ALLOWED_PROFILE_FIELDS) {
+    if (key in profileData) picked[key] = profileData[key];
+  }
+  return picked;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -31,7 +50,7 @@ Deno.serve(async (req) => {
 
     const { data: pending, error: insertError } = await admin
       .from("pending_signups")
-      .insert({ email, password, profile_data: profileData, photo_data_url: photoDataUrl || null, plan })
+      .insert({ email, password, profile_data: pickAllowedFields(profileData), photo_data_url: photoDataUrl || null, plan })
       .select("id")
       .single();
     if (insertError) throw insertError;

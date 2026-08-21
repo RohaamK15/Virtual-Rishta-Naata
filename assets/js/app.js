@@ -181,7 +181,7 @@ async function vrnRegisterForPush(){
   if (!user) return;
 
   let permStatus = await PushNotifications.checkPermissions();
-  if (permStatus.receive === 'prompt') {
+  if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
     permStatus = await PushNotifications.requestPermissions();
   }
   if (permStatus.receive !== 'granted') return;

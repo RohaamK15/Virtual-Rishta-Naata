@@ -423,7 +423,7 @@
     if (!confirm(`Block ${refCode}? They will no longer appear in your search results and won't be able to message you. You can unblock them later from My Account.`)) return;
     try {
       const { error } = await sb.from('blocks').insert({ blocker_id: (await vrnCurrentUser()).id, blocked_id: userId });
-      if (error) throw error;
+      if (error && error.code !== '23505') throw error; // 23505 = already blocked, treat as success
       closeSheet('detailSheet');
       alert(`${refCode} has been blocked.`);
       renderGrid();

@@ -1,7 +1,13 @@
 // Permanently deletes a member's auth account + profile row + any uploaded
-// photo. Admin-only, service-role — see _shared/requireAdmin.ts.
+// photo. Admin-only, service-role — see _shared/requireAdmin.ts. Cancels any
+// active Stripe subscription first (mirrors delete-own-account) — without
+// this, a deleted member would keep being billed indefinitely with no
+// account left to see or cancel it from.
+import Stripe from "https://esm.sh/stripe@14?target=deno";
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/requireAdmin.ts";
+
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -12,10 +18,18 @@ Deno.serve(async (req) => {
 
     const { data: target, error: findError } = await admin
       .from("profiles")
-      .select("id, photo_path")
+      .select("id, photo_path, stripe_subscription_id")
       .eq("ref_code", ref_code)
       .single();
     if (findError || !target) throw new Error("Profile not found");
+
+    if (target.stripe_subscription_id) {
+      try {
+        await stripe.subscriptions.cancel(target.stripe_subscription_id);
+      } catch (stripeErr) {
+        if (!String(stripeErr.message).includes("No such subscription")) throw stripeErr;
+      }
+    }
 
     if (target.photo_path) {
       await admin.storage.from("profile-photos").remove([target.photo_path]);

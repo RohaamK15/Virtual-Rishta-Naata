@@ -15,6 +15,26 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+// This insert runs with the service-role key, which bypasses RLS and every
+// column-level grant entirely — the only thing standing between a public,
+// unauthenticated caller and setting is_admin/subscription_status/
+// profile_status/is_comped/etc. directly on their own new row is this
+// allowlist. Never spread req.body's profileData into the insert directly.
+const ALLOWED_PROFILE_FIELDS = [
+  "gender", "age", "height", "qualifications", "employment", "immigration_status",
+  "city", "county", "country", "is_ahmadi", "local_jamaat", "had_previous",
+  "previous_type", "previous_duration", "has_children", "preference_line",
+  "country_looking_in", "consider_pakistan", "additional_note", "about",
+];
+
+function pickAllowedFields(profileData: Record<string, unknown>) {
+  const picked: Record<string, unknown> = {};
+  for (const key of ALLOWED_PROFILE_FIELDS) {
+    if (key in profileData) picked[key] = profileData[key];
+  }
+  return picked;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -42,7 +62,7 @@ Deno.serve(async (req) => {
     try {
       const { error: profileError } = await admin.from("profiles").insert({
         id: userId,
-        ...profileData,
+        ...pickAllowedFields(profileData),
         contact_email: email,
         plan,
       });

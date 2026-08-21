@@ -36,7 +36,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    await admin.from("profiles").update({ subscription_status: "cancelled" }).eq("id", user.id);
+    // is_comped must also be cleared here — is_active_member() treats
+    // subscription_status='active' OR is_comped as equally sufficient, so a
+    // comped member cancelling would otherwise stay fully visible and
+    // messageable despite the button's explicit promise to hide their profile.
+    await admin.from("profiles").update({ subscription_status: "cancelled", is_comped: false }).eq("id", user.id);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

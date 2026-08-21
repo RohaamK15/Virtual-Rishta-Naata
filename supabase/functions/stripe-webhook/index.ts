@@ -11,6 +11,27 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+// pending.profile_data originated as attacker-reachable client input to
+// create-signup-checkout, staged into pending_signups with no sanitization —
+// this is the only thing stopping someone from paying for their own
+// subscription with is_admin/profile_status/etc. smuggled into profileData
+// and having it upserted straight into profiles below. Never spread
+// profile_data into that upsert directly.
+const ALLOWED_PROFILE_FIELDS = [
+  "gender", "age", "height", "qualifications", "employment", "immigration_status",
+  "city", "county", "country", "is_ahmadi", "local_jamaat", "had_previous",
+  "previous_type", "previous_duration", "has_children", "preference_line",
+  "country_looking_in", "consider_pakistan", "additional_note", "about",
+];
+
+function pickAllowedFields(profileData: Record<string, unknown>) {
+  const picked: Record<string, unknown> = {};
+  for (const key of ALLOWED_PROFILE_FIELDS) {
+    if (key in profileData) picked[key] = profileData[key];
+  }
+  return picked;
+}
+
 // Deliberately does NOT import the stripe npm package — just constructing a
 // Stripe client from esm.sh's Deno build (stripe@14) crashes this function
 // outright on every real invocation with "Deno.core.runMicrotasks() is not
@@ -111,7 +132,7 @@ Deno.serve(async (req) => {
               userId = created.user!.id;
             }
 
-            const profileFields = pending.profile_data as Record<string, unknown>;
+            const profileFields = pickAllowedFields(pending.profile_data as Record<string, unknown>);
             const { error: profileError } = await admin.from("profiles").upsert({
               id: userId,
               ...profileFields,

@@ -394,7 +394,13 @@ alter table public.consultation_requests enable row level security;
 create policy "consultation_requests_insert_anyone" on public.consultation_requests
   for insert with check (true);
 
-grant insert on public.consultation_requests to anon, authenticated;
+-- Column-level grant so a direct client insert can't set payment_status,
+-- status, or stripe_checkout_session_id itself — those are only ever
+-- written by create-consultation-checkout/stripe-webhook (service-role).
+-- The revoke first matters even on a fresh install: Supabase applies its own
+-- default broad table privileges to every new table automatically.
+revoke insert on public.consultation_requests from anon, authenticated;
+grant insert (id, email, ref_code, phone, message) on public.consultation_requests to anon, authenticated;
 
 -- ============================================================
 -- 6. PENDING SIGNUPS
@@ -430,7 +436,14 @@ alter table public.pending_signups enable row level security;
 create policy "pending_signups_insert_anyone" on public.pending_signups
   for insert with check (true);
 
-grant insert on public.pending_signups to anon, authenticated;
+-- Column-level grant: id/stripe_checkout_session_id are only ever set by
+-- create-signup-checkout/stripe-webhook (service-role), never by a direct
+-- client insert. profile_data itself is sanitized to a content-only
+-- allowlist in both of those functions before ever reaching profiles. The
+-- revoke first matters even on a fresh install: Supabase applies its own
+-- default broad table privileges to every new table automatically.
+revoke insert on public.pending_signups from anon, authenticated;
+grant insert (email, password, profile_data, photo_data_url, plan) on public.pending_signups to anon, authenticated;
 
 -- ============================================================
 -- 7. CHAT & MESSAGING
@@ -559,7 +572,14 @@ create policy "messages_insert_own_conversation" on public.messages
     )
   );
 
-grant insert on public.messages to authenticated;
+-- Column-level grant: without the revoke-then-column-grant here (same
+-- pattern as the update grant below), a client insert could preset
+-- reviewed_by_admin=true on their own message, hiding it from
+-- admin-list-flagged-messages' review queue even when the auto-flag trigger
+-- below would otherwise correctly catch it for sharing contact details —
+-- completely bypassing the moderation system this feature exists to enforce.
+revoke insert on public.messages from authenticated;
+grant insert (conversation_id, sender_id, body) on public.messages to authenticated;
 
 -- Members can flag a message in their own conversation (reported/reported_reason
 -- only — column grants stop them from editing anything else, including body).
@@ -656,7 +676,11 @@ alter table public.profile_reports enable row level security;
 create policy "profile_reports_insert_own" on public.profile_reports
   for insert with check (reporter_id = auth.uid() and public.is_active_member());
 
-grant insert on public.profile_reports to authenticated;
+-- Column-level grant: without the revoke-then-column-grant, a reporter could
+-- preset reviewed_by_admin=true on their own submitted report, hiding it
+-- from admin-list-profile-reports' queue immediately.
+revoke insert on public.profile_reports from authenticated;
+grant insert (reporter_id, reported_id, reason) on public.profile_reports to authenticated;
 
 -- ============================================================
 -- 9. FIRST ADMIN
