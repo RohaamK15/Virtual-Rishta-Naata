@@ -195,7 +195,11 @@
           <p style="margin-top:14px;color:rgba(255,249,242,.75);">A one-to-one session with a neutral facilitator, for any part of the process — honest, private, and focused entirely on you, at £35 per session. Fill in the form and you'll be taken straight to secure payment; we'll reply by email within one working day to arrange a time.</p>
         </div>
         <div>
-          <form class="consult-form" id="consultForm" onsubmit="return false;">
+          <div id="consultGate" style="display:none;">
+            <p style="color:rgba(255,249,242,.75);margin-bottom:22px;">Booking a consultation is available to Virtual Rishta Naata members. If you don't have an account yet, or your membership isn't active yet, follow the usual account and payment steps first — then come back here to book.</p>
+            <a href="/signup.html" id="consultGateBtn" class="btn btn-gold btn-block">Book Your Consultation</a>
+          </div>
+          <form class="consult-form" id="consultForm" onsubmit="return false;" style="display:none;">
             <div class="field">
               <label for="consultEmail">Your Contact Email</label>
               <input type="email" id="consultEmail" placeholder="you@example.com">
@@ -278,16 +282,30 @@
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
 <script>
-  // Booking a consultation now requires an active membership — see
-  // account.html's "Complete Your Membership" flow for anyone not yet
-  // approved/paid. vrnRequireActiveMembership() redirects there with an
-  // explanation if the signed-in member isn't active yet.
+  // This page itself stays open to everyone — only the booking form is
+  // gated. Active members see the real form (pre-filled from their own
+  // profile); everyone else sees a single button pointing at whichever step
+  // they actually need next (create a profile, or finish approval/payment
+  // on their existing one), then land back here once they qualify.
   (async () => {
-    const user = await vrnRequireAuth();
-    const me = await vrnRequireActiveMembership();
-    if (me) {
+    let isActive = false;
+    let user = null;
+    let me = null;
+    try {
+      user = await vrnCurrentUser();
+      if (user) {
+        me = await vrnMyProfile();
+        isActive = !!me && me.profile_status === 'approved' && (me.subscription_status === 'active' || me.is_comped);
+      }
+    } catch (e) { /* treat as not-a-member below */ }
+
+    if (isActive) {
       document.getElementById('consultEmail').value = user?.email || '';
       document.getElementById('consultRef').value = me.ref_code || '';
+      document.getElementById('consultForm').style.display = 'block';
+    } else {
+      document.getElementById('consultGateBtn').href = user ? '/account.html' : '/signup.html';
+      document.getElementById('consultGate').style.display = 'block';
     }
   })();
 </script>
