@@ -267,6 +267,7 @@ as $$
     select 1 from public.profiles
     where id = auth.uid() and profile_status = 'approved'
       and (subscription_status = 'active' or is_comped = true)
+      and not is_admin
   );
 $$;
 

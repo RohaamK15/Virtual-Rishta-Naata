@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
         "consider_pakistan, additional_note, about, created_at"
       )
       .eq("profile_status", "pending")
+      .eq("is_admin", false)
       .order("created_at", { ascending: true });
     if (error) throw error;
 

@@ -12,6 +12,7 @@ Deno.serve(async (req) => {
       .from("profiles")
       .select("id, ref_code, photo_path, created_at")
       .eq("photo_status", "pending")
+      .eq("is_admin", false)
       .order("created_at", { ascending: true });
     if (error) throw error;
 

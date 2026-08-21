@@ -126,7 +126,7 @@
 
     <div class="stat-row">
       <div class="stat-card" data-reveal><span>Total Members</span><strong id="statTotal">0</strong></div>
-      <div class="stat-card" data-reveal><span>Active Subscriptions</span><strong id="statActive">0</strong></div>
+      <div class="stat-card" data-reveal><span>Active Members</span><strong id="statActive">0</strong></div>
       <div class="stat-card" data-reveal><span>New This Week</span><strong id="statNewWeek">0</strong></div>
       <div class="stat-card alert" data-reveal><span>Flagged Accounts</span><strong id="statFlagged">0</strong></div>
     </div>
@@ -468,17 +468,33 @@
     document.getElementById('notifList').innerHTML = recent.map(p => `
       <div class="notif-row">
         <div class="notif-dot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>
-        <div>New profile created: <strong>${p.ref_code}</strong> (${p.gender}, ${p.age}, ${escapeHtml(p.country)}) — ${p.subscription_status}.</div>
+        <div>New profile created: <strong>${p.ref_code}</strong> (${p.gender}, ${p.age}, ${escapeHtml(p.country)}) — ${deriveStatus(p).label}.</div>
         <span class="notif-time">${new Date(p.created_at).toLocaleDateString('en-GB')}</span>
       </div>
     `).join('') || '<div class="notif-row">No signups yet.</div>';
+  }
+
+  // Collapses profile_status + subscription_status + is_comped + is_admin
+  // into ONE status a human can read at a glance, instead of showing two raw
+  // enum values side by side (e.g. "pending" + "approved" together read as
+  // contradictory, when really they're two separate axes: content review vs.
+  // payment). Mirrors is_active_member()'s own logic in schema.sql.
+  function deriveStatus(p){
+    if (p.is_admin) return { label: 'Admin', bg: 'var(--gold-soft)', fg: 'var(--gold-ink)' };
+    if (p.profile_status === 'rejected') return { label: 'Rejected', bg: 'var(--warn-bg)', fg: 'var(--warn-text)' };
+    if (p.profile_status === 'pending') return { label: 'Pending Review', bg: 'var(--gold-soft)', fg: 'var(--gold-ink)' };
+    // From here, profile_status is 'approved'.
+    if (p.is_comped) return { label: 'Active (Comped)', bg: 'var(--green-soft)', fg: 'var(--green)' };
+    if (p.subscription_status === 'active') return { label: 'Active Member', bg: 'var(--green-soft)', fg: 'var(--green)' };
+    if (p.subscription_status === 'past_due') return { label: 'Payment Past Due', bg: 'var(--warn-bg)', fg: 'var(--warn-text)' };
+    return { label: 'Approved — Awaiting Payment', bg: 'var(--gold-soft)', fg: 'var(--gold-ink)' };
   }
 
   function renderTable(filterText = ''){
     const body = document.getElementById('adminTableBody');
     const q = filterText.toLowerCase();
     const rows = ALL_PROFILES.filter(p => !q || p.ref_code.toLowerCase().includes(q) || (p.contact_email || '').toLowerCase().includes(q));
-    body.innerHTML = rows.map(p => `
+    body.innerHTML = rows.map(p => { const status = deriveStatus(p); return `
       <tr data-ref="${p.ref_code}">
         <td><strong>${p.ref_code}</strong></td>
         <td><span class="badge ${p.gender==='M'?'badge-m':'badge-f'}">${p.gender}</span></td>
@@ -488,7 +504,7 @@
         <td>${escapeHtml(p.country_looking_in) || '—'}</td>
         <td>${escapeHtml(p.contact_email)}</td>
         <td>${new Date(p.created_at).toLocaleDateString('en-GB')}</td>
-        <td><span class="status-pill">${p.subscription_status}</span> <span class="status-pill" style="background:var(--gold-soft);color:var(--gold-ink);">${p.profile_status}</span>${p.is_comped ? ' <span class="status-pill" style="background:var(--green-soft);color:var(--green);">comped</span>' : ''}</td>
+        <td><span class="status-pill" style="background:${status.bg};color:${status.fg};">${status.label}</span></td>
         <td>
           <div class="row-actions">
             <button class="action-btn" title="View full record" onclick="openProfile('${p.ref_code}')">
@@ -503,11 +519,11 @@
           </div>
         </td>
       </tr>
-    `).join('') || `<tr><td colspan="9" style="text-align:center;padding:30px;">No members match your search.</td></tr>`;
-    document.getElementById('statTotal').textContent = ALL_PROFILES.length;
-    document.getElementById('statActive').textContent = ALL_PROFILES.filter(p=>p.subscription_status==='active').length;
+    `; }).join('') || `<tr><td colspan="9" style="text-align:center;padding:30px;">No members match your search.</td></tr>`;
+    document.getElementById('statTotal').textContent = ALL_PROFILES.filter(p => !p.is_admin).length;
+    document.getElementById('statActive').textContent = ALL_PROFILES.filter(p => !p.is_admin && p.profile_status === 'approved' && (p.subscription_status === 'active' || p.is_comped)).length;
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    document.getElementById('statNewWeek').textContent = ALL_PROFILES.filter(p => new Date(p.created_at).getTime() > oneWeekAgo).length;
+    document.getElementById('statNewWeek').textContent = ALL_PROFILES.filter(p => !p.is_admin && new Date(p.created_at).getTime() > oneWeekAgo).length;
   }
 
   function askDelete(ref){
@@ -541,8 +557,10 @@
           <span style="font-family:'Montserrat',sans-serif;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--green);flex-shrink:0;">${escapeHtml(label)}</span>
           <span style="text-align:right;color:var(--ink);">${value === null || value === undefined || value === '' ? '—' : escapeHtml(String(value))}</span>
         </div>`;
+      const status = deriveStatus(p);
       body.innerHTML = `
         ${p.photo_url ? `<img src="${p.photo_url}" alt="${escapeHtml(p.ref_code)}" style="width:100%;max-width:220px;margin:0 auto 12px;border-radius:var(--radius-m);display:block;">` : ''}
+        <div style="text-align:center;margin-bottom:14px;"><span class="status-pill" style="background:${status.bg};color:${status.fg};">${status.label}</span></div>
         ${row('Gender', p.gender)}
         ${row('Age', p.age)}
         ${row('Height', p.height)}
