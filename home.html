@@ -14,7 +14,7 @@
      stays in the stack as a fallback in case the local font fails to load.
      Scheherazade New is a genuine Quranic-typesetting typeface (built for
      classical Arabic with full tashkīl), used for both the ayah and hadith. */
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Scheherazade+New:wght@400;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap');
   @font-face{
     font-family:'Jameel Noori Nastaleeq';
     src:url('/assets/fonts/jameel-noori-nastaleeq.woff2') format('woff2');
@@ -101,7 +101,14 @@
   .reverence-caption span{display:block;margin-top:7px;font-size:.9rem;color:var(--gold-ink);letter-spacing:.04em;}
 
   .reverence-body{position:relative;}
-  .reverence-body > p{color:var(--ink-soft);line-height:1.8;margin-bottom:22px;font-style:italic;}
+  /* Noto Serif, not Lato, for every piece of English prose in this excerpt —
+     Lato covers macrons (ā/ī/ū) but lacks the "dot-below" letters used in
+     Arabic-transliteration citations (ṣ, ḍ, ḥ), so those specific letters
+     were silently falling back to whatever generic sans-serif the visitor's
+     OS provides — visibly different per letter, and inconsistent
+     device-to-device. Noto Serif has full, consistent glyph coverage for
+     both diacritic families in one typeface. */
+  .reverence-body > p{font-family:'Noto Serif',serif;color:var(--ink-soft);line-height:1.8;margin-bottom:22px;font-style:italic;}
   .reverence-quote-mark{
     font-family:Georgia,'Cinzel',serif;font-size:5.5rem;line-height:1;color:var(--gold);
     opacity:.4;height:34px;display:block;
@@ -124,7 +131,7 @@
     direction:rtl;
   }
   .ilham-translation{
-    margin-top:14px;font-family:'Lato',sans-serif;font-style:italic;
+    margin-top:14px;font-family:'Noto Serif',serif;font-style:italic;
     color:var(--ink-soft);font-size:1rem;
   }
 
@@ -138,7 +145,7 @@
   }
   .ayah-block.quran .ayah-arabic{font-size:2rem;}
   .ayah-block.hadith .ayah-arabic{font-size:1.6rem;}
-  .ayah-meaning{margin-top:16px;color:var(--ink-soft);font-size:.94rem;line-height:1.7;}
+  .ayah-meaning{font-family:'Noto Serif',serif;margin-top:16px;color:var(--ink-soft);font-size:.94rem;line-height:1.7;}
   .ayah-meaning em{font-style:normal;color:var(--gold-ink);}
 
   .reverence-citation{
