@@ -126,6 +126,7 @@
         <p id="profile-rejection-note" style="display:none;font-size:.82rem;color:var(--error);margin-bottom:14px;"></p>
         <p id="profile-resubmit-note" style="display:none;font-size:.82rem;color:var(--ink-soft);margin-bottom:14px;">Make the changes below and your profile will automatically be resubmitted for review — no need to pay again or start over.</p>
         <a href="/edit-profile.html" id="profileEditCta" style="display:none;" class="btn btn-outline btn-sm btn-block">Edit Your Profile</a>
+        <button type="button" id="profilePayCta" class="btn btn-primary btn-sm btn-block" style="display:none;" onclick="handleCompleteMembership()">Complete Your Membership</button>
       </div>
       <div class="side-card" data-reveal id="photoCard" style="display:none;">
         <h4>Your Photo</h4>
@@ -277,18 +278,30 @@
       }
     }
 
-    const PROFILE_STATUS_COPY = {
-      pending: { text: '🕐 Pending review — you\'ll be able to browse and message once your profile is approved.', color: 'var(--gold)' },
-      approved: { text: '✓ Approved — you have full access to browse and message other members.', color: 'var(--green)' },
-      rejected: { text: '✕ Not approved.', color: 'var(--error)' },
-    };
-    const profileStatusInfo = PROFILE_STATUS_COPY[p.profile_status];
+    // "Approved" alone doesn't mean full access — it only covers content
+    // review. Full access also needs an active subscription (or a comp
+    // grant), same condition is_active_member() checks in schema.sql. Was
+    // previously worded as if approval alone granted access, which
+    // misrepresented an approved-but-unpaid account as already having full
+    // access.
+    const isFullyActive = p.subscription_status === 'active' || p.is_comped;
+    let profileStatusInfo;
+    if (p.profile_status === 'pending') {
+      profileStatusInfo = { text: '🕐 Pending review — you\'ll be able to browse and message once your profile is approved.', color: 'var(--gold)' };
+    } else if (p.profile_status === 'rejected') {
+      profileStatusInfo = { text: '✕ Not approved.', color: 'var(--error)' };
+    } else if (p.profile_status === 'approved' && isFullyActive) {
+      profileStatusInfo = { text: '✓ Approved — you have full access to browse and message other members.', color: 'var(--green)' };
+    } else if (p.profile_status === 'approved') {
+      profileStatusInfo = { text: '✓ Approved — complete your membership below to start browsing and messaging.', color: 'var(--green)' };
+    }
     document.getElementById('profile-status-badge').textContent = profileStatusInfo ? profileStatusInfo.text : '';
     document.getElementById('profile-status-badge').style.color = profileStatusInfo ? profileStatusInfo.color : 'var(--ink-soft)';
 
     const profileRejectionNote = document.getElementById('profile-rejection-note');
     const profileResubmitNote = document.getElementById('profile-resubmit-note');
     const profileEditCta = document.getElementById('profileEditCta');
+    const profilePayCta = document.getElementById('profilePayCta');
     if (p.profile_status === 'rejected') {
       if (p.profile_rejection_reason) {
         profileRejectionNote.textContent = `Reason: ${p.profile_rejection_reason}`;
@@ -301,6 +314,7 @@
       profileResubmitNote.style.display = 'none';
       profileEditCta.style.display = 'none';
     }
+    profilePayCta.style.display = (p.profile_status === 'approved' && !isFullyActive) ? 'block' : 'none';
 
     document.getElementById('photoCard').style.display = 'block';
     const photoPreview = document.getElementById('photo-preview');
@@ -437,21 +451,23 @@
   }
 
   async function handleCompleteMembership(){
-    const btn = document.getElementById('membershipCta');
-    btn.setAttribute('disabled', '');
-    btn.textContent = 'Redirecting to Stripe...';
+    // Two buttons trigger this (the Profile Status card's inline CTA and the
+    // Membership card's own one) — keep both in sync regardless of which was
+    // actually clicked.
+    const btns = [document.getElementById('profilePayCta'), document.getElementById('membershipCta')].filter(Boolean);
+    const setState = (disabled, text) => btns.forEach(b => {
+      if (disabled) b.setAttribute('disabled', ''); else b.removeAttribute('disabled');
+      b.textContent = text;
+    });
+    setState(true, 'Redirecting to Stripe...');
     try {
       const plan = currentProfile?.plan || 'monthly';
       const { data, error } = await sb.functions.invoke('create-checkout-session', { body: { plan } });
       if (error) throw error;
-      await vrnOpenCheckout(data.url, () => {
-        btn.removeAttribute('disabled');
-        btn.textContent = 'Complete Your Membership';
-      });
+      await vrnOpenCheckout(data.url, () => setState(false, 'Complete Your Membership'));
     } catch (err) {
       alert('Could not start checkout: ' + await vrnFunctionErrorMessage(err));
-      btn.removeAttribute('disabled');
-      btn.textContent = 'Complete Your Membership';
+      setState(false, 'Complete Your Membership');
     }
   }
 
