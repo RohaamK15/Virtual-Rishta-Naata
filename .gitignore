@@ -17,6 +17,9 @@ android/app/*firebase-adminsdk*.json
 *ecret*ey*.txt
 *.pem
 *.p12
+*.p8
+*password*.txt
+AuthKey_*.p8
 
 # Release signing keystore — permanent credential, never committed. Back this
 # up (and its password) somewhere safe outside this repo; losing it means

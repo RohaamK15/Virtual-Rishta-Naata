@@ -78,26 +78,42 @@ workflows:
   #     google_play:
   #       credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
   #       track: internal
-  #
-  # ios-release:
-  #   name: iOS Release (App Store / TestFlight)
-  #   instance_type: mac_mini_m2
-  #   environment:
-  #     node: 22
-  #     xcode: latest
-  #     ios_signing:
-  #       distribution_type: app_store
-  #       bundle_identifier: com.virtualrishtanaata.app
-  #     groups:
-  #       - app_store_connect      # holds APP_STORE_CONNECT_ISSUER_ID, KEY_ID, PRIVATE_KEY
-  #   scripts:
-  #     - npm ci
-  #     - node build-www.mjs
-  #     - npx cap sync ios
-  #     - xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
-  #   artifacts:
-  #     - build/ios/ipa/*.ipa
-  #   publishing:
-  #     app_store_connect:
-  #       auth: integration
-  #       submit_to_testflight: true
+
+  ios-release:
+    name: iOS Release (App Store / TestFlight)
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: "App Store connect VRN"
+    environment:
+      node: 22
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.virtualrishtanaata.app
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+      - name: Build web bundle
+        script: node build-www.mjs
+      - name: Sync Capacitor iOS
+        script: npx cap sync ios
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files com.virtualrishtanaata.app \
+            --type IOS_APP_STORE \
+            --create
+      - name: Set up keychain
+        script: keychain initialize
+      - name: Add certificates to keychain
+        script: keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: xcode-project use-profiles
+      - name: Build ipa
+        script: |
+          xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
