@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
         const body = action === "approve"
           ? "Complete your membership from the app to start browsing and messaging."
           : (reason || "Please review and resubmit your profile from My Account.");
-        await sendFcmPush(member.push_token, title, body);
+        await sendFcmPush(member.push_token, title, body, { url: "/account.html" });
       }
     } catch (pushErr) {
       console.warn("Profile review push notification failed:", pushErr);

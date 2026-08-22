@@ -199,6 +199,15 @@ async function vrnRegisterForPush(){
   PushNotifications.addListener('registrationError', (err) => {
     console.warn('Push registration error:', err);
   });
+
+  // Tapping a delivered notification (app backgrounded or closed) — routes
+  // to whatever page the sender attached as data.url (see _shared/fcm.ts).
+  // Safe to register on every page load: Capacitor delivers this event to
+  // whichever page happens to be active when the tap is handled.
+  PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+    const url = action?.notification?.data?.url;
+    if (url) window.location.href = url;
+  });
 }
 
 // Swaps the marketing-page nav's "Log In" / "Create Profile" buttons for the

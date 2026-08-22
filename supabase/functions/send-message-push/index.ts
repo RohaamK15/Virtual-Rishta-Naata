@@ -68,7 +68,8 @@ Deno.serve(async (req) => {
     await sendFcmPush(
       recipient.push_token,
       `Message from ${sender?.ref_code || "a member"}`,
-      message.body.length > 120 ? message.body.slice(0, 117) + "..." : message.body
+      message.body.length > 120 ? message.body.slice(0, 117) + "..." : message.body,
+      sender?.ref_code ? { url: `/chat.html?ref=${sender.ref_code}` } : undefined
     );
 
     return new Response(JSON.stringify({ success: true }), {

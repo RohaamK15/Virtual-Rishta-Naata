@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
         const body = action === "approve"
           ? "Other members can now see your photo when they open your profile."
           : (reason || "Please upload a new photo from My Account.");
-        await sendFcmPush(member.push_token, title, body);
+        await sendFcmPush(member.push_token, title, body, { url: "/account.html" });
       }
     } catch (pushErr) {
       console.warn("Photo review push notification failed:", pushErr);

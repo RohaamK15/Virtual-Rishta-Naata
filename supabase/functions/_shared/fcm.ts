@@ -65,7 +65,12 @@ async function getAccessToken(serviceAccount: { client_email: string; private_ke
   return cachedToken.value;
 }
 
-export async function sendFcmPush(token: string, title: string, body: string) {
+// `data` becomes available client-side on the tapped notification's
+// notification.data (see the pushNotificationActionPerformed listener in
+// assets/js/app.js) — used to route the tap to a specific in-app page.
+// FCM requires every data value to be a string; a boolean/number here would
+// silently fail to send.
+export async function sendFcmPush(token: string, title: string, body: string, data?: Record<string, string>) {
   const serviceAccount = JSON.parse(Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON")!);
   const accessToken = await getAccessToken(serviceAccount);
 
@@ -78,7 +83,7 @@ export async function sendFcmPush(token: string, title: string, body: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: { token, notification: { title, body } },
+        message: { token, notification: { title, body }, ...(data ? { data } : {}) },
       }),
     }
   );
