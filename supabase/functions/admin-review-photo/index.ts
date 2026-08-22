@@ -3,6 +3,7 @@
 // to that column at all (see schema.sql's trg_reset_photo_status).
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/requireAdmin.ts";
+import { sendFcmPush } from "../_shared/fcm.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -17,6 +18,25 @@ Deno.serve(async (req) => {
       photo_rejection_reason: action === "reject" ? (reason || "Did not meet our photo guidelines") : null,
     }).eq("id", profile_id);
     if (error) throw error;
+
+    // Best-effort push notification — see admin-review-profile for the same
+    // pattern; a failure here should never fail the review action itself.
+    try {
+      const { data: member } = await admin
+        .from("profiles")
+        .select("push_token, push_platform, push_enabled")
+        .eq("id", profile_id)
+        .single();
+      if (member?.push_token && member.push_enabled !== false && member.push_platform === "android") {
+        const title = action === "approve" ? "Your photo has been approved!" : "Your photo needs a small update";
+        const body = action === "approve"
+          ? "Other members can now see your photo when they open your profile."
+          : (reason || "Please upload a new photo from My Account.");
+        await sendFcmPush(member.push_token, title, body);
+      }
+    } catch (pushErr) {
+      console.warn("Photo review push notification failed:", pushErr);
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
