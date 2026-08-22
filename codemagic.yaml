@@ -87,9 +87,6 @@ workflows:
     environment:
       node: 22
       xcode: latest
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.virtualrishtanaata.app
     scripts:
       - name: Install dependencies
         script: npm ci
