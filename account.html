@@ -459,6 +459,14 @@
       if (disabled) b.setAttribute('disabled', ''); else b.removeAttribute('disabled');
       b.textContent = text;
     });
+
+    // iOS must use Apple IAP (via RevenueCat) rather than Stripe — App Store
+    // guideline 3.1.1 requires it for unlocking in-app digital content.
+    // Android and web are unaffected and keep the existing Stripe flow.
+    if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.getPlatform() === 'ios') {
+      return handleCompleteMembershipIOS(setState);
+    }
+
     setState(true, 'Redirecting to Stripe...');
     try {
       const plan = currentProfile?.plan || 'monthly';
@@ -467,6 +475,39 @@
       await vrnOpenCheckout(data.url, () => setState(false, 'Complete Your Membership'));
     } catch (err) {
       alert('Could not start checkout: ' + await vrnFunctionErrorMessage(err));
+      setState(false, 'Complete Your Membership');
+    }
+  }
+
+  async function handleCompleteMembershipIOS(setState){
+    setState(true, 'Loading...');
+    try {
+      const { Purchases } = window.Capacitor.Plugins;
+      const offerings = await Purchases.getOfferings();
+      const offering = offerings.current;
+      if (!offering) throw new Error('No membership plans are available right now — please try again shortly.');
+
+      const plan = currentProfile?.plan || 'monthly';
+      const pkg = plan === 'annual' ? offering.annual : offering.monthly;
+      if (!pkg) throw new Error('That plan is not available right now — please try again shortly.');
+
+      setState(true, 'Processing purchase...');
+      await Purchases.purchasePackage({ aPackage: pkg });
+
+      // The purchase itself just succeeded with Apple — revenuecat-webhook
+      // updates subscription_status/plan in Supabase asynchronously, usually
+      // within a few seconds. Poll briefly rather than leaving the member
+      // looking at a stale "Complete Your Membership" button.
+      setState(true, 'Finalizing...');
+      for (let i = 0; i < 10; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await loadAccount();
+        if (currentProfile?.subscription_status === 'active') return;
+      }
+      setState(false, 'Complete Your Membership');
+    } catch (err) {
+      if (err?.userCancelled) { setState(false, 'Complete Your Membership'); return; }
+      alert('Could not complete purchase: ' + (err.message || 'please try again.'));
       setState(false, 'Complete Your Membership');
     }
   }

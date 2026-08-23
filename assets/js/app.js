@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   vrnRenderNavAuthState();
   vrnRegisterForPush();
+  vrnInitRevenueCat();
 });
 
 // Registers this device for push notifications (new chat messages) — native
@@ -208,6 +209,28 @@ async function vrnRegisterForPush(){
     const url = action?.notification?.data?.url;
     if (url) window.location.href = url;
   });
+}
+
+// Configures RevenueCat for Apple IAP purchases — iOS native only; Android
+// and web still go entirely through Stripe (see create-checkout-session).
+// Safe to call on every page load: Purchases.configure() is a no-op if
+// already configured for the same appUserID. Logging in with the Supabase
+// user's own id (rather than letting RevenueCat generate an anonymous one)
+// is what lets revenuecat-webhook match a purchase event back to a profile
+// row via event.app_user_id, with no extra "revenuecat customer id" column.
+async function vrnInitRevenueCat(){
+  if (!window.Capacitor?.isNativePlatform?.() || window.Capacitor.getPlatform() !== 'ios') return;
+  const { Purchases } = window.Capacitor.Plugins || {};
+  if (!Purchases) return;
+  if (typeof vrnCurrentUser !== 'function') return;
+
+  let user;
+  try { user = await vrnCurrentUser(); } catch (e) { return; }
+  if (!user) return;
+
+  try {
+    await Purchases.configure({ apiKey: window.REVENUECAT_CONFIG.iosApiKey, appUserID: user.id });
+  } catch (e) { console.warn('RevenueCat configure failed:', e); }
 }
 
 // Swaps the marketing-page nav's "Log In" / "Create Profile" buttons for the
