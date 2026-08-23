@@ -176,7 +176,7 @@
           <option value="Other">Other</option>
         </select>
       </div>
-      <div class="field-row">
+      <div class="field-row" id="cityCountyFields">
         <div class="field">
           <label for="city">Residency — City</label>
           <input type="text" id="city" placeholder="e.g. Manchester">
@@ -186,9 +186,10 @@
           <input type="text" id="county" placeholder="e.g. Greater Manchester">
         </div>
       </div>
+      <p id="cityCountyPakistanNote" style="display:none;font-size:.82rem;color:var(--ink-soft);margin:-8px 0 16px;">For the safety of Ahmadis in Pakistan, we don't ask for your city or county.</p>
       <div class="field">
         <label for="countryOfResidence">Country of Residence</label>
-        <select id="countryOfResidence" onchange="updateLocalJamaatVisibility()"></select>
+        <select id="countryOfResidence" onchange="updatePakistanSensitiveFields()"></select>
         <input type="text" id="countryOfResidenceOther" placeholder="Please specify your country" style="display:none;margin-top:10px;">
         <p class="field-hint">This is shown alongside your age on the search page — your city and county are only visible once someone opens your full profile.</p>
       </div>
@@ -530,7 +531,7 @@
   });
 
   function renderStep(){
-    updateLocalJamaatVisibility();
+    updatePakistanSensitiveFields();
     document.querySelectorAll('.step').forEach(s => s.classList.toggle('active', +s.dataset.step === current));
     document.getElementById('progressFill').style.width = (current/TOTAL_STEPS*100) + '%';
     document.getElementById('stepLabel').textContent = `Step ${current} of ${TOTAL_STEPS}`;
@@ -543,14 +544,20 @@
   }
   function goToStep(n){ current = n; renderStep(); }
 
-  // Ahmadis in Pakistan face real security risk if their local Jamaat is on
-  // record anywhere — so the field is hidden entirely, not just optional,
-  // for anyone residing in Pakistan.
-  function updateLocalJamaatVisibility(){
+  // Ahmadis in Pakistan face real security risk if their local Jamaat, city
+  // or county are on record anywhere — so these fields are hidden entirely,
+  // not just optional, for anyone residing in Pakistan.
+  function updatePakistanSensitiveFields(){
     const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
     document.getElementById('localJamaatField').style.display = isPakistan ? 'none' : '';
     document.getElementById('localJamaatPakistanNote').style.display = isPakistan ? 'block' : 'none';
     if (isPakistan) document.getElementById('localJamaat').value = '';
+    document.getElementById('cityCountyFields').style.display = isPakistan ? 'none' : '';
+    document.getElementById('cityCountyPakistanNote').style.display = isPakistan ? 'block' : 'none';
+    if (isPakistan) {
+      document.getElementById('city').value = '';
+      document.getElementById('county').value = '';
+    }
   }
   function nextStep(){ if(current < TOTAL_STEPS){ current++; renderStep(); } }
   function prevStep(){ if(current > 1){ current--; renderStep(); } }
@@ -574,9 +581,15 @@
       if (!heightMatch || +heightMatch[2] > 11) return "Please enter your height in the format feet'inches, e.g. 5'9";
     }
     if (stepNum === 2) {
-      const required = ['qualifications', 'employment', 'immigrationStatus', 'city', 'county'];
+      const required = ['qualifications', 'employment', 'immigrationStatus'];
       for (const id of required) {
         if (!document.getElementById(id).value.trim()) return 'Please fill in every field before continuing.';
+      }
+      const residesInPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
+      if (!residesInPakistan) {
+        if (!document.getElementById('city').value.trim() || !document.getElementById('county').value.trim()) {
+          return 'Please fill in every field before continuing.';
+        }
       }
       if (!document.getElementById('countryOfResidence').value) return 'Please select your country of residence.';
       if (document.getElementById('countryOfResidence').value === 'Other' && !document.getElementById('countryOfResidenceOther').value.trim()) {
@@ -658,8 +671,8 @@
       qualifications: document.getElementById('qualifications').value,
       employment: document.getElementById('employment').value,
       immigration_status: document.getElementById('immigrationStatus').value,
-      city: document.getElementById('city').value,
-      county: document.getElementById('county').value,
+      city: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('city').value,
+      county: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('county').value,
       country: vrnResolveCountryValue(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther')),
       is_ahmadi: document.querySelector('input[name="isAhmadi"]:checked')?.value === 'Yes',
       local_jamaat: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('localJamaat').value,

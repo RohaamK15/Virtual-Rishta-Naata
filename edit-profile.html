@@ -125,7 +125,7 @@
             <option value="Other">Other</option>
           </select>
         </div>
-        <div class="field-row">
+        <div class="field-row" id="cityCountyFields">
           <div class="field">
             <label for="city">Residency — City</label>
             <input type="text" id="city" placeholder="e.g. Manchester">
@@ -135,9 +135,10 @@
             <input type="text" id="county" placeholder="e.g. Greater Manchester">
           </div>
         </div>
+        <p id="cityCountyPakistanNote" style="display:none;font-size:.82rem;color:var(--ink-soft);margin:-8px 0 16px;">For the safety of Ahmadis in Pakistan, we don't ask for your city or county.</p>
         <div class="field">
           <label for="countryOfResidence">Country of Residence</label>
-          <select id="countryOfResidence" onchange="updateLocalJamaatVisibility()"></select>
+          <select id="countryOfResidence" onchange="updatePakistanSensitiveFields()"></select>
           <input type="text" id="countryOfResidenceOther" placeholder="Please specify your country" style="display:none;margin-top:10px;">
         </div>
       </div>
@@ -263,14 +264,20 @@
     document.getElementById('previousDetailsFields').style.display = hadPrevious ? 'block' : 'none';
   }
 
-  // Ahmadis in Pakistan face real security risk if their local Jamaat is on
-  // record anywhere — so the field is hidden entirely, not just optional,
-  // for anyone residing in Pakistan.
-  function updateLocalJamaatVisibility(){
+  // Ahmadis in Pakistan face real security risk if their local Jamaat, city
+  // or county are on record anywhere — so these fields are hidden entirely,
+  // not just optional, for anyone residing in Pakistan.
+  function updatePakistanSensitiveFields(){
     const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
     document.getElementById('localJamaatField').style.display = isPakistan ? 'none' : '';
     document.getElementById('localJamaatPakistanNote').style.display = isPakistan ? 'block' : 'none';
     if (isPakistan) document.getElementById('localJamaat').value = '';
+    document.getElementById('cityCountyFields').style.display = isPakistan ? 'none' : '';
+    document.getElementById('cityCountyPakistanNote').style.display = isPakistan ? 'block' : 'none';
+    if (isPakistan) {
+      document.getElementById('city').value = '';
+      document.getElementById('county').value = '';
+    }
   }
 
   // Selects a radio in a group by value if it exists — used to restore the
@@ -328,7 +335,7 @@
     setCountryField(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther'), p.country);
 
     document.getElementById('localJamaat').value = p.local_jamaat || '';
-    updateLocalJamaatVisibility();
+    updatePakistanSensitiveFields();
     selectRadio('hadPrevious', p.had_previous ? 'Yes' : 'No');
     onPreviousChange();
     selectRadio('previousType', p.previous_type);
@@ -351,12 +358,16 @@
     const heightMatch = height.match(/^([3-8])'(\d{1,2})"?$/);
     if (!heightMatch || +heightMatch[2] > 11) return "Please enter your height in the format feet'inches, e.g. 5'9";
 
-    const required = ['qualifications', 'employment', 'immigrationStatus', 'city', 'county', 'preferenceLine', 'aboutYourself'];
+    const required = ['qualifications', 'employment', 'immigrationStatus', 'preferenceLine', 'aboutYourself'];
     for (const id of required) {
       if (!document.getElementById(id).value.trim()) return 'Please fill in every field before saving.';
     }
     if (!document.getElementById('countryOfResidence').value) return 'Please select your country of residence.';
-    if (document.getElementById('countryOfResidence').value !== 'Pakistan' && !document.getElementById('localJamaat').value.trim()) {
+    const residesInPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
+    if (!residesInPakistan && (!document.getElementById('city').value.trim() || !document.getElementById('county').value.trim())) {
+      return 'Please fill in every field before saving.';
+    }
+    if (!residesInPakistan && !document.getElementById('localJamaat').value.trim()) {
       return 'Please enter your local Jamaat.';
     }
     if (document.getElementById('countryOfResidence').value === 'Other' && !document.getElementById('countryOfResidenceOther').value.trim()) {
@@ -406,8 +417,8 @@
       qualifications: document.getElementById('qualifications').value,
       employment: document.getElementById('employment').value,
       immigration_status: document.getElementById('immigrationStatus').value,
-      city: document.getElementById('city').value,
-      county: document.getElementById('county').value,
+      city: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('city').value,
+      county: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('county').value,
       country: vrnResolveCountryValue(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther')),
       local_jamaat: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('localJamaat').value,
       had_previous: previousChoice,
