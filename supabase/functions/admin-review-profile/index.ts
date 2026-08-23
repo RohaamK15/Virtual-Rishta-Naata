@@ -21,9 +21,19 @@ Deno.serve(async (req) => {
     }).eq("id", profile_id);
     if (error) throw error;
 
-    // Ahmadi verification answers are one-time-viewing data for this
-    // decision only — never retained past the moment a decision is made,
-    // approve or reject, regardless of what happens below.
+    // Ahmadi verification answers (including the intro video) are one-time-
+    // viewing data for this decision only — never retained past the moment a
+    // decision is made, approve or reject, regardless of what happens below.
+    // Deleting the DB row alone wouldn't remove the video file itself, so
+    // fetch its path first and remove the storage object too.
+    const { data: verification } = await admin
+      .from("profile_verification")
+      .select("video_path")
+      .eq("profile_id", profile_id)
+      .maybeSingle();
+    if (verification?.video_path) {
+      await admin.storage.from("verification-videos").remove([verification.video_path]);
+    }
     await admin.from("profile_verification").delete().eq("profile_id", profile_id);
 
     // Best-effort push notification — previously a member only found out

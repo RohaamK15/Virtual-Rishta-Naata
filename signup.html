@@ -321,13 +321,13 @@
       <div id="photoSection">
         <div class="photo-note">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
-          <span>You may optionally add a photo of yourself — please choose a modest, decent, recent photo (not a group photo or anything unrelated). It only ever gets shown to someone who opens your full profile, and every photo is reviewed by our team before it goes live.</span>
+          <span>Please add a modest, decent, recent photo of yourself (not a group photo or anything unrelated). It only ever gets shown to someone who opens your full profile, and every photo is reviewed by our team before it goes live.</span>
         </div>
         <div class="upload-box" id="uploadBox" onclick="document.getElementById('photoInput').click()">
           <img id="photoPreview" style="display:none;width:72px;height:72px;object-fit:cover;border-radius:50%;margin:0 auto 12px;" alt="Selected photo preview">
           <svg id="uploadIcon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
           <div id="uploadLabel" style="font-family:'Montserrat',sans-serif;font-weight:600;font-size:.85rem;color:var(--green);">Click to upload a photo</div>
-          <div id="uploadHint" style="font-size:.78rem;margin-top:4px;">Optional · Portrait photo only · JPG or PNG · Max 5MB</div>
+          <div id="uploadHint" style="font-size:.78rem;margin-top:4px;">Required · Portrait photo only · JPG or PNG · Max 5MB</div>
           <input type="file" id="photoInput" accept="image/*" style="display:none;">
         </div>
       </div>
@@ -461,6 +461,12 @@
     <label for="verifyActivity">What Activity Have You Done for the Jamaat?</label>
     <textarea id="verifyActivity" placeholder="e.g. Regular Ijtema attendance, Waqar-e-Amal, Tabligh stalls..."></textarea>
   </div>
+  <div class="field">
+    <label for="verifyVideoInput">Short Introduction Video</label>
+    <p class="field-hint" style="margin:0 0 8px;">Briefly introduce yourself and what you're looking for — max 30 seconds. Seen only by our admin team, deleted the moment your profile is reviewed.</p>
+    <input type="file" id="verifyVideoInput" accept="video/*" capture="user">
+    <p id="verifyVideoName" style="display:none;font-size:.82rem;color:var(--green);margin-top:6px;"></p>
+  </div>
   <p id="ahmadiVerificationError" style="display:none;color:var(--error);font-size:.85rem;margin-top:6px;"></p>
   <button type="button" class="btn btn-primary btn-block" style="margin-top:14px;" onclick="saveAhmadiVerification()">Save</button>
 </div>
@@ -512,6 +518,7 @@
   const stepNames = ["Basics","Background","Community & History","Preferences","About You","Contact","Membership","Complete"];
   let current = 1;
   let selectedPhotoFile = null;
+  let selectedVerifyVideoFile = null;
 
   vrnPopulateCountrySelect(document.getElementById('countryOfResidence'), { placeholder: 'Select a country' });
   vrnWireCountryOther(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther'));
@@ -567,6 +574,25 @@
     document.getElementById('uploadHint').textContent = 'Photo selected — click to choose a different one';
     document.getElementById('uploadBox').style.borderColor = 'var(--green)';
     document.getElementById('uploadBox').style.borderStyle = 'solid';
+  });
+
+  document.getElementById('verifyVideoInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0] || null;
+    const nameEl = document.getElementById('verifyVideoName');
+    if (!file) { selectedVerifyVideoFile = null; nameEl.style.display = 'none'; return; }
+
+    const videoError = await vrnValidateIntroVideo(file);
+    if (videoError) {
+      alert(videoError);
+      selectedVerifyVideoFile = null;
+      nameEl.style.display = 'none';
+      e.target.value = '';
+      return;
+    }
+
+    selectedVerifyVideoFile = file;
+    nameEl.textContent = '✓ ' + file.name;
+    nameEl.style.display = 'block';
   });
 
   function renderStep(){
@@ -667,6 +693,7 @@
     }
     if (stepNum === 5) {
       if (vrnWordCount(document.getElementById('aboutYourself').value) < 20) return 'Please write at least 20 words about yourself — quality information gives you a much better chance of finding a suitable Rishta.';
+      if (!selectedPhotoFile) return 'Please upload a profile photo before continuing.';
     }
     return null;
   }
@@ -683,6 +710,7 @@
   function vrnAhmadiVerificationComplete(){
     const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
     if (isPakistan && !document.getElementById('verifyLocalJamaat').value.trim()) return false;
+    if (!selectedVerifyVideoFile) return false;
     return AHMADI_VERIFICATION_FIELD_IDS.every(id => document.getElementById(id).value.trim());
   }
 
@@ -700,7 +728,7 @@
   function saveAhmadiVerification(){
     const errorEl = document.getElementById('ahmadiVerificationError');
     if (!vrnAhmadiVerificationComplete()) {
-      errorEl.textContent = 'Please answer every question before saving.';
+      errorEl.textContent = 'Please answer every question and upload your introduction video before saving.';
       errorEl.style.display = 'block';
       return;
     }
@@ -821,24 +849,48 @@
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const profileData = collectProfileFields();
-
-      let photoDataUrl = null;
-      if (selectedPhotoFile) {
-        photoDataUrl = await readFileAsDataUrl(selectedPhotoFile);
-      }
+      const photoDataUrl = await readFileAsDataUrl(selectedPhotoFile);
 
       // submit-profile-for-review creates the account + profile immediately,
       // no payment involved — profile_status/subscription_status start at
       // their column defaults ('pending'/'pending'), so this alone never
-      // grants access. See is_active_member() in supabase/schema.sql.
-      const verification = collectAhmadiVerification();
-
+      // grants access. See is_active_member() in supabase/schema.sql. The
+      // Ahmadi Verification answers (including the video) are saved
+      // separately below, once signed in — the video needs a real
+      // authenticated session to upload directly to storage.
       const { error } = await sb.functions.invoke('submit-profile-for-review', {
-        body: { email, password, profileData, photoDataUrl, plan, verification }
+        body: { email, password, profileData, photoDataUrl, plan }
       });
       if (error) throw error;
 
       await vrnSignIn(email, password);
+      await submitVerificationAfterSignup(email);
+    } catch (err) {
+      errorEl.textContent = await vrnFunctionErrorMessage(err);
+      errorEl.style.display = 'block';
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Submit for Review';
+    }
+  }
+
+  // Runs after the account/profile/photo already exist and the member is
+  // signed in — uploads the intro video directly to storage (needs a real
+  // session, unlike the rest of submit-profile-for-review) and saves the
+  // Ahmadi Verification answers. If this fails, the account still exists in
+  // 'pending' status, so this is safely retryable from the same signed-in
+  // session rather than needing to redo the whole signup.
+  async function submitVerificationAfterSignup(email){
+    const errorEl = document.getElementById('planError');
+    const btn = document.getElementById('submitReviewBtn');
+    try {
+      const user = await vrnCurrentUser();
+      const videoPath = await vrnUploadIntroVideo(user.id, selectedVerifyVideoFile);
+      const verification = collectAhmadiVerification();
+      const { error } = await sb.functions.invoke('submit-profile-verification', {
+        body: { ...verification, video_path: videoPath }
+      });
+      if (error) throw error;
+
       const profile = await vrnMyProfile();
       document.getElementById('refCodeOut').textContent = profile.ref_code;
       goToStep(8);
@@ -846,10 +898,11 @@
       document.getElementById('confirmError').style.display = 'none';
       notifyNewSignup(profile, email);
     } catch (err) {
-      errorEl.textContent = await vrnFunctionErrorMessage(err);
+      errorEl.textContent = 'Your account was created, but we couldn\'t save your Ahmadi Verification answers: ' + await vrnFunctionErrorMessage(err);
       errorEl.style.display = 'block';
       btn.removeAttribute('disabled');
-      btn.textContent = 'Submit for Review';
+      btn.textContent = 'Retry Submitting Verification';
+      btn.onclick = () => submitVerificationAfterSignup(email);
     }
   }
 

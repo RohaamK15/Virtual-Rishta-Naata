@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error } = await admin
       .from("profiles")
-      .select("*, profile_verification(local_jamaat, sadr_name_contact, positions_held, joined_jamaat, jamaat_activity)")
+      .select("*, profile_verification(local_jamaat, sadr_name_contact, positions_held, joined_jamaat, jamaat_activity, video_path)")
       .eq("ref_code", ref_code)
       .single();
     if (error) throw error;
@@ -28,9 +28,19 @@ Deno.serve(async (req) => {
     // profile_verification is a to-one relation via primary key, but
     // PostgREST always returns embedded relations as an array — flatten it,
     // and be explicit when it's missing (already reviewed and deleted —
-    // expected once profile_status is no longer 'pending').
+    // expected once profile_status is no longer 'pending'). The video is
+    // only ever reachable via this short-lived signed URL.
     const rawVerification = (profile as Record<string, unknown>).profile_verification;
-    const profile_verification = Array.isArray(rawVerification) ? rawVerification[0] || null : rawVerification;
+    const verificationRow = (Array.isArray(rawVerification) ? rawVerification[0] : rawVerification) as Record<string, unknown> | null | undefined;
+    let profile_verification = null;
+    if (verificationRow) {
+      let video_url = null;
+      if (verificationRow.video_path) {
+        const { data: signed } = await admin.storage.from("verification-videos").createSignedUrl(verificationRow.video_path as string, 300);
+        video_url = signed?.signedUrl || null;
+      }
+      profile_verification = { ...verificationRow, video_url };
+    }
 
     return new Response(JSON.stringify({ profile: { ...profile, profile_verification, photo_url } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

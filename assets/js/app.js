@@ -47,6 +47,49 @@ function vrnValidatePortraitPhoto(file) {
 // no visual benefit. Silently downscales instead of rejecting the photo —
 // nobody should have to fight with external resizing tools. Returns the
 // original file unchanged if it's already a reasonable size.
+// Ahmadi Verification's self-introduction video: capped at 30s / 50MB (see
+// the profile_verification table). Reads duration via a hidden <video>
+// element rather than trusting file metadata, same reasoning as the photo
+// shape check using a real <img> load rather than trusting file headers.
+function vrnValidateIntroVideo(file, maxDurationSeconds = 30, maxBytes = 50 * 1024 * 1024) {
+  return new Promise((resolve) => {
+    if (file.size > maxBytes) {
+      resolve(`This video is too large (max ${Math.round(maxBytes / 1024 / 1024)}MB) — please record a shorter clip or lower quality.`);
+      return;
+    }
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(file);
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      if (video.duration > maxDurationSeconds + 1) { // +1s grace for encoder rounding
+        resolve(`This video is too long (max ${maxDurationSeconds} seconds) — please trim it or record a shorter one.`);
+      } else {
+        resolve(null);
+      }
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve('Could not read this video — please choose a different file.');
+    };
+    video.src = url;
+  });
+}
+
+// Uploads directly to the verification-videos bucket using the caller's own
+// authenticated session (RLS scopes them to their own folder — see
+// verification_videos_insert_own/update_own in schema.sql). Used by both
+// signup.html (right after account creation + sign-in) and edit-profile.html
+// (already signed in). Returns the storage path to pass to
+// submit-profile-verification, never the video itself.
+async function vrnUploadIntroVideo(userId, file){
+  const ext = (file.name.match(/\.(\w+)$/)?.[1] || 'mp4').toLowerCase();
+  const path = `${userId}/intro.${ext}`;
+  const { error } = await sb.storage.from('verification-videos').upload(path, file, { upsert: true });
+  if (error) throw error;
+  return path;
+}
+
 function vrnDownscaleImage(file, maxDimension = 1600, quality = 0.85) {
   return new Promise((resolve) => {
     const img = new Image();

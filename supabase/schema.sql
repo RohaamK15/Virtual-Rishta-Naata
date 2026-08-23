@@ -203,7 +203,14 @@ create table if not exists public.profile_verification (
   sadr_name_contact text not null,
   positions_held text not null,
   joined_jamaat text not null,
-  jamaat_activity text not null
+  jamaat_activity text not null,
+  -- Path in the verification-videos bucket (see PHOTO STORAGE section below)
+  -- for their short self-introduction video. Same one-time-viewing model as
+  -- the text fields above: admin-review-profile deletes both this row AND
+  -- the underlying storage object the instant a decision is made — this is
+  -- the most sensitive thing collected here (face + voice), so minimizing
+  -- how long it's retained matters most for this field specifically.
+  video_path text not null
 );
 alter table public.profile_verification enable row level security;
 
@@ -392,6 +399,33 @@ create policy "profile_photos_delete_own" on storage.objects
 -- Edge Function, which checks gender + has_photo + both members' subscription
 -- status, then hands back a short-lived signed URL. That keeps photos from
 -- being enumerable via the storage API directly.
+
+-- ============================================================
+-- 4b. AHMADI VERIFICATION VIDEO STORAGE
+-- ============================================================
+-- Short self-introduction video, required as part of Ahmadi Verification
+-- (see profile_verification above). No select/delete policy for the member
+-- themselves — deliberately admin-only, one-time-viewing: admin-review-
+-- profile deletes the object here the instant a decision is made, and
+-- nothing else ever reads it back except through the admin-* Edge
+-- Functions' service-role client generating a short-lived signed URL.
+insert into storage.buckets (id, name, public)
+values ('verification-videos', 'verification-videos', false)
+on conflict (id) do nothing;
+
+create policy "verification_videos_insert_own" on storage.objects
+  for insert with check (
+    bucket_id = 'verification-videos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Needed for the same reason as profile_photos_update_own: a retry after a
+-- failed submit-profile-verification call re-uploads to the same path.
+create policy "verification_videos_update_own" on storage.objects
+  for update using (
+    bucket_id = 'verification-videos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
 
 -- ============================================================
 -- 5. CONSULTATION REQUESTS

@@ -279,6 +279,12 @@
     <label for="verifyActivity">What Activity Have You Done for the Jamaat?</label>
     <textarea id="verifyActivity" placeholder="e.g. Regular Ijtema attendance, Waqar-e-Amal, Tabligh stalls..."></textarea>
   </div>
+  <div class="field">
+    <label for="verifyVideoInput">Short Introduction Video</label>
+    <p class="field-hint" style="margin:0 0 8px;">Briefly introduce yourself and what you're looking for — max 30 seconds. Seen only by our admin team, deleted the moment your profile is reviewed.</p>
+    <input type="file" id="verifyVideoInput" accept="video/*" capture="user">
+    <p id="verifyVideoName" style="display:none;font-size:.82rem;color:var(--green);margin-top:6px;"></p>
+  </div>
   <p id="ahmadiVerificationError" style="display:none;color:var(--error);font-size:.85rem;margin-top:6px;"></p>
   <button type="button" class="btn btn-primary btn-block" style="margin-top:14px;" onclick="saveAhmadiVerification()">Save</button>
 </div>
@@ -357,6 +363,26 @@
   }
 
   let currentProfile = null;
+  let selectedVerifyVideoFile = null;
+
+  document.getElementById('verifyVideoInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0] || null;
+    const nameEl = document.getElementById('verifyVideoName');
+    if (!file) { selectedVerifyVideoFile = null; nameEl.style.display = 'none'; return; }
+
+    const videoError = await vrnValidateIntroVideo(file);
+    if (videoError) {
+      alert(videoError);
+      selectedVerifyVideoFile = null;
+      nameEl.style.display = 'none';
+      e.target.value = '';
+      return;
+    }
+
+    selectedVerifyVideoFile = file;
+    nameEl.textContent = '✓ ' + file.name;
+    nameEl.style.display = 'block';
+  });
 
   async function loadProfile(){
     await vrnRequireAuth();
@@ -449,6 +475,7 @@
   function vrnAhmadiVerificationComplete(){
     const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
     if (isPakistan && !document.getElementById('verifyLocalJamaat').value.trim()) return false;
+    if (!selectedVerifyVideoFile) return false;
     return AHMADI_VERIFICATION_FIELD_IDS.every(id => document.getElementById(id).value.trim());
   }
 
@@ -466,7 +493,7 @@
   function saveAhmadiVerification(){
     const errorEl = document.getElementById('ahmadiVerificationError');
     if (!vrnAhmadiVerificationComplete()) {
-      errorEl.textContent = 'Please answer every question before saving.';
+      errorEl.textContent = 'Please answer every question and upload your introduction video before saving.';
       errorEl.style.display = 'block';
       return;
     }
@@ -517,12 +544,13 @@
     btn.setAttribute('disabled', '');
     btn.textContent = 'Saving...';
     try {
+      const user = await vrnCurrentUser();
+      const videoPath = await vrnUploadIntroVideo(user.id, selectedVerifyVideoFile);
       const { error: verificationError } = await sb.functions.invoke('submit-profile-verification', {
-        body: collectAhmadiVerification()
+        body: { ...collectAhmadiVerification(), video_path: videoPath }
       });
       if (verificationError) throw new Error(await vrnFunctionErrorMessage(verificationError));
 
-      const user = await vrnCurrentUser();
       const { error: updateError } = await sb.from('profiles').update(updates).eq('id', user.id);
       if (updateError) throw updateError;
       successEl.style.display = 'block';

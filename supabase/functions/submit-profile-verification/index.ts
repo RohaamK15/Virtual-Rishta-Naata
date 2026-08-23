@@ -36,9 +36,24 @@ Deno.serve(async (req) => {
       picked[key] = value;
     }
 
+    // Must be a path this same user actually owns in verification-videos
+    // (their own storage folder) — never trust a client-supplied path
+    // otherwise, since it would let anyone attach an arbitrary object
+    // (including someone else's video) to their own verification record.
+    const videoPath = typeof body.video_path === "string" ? body.video_path.trim() : "";
+    if (!videoPath || !videoPath.startsWith(`${user.id}/`)) {
+      throw new Error("A self-introduction video is required");
+    }
+    const { data: videoExists } = await admin.storage.from("verification-videos").list(user.id);
+    const fileName = videoPath.slice(user.id.length + 1);
+    if (!videoExists?.some((f) => f.name === fileName)) {
+      throw new Error("We couldn't find your uploaded video — please try uploading it again");
+    }
+
     const { error } = await admin.from("profile_verification").upsert({
       profile_id: user.id,
       ...picked,
+      video_path: videoPath,
     });
     if (error) throw error;
 

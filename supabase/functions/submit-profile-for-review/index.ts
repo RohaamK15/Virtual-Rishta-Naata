@@ -35,31 +35,17 @@ function pickAllowedFields(profileData: Record<string, unknown>) {
   return picked;
 }
 
-const VERIFICATION_FIELDS = ["local_jamaat", "sadr_name_contact", "positions_held", "joined_jamaat", "jamaat_activity"];
-
-function validateVerification(verification: unknown): Record<string, string> {
-  if (!verification || typeof verification !== "object") throw new Error("Ahmadi verification answers are required");
-  const v = verification as Record<string, unknown>;
-  const picked: Record<string, string> = {};
-  for (const key of VERIFICATION_FIELDS) {
-    const value = typeof v[key] === "string" ? (v[key] as string).trim() : "";
-    if (!value) throw new Error("Please answer every Ahmadi verification question");
-    picked[key] = value;
-  }
-  return picked;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { email, password, profileData, photoDataUrl, plan, verification } = await req.json();
+    const { email, password, profileData, photoDataUrl, plan } = await req.json();
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("A valid email is required");
     if (!password || password.length < 8) throw new Error("Password must be at least 8 characters");
     if (!profileData || typeof profileData !== "object") throw new Error("Missing profile data");
     if (!["monthly", "annual"].includes(plan)) throw new Error("Invalid plan");
-    const verificationFields = validateVerification(verification);
+    if (!photoDataUrl) throw new Error("A profile photo is required");
 
     const { data: existing } = await admin.auth.admin.listUsers();
     if (existing?.users?.some((u) => u.email?.toLowerCase() === email.toLowerCase())) {
@@ -83,29 +69,26 @@ Deno.serve(async (req) => {
       });
       if (profileError) throw profileError;
 
-      const { error: verificationError } = await admin.from("profile_verification").insert({
-        profile_id: userId,
-        ...verificationFields,
-      });
-      if (verificationError) throw verificationError;
+      // Photos are mandatory now, so a failed upload/decode here must roll
+      // back the whole signup rather than silently leaving has_photo=false.
+      const match = photoDataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (!match) throw new Error("Could not process that photo — please try a different file.");
+      const contentType = match[1];
+      const bytes = Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0));
+      const ext = contentType === "image/png" ? "png" : "jpg";
+      const path = `${userId}/photo.${ext}`;
+      const { error: uploadError } = await admin.storage
+        .from("profile-photos")
+        .upload(path, bytes, { contentType, upsert: true });
+      if (uploadError) throw uploadError;
+      const { error: photoUpdateError } = await admin.from("profiles").update({ has_photo: true, photo_path: path }).eq("id", userId);
+      if (photoUpdateError) throw photoUpdateError;
 
-      if (photoDataUrl) {
-        const match = photoDataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
-        if (match) {
-          const contentType = match[1];
-          const bytes = Uint8Array.from(atob(match[2]), (c) => c.charCodeAt(0));
-          const ext = contentType === "image/png" ? "png" : "jpg";
-          const path = `${userId}/photo.${ext}`;
-          const { error: uploadError } = await admin.storage
-            .from("profile-photos")
-            .upload(path, bytes, { contentType, upsert: true });
-          if (!uploadError) {
-            await admin.from("profiles").update({ has_photo: true, photo_path: path }).eq("id", userId);
-          } else {
-            console.error("Photo upload failed during signup submission:", uploadError);
-          }
-        }
-      }
+      // Ahmadi Verification answers (including the intro video) are saved
+      // separately, after this function returns and the client signs in —
+      // see submit-profile-verification. The video needs a real authenticated
+      // session to upload directly to storage (base64-through-this-function
+      // isn't viable at up to 50MB), so it can't be part of this atomic step.
     } catch (err) {
       // Never leave an orphaned auth user with no profile behind.
       await admin.auth.admin.deleteUser(userId);
