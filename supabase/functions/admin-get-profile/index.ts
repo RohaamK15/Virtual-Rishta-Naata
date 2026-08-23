@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error } = await admin
       .from("profiles")
-      .select("*")
+      .select("*, profile_verification(local_jamaat, sadr_name_contact, positions_held, joined_jamaat, jamaat_activity)")
       .eq("ref_code", ref_code)
       .single();
     if (error) throw error;
@@ -25,7 +25,14 @@ Deno.serve(async (req) => {
       photo_url = signed?.signedUrl || null;
     }
 
-    return new Response(JSON.stringify({ profile: { ...profile, photo_url } }), {
+    // profile_verification is a to-one relation via primary key, but
+    // PostgREST always returns embedded relations as an array — flatten it,
+    // and be explicit when it's missing (already reviewed and deleted —
+    // expected once profile_status is no longer 'pending').
+    const rawVerification = (profile as Record<string, unknown>).profile_verification;
+    const profile_verification = Array.isArray(rawVerification) ? rawVerification[0] || null : rawVerification;
+
+    return new Response(JSON.stringify({ profile: { ...profile, profile_verification, photo_url } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

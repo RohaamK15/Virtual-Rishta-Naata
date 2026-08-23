@@ -302,6 +302,7 @@
             ${p.about ? `<div><strong>About:</strong> ${escapeHtml(p.about)}${aiFlagBadge(p.about)}</div>` : ''}
             ${p.additional_note ? `<div><strong>Additional note:</strong> ${escapeHtml(p.additional_note)}${aiFlagBadge(p.additional_note)}</div>` : ''}
           </div>
+          ${verificationBlock(p.profile_verification)}
           <div style="display:flex;gap:8px;">
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="openProfile('${p.ref_code}')">View Full Profile</button>
           </div>
@@ -455,6 +456,25 @@
     return looksAiGenerated(text)
       ? ` <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#FBEAEA;color:#B23B3B;font-size:.7rem;font-weight:600;vertical-align:middle;">⚠ Possibly AI-generated — review closely</span>`
       : '';
+  }
+
+  // Ahmadi verification answers are deleted the instant a profile is
+  // approved or rejected (see admin-review-profile) — this only ever
+  // renders for a still-pending profile. If it's ever missing here, the
+  // decision has already been made and there's nothing left to show.
+  function verificationBlock(v){
+    if (!v) return `<p style="font-size:.8rem;color:var(--ink-soft);font-style:italic;margin-top:10px;">No Ahmadi verification answers on file (already reviewed, or not yet submitted).</p>`;
+    return `
+      <div style="background:#FBF3E4;border:1px solid #E8D6A8;border-radius:var(--radius-s);padding:14px 16px;margin-top:10px;">
+        <div style="font-family:'Montserrat',sans-serif;font-size:.7rem;letter-spacing:.04em;text-transform:uppercase;color:#8A6A2E;font-weight:700;margin-bottom:8px;">🔒 Ahmadi Verification — one-time view, deleted on decision</div>
+        <div style="font-size:.85rem;color:var(--ink-soft);display:grid;gap:6px;">
+          <div><strong>Local Jamaat:</strong> ${escapeHtml(v.local_jamaat)}</div>
+          <div><strong>Local Sadr's Name &amp; Contact:</strong> ${escapeHtml(v.sadr_name_contact)}</div>
+          <div><strong>Positions Held:</strong> ${escapeHtml(v.positions_held)}</div>
+          <div><strong>When Joined Jamaat:</strong> ${escapeHtml(v.joined_jamaat)}</div>
+          <div><strong>Jamaat Activity:</strong> ${escapeHtml(v.jamaat_activity)}</div>
+        </div>
+      </div>`;
   }
 
   async function loadFlaggedMessages(){
@@ -621,6 +641,7 @@
         ${row('Admin', p.is_admin ? 'Yes' : 'No')}
         ${row('Photo Status', p.photo_status)}
         ${row('Joined', p.created_at ? new Date(p.created_at).toLocaleString('en-GB') : null)}
+        ${verificationBlock(p.profile_verification)}
         ${p.profile_status === 'pending' ? `
           <div style="display:flex;gap:8px;margin-top:16px;">
             <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFromModal('${p.id}','approve')">Approve</button>

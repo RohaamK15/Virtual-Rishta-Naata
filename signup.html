@@ -256,6 +256,12 @@
             <label class="radio-pill"><input type="radio" name="hasChildren" value="No">No</label>
           </div>
         </div>
+        <div class="field">
+          <label>Ahmadi Verification</label>
+          <p class="field-hint" style="margin:0 0 10px;">A few extra questions only our admin team sees, to help us confirm genuine Ahmadi members. This information is deleted permanently the moment your profile is reviewed — it's never stored long-term or shown to other members.</p>
+          <button type="button" class="btn btn-outline btn-block" onclick="openSheet('ahmadiVerificationModal')">Complete Ahmadi Verification</button>
+          <p id="ahmadiVerificationStatus" style="font-size:.82rem;color:var(--error);margin-top:8px;">Not yet completed</p>
+        </div>
       </div>
 
       <p class="step-error" style="display:none;color:var(--error);font-size:.85rem;margin-top:16px;"></p>
@@ -425,6 +431,39 @@
 
   </form>
 </main>
+
+<div class="overlay" id="ahmadiVerificationModal-overlay" onclick="closeSheet('ahmadiVerificationModal')"></div>
+<div class="sheet" id="ahmadiVerificationModal" style="max-width:520px;padding:32px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+    <h3 style="margin:0;">Ahmadi Verification</h3>
+    <button type="button" class="action-btn" onclick="closeSheet('ahmadiVerificationModal')" aria-label="Close">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <p style="font-size:.85rem;color:var(--ink-soft);margin-bottom:18px;">Seen only by our admin team to help confirm genuine Ahmadi members, then permanently deleted the moment your profile is reviewed.</p>
+  <div class="field">
+    <label for="verifyLocalJamaat">Local Jamaat</label>
+    <input type="text" id="verifyLocalJamaat" placeholder="e.g. Baitul Futuh">
+  </div>
+  <div class="field">
+    <label for="verifySadrContact">Local Sadr's Name &amp; Contact Details</label>
+    <textarea id="verifySadrContact" placeholder="Name and a phone number or email we could reach them on"></textarea>
+  </div>
+  <div class="field">
+    <label for="verifyPositions">Any Positions You Hold or Have Held</label>
+    <input type="text" id="verifyPositions" placeholder="e.g. None, or Secretary Tarbiyat">
+  </div>
+  <div class="field">
+    <label for="verifyJoinedJamaat">When You Joined the Jamaat</label>
+    <input type="text" id="verifyJoinedJamaat" placeholder="e.g. Born into an Ahmadi family, or year of Bai'at">
+  </div>
+  <div class="field">
+    <label for="verifyActivity">What Activity Have You Done for the Jamaat?</label>
+    <textarea id="verifyActivity" placeholder="e.g. Regular Ijtema attendance, Waqar-e-Amal, Tabligh stalls..."></textarea>
+  </div>
+  <p id="ahmadiVerificationError" style="display:none;color:var(--error);font-size:.85rem;margin-top:6px;"></p>
+  <button type="button" class="btn btn-primary btn-block" style="margin-top:14px;" onclick="saveAhmadiVerification()">Save</button>
+</div>
 
 <script src="/assets/js/app.js"></script>
 <script src="/assets/js/countries.js"></script>
@@ -609,6 +648,7 @@
         if (!document.getElementById('previousDuration').value.trim()) return 'Please let us know how long it lasted.';
       }
       if (!document.querySelector('input[name="hasChildren"]:checked')) return 'Please let us know if you have children.';
+      if (!vrnAhmadiVerificationComplete()) return 'Please complete the Ahmadi Verification questions before continuing.';
     }
     if (stepNum === 4) {
       if (!document.getElementById('preferenceLine').value.trim()) return 'Please describe your preference in a line.';
@@ -627,6 +667,36 @@
 
   function vrnWordCount(text){
     return (text || '').trim().split(/\s+/).filter(Boolean).length;
+  }
+
+  const AHMADI_VERIFICATION_FIELD_IDS = ['verifyLocalJamaat', 'verifySadrContact', 'verifyPositions', 'verifyJoinedJamaat', 'verifyActivity'];
+
+  function vrnAhmadiVerificationComplete(){
+    return AHMADI_VERIFICATION_FIELD_IDS.every(id => document.getElementById(id).value.trim());
+  }
+
+  function collectAhmadiVerification(){
+    return {
+      local_jamaat: document.getElementById('verifyLocalJamaat').value.trim(),
+      sadr_name_contact: document.getElementById('verifySadrContact').value.trim(),
+      positions_held: document.getElementById('verifyPositions').value.trim(),
+      joined_jamaat: document.getElementById('verifyJoinedJamaat').value.trim(),
+      jamaat_activity: document.getElementById('verifyActivity').value.trim(),
+    };
+  }
+
+  function saveAhmadiVerification(){
+    const errorEl = document.getElementById('ahmadiVerificationError');
+    if (!vrnAhmadiVerificationComplete()) {
+      errorEl.textContent = 'Please answer every question before saving.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    errorEl.style.display = 'none';
+    const status = document.getElementById('ahmadiVerificationStatus');
+    status.textContent = '✓ Completed';
+    status.style.color = 'var(--green)';
+    closeSheet('ahmadiVerificationModal');
   }
 
   function tryNextStep(stepNum){
@@ -749,8 +819,10 @@
       // no payment involved — profile_status/subscription_status start at
       // their column defaults ('pending'/'pending'), so this alone never
       // grants access. See is_active_member() in supabase/schema.sql.
+      const verification = collectAhmadiVerification();
+
       const { error } = await sb.functions.invoke('submit-profile-for-review', {
-        body: { email, password, profileData, photoDataUrl, plan }
+        body: { email, password, profileData, photoDataUrl, plan, verification }
       });
       if (error) throw error;
 

@@ -186,6 +186,27 @@ create trigger trg_reset_profile_status
   before update on public.profiles
   for each row execute function public.reset_profile_status_on_change();
 
+-- Ahmadi verification answers (Local Jamaat, Local Sadr's name/contact,
+-- positions held, when joined, and Jamaat activity) collected at signup and
+-- on every resubmission (trg_reset_profile_status above sends any content
+-- edit back to 'pending', so a fresh review always needs fresh answers).
+-- Deliberately a separate table with ZERO RLS policies below — reachable
+-- only through the service-role client inside submit-profile-for-review,
+-- submit-profile-verification and the admin-* edge functions, never
+-- directly from any client, not even the profile's own owner. This is
+-- one-time-viewing data for the admin's approve/reject decision only:
+-- admin-review-profile deletes this row the instant a decision is made, so
+-- it should never exist for a profile that isn't currently pending review.
+create table if not exists public.profile_verification (
+  profile_id uuid primary key references public.profiles(id) on delete cascade,
+  local_jamaat text not null,
+  sadr_name_contact text not null,
+  positions_held text not null,
+  joined_jamaat text not null,
+  jamaat_activity text not null
+);
+alter table public.profile_verification enable row level security;
+
 -- ============================================================
 -- 3. ROW LEVEL SECURITY POLICIES
 -- ============================================================

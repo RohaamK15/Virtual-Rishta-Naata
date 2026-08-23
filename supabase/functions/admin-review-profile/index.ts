@@ -21,6 +21,11 @@ Deno.serve(async (req) => {
     }).eq("id", profile_id);
     if (error) throw error;
 
+    // Ahmadi verification answers are one-time-viewing data for this
+    // decision only — never retained past the moment a decision is made,
+    // approve or reject, regardless of what happens below.
+    await admin.from("profile_verification").delete().eq("profile_id", profile_id);
+
     // Best-effort push notification — previously a member only found out
     // their profile had been reviewed if they happened to open the app and
     // check account.html themselves. A failure here should never fail the

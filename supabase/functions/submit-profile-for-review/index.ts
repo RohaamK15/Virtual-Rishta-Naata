@@ -35,16 +35,31 @@ function pickAllowedFields(profileData: Record<string, unknown>) {
   return picked;
 }
 
+const VERIFICATION_FIELDS = ["local_jamaat", "sadr_name_contact", "positions_held", "joined_jamaat", "jamaat_activity"];
+
+function validateVerification(verification: unknown): Record<string, string> {
+  if (!verification || typeof verification !== "object") throw new Error("Ahmadi verification answers are required");
+  const v = verification as Record<string, unknown>;
+  const picked: Record<string, string> = {};
+  for (const key of VERIFICATION_FIELDS) {
+    const value = typeof v[key] === "string" ? (v[key] as string).trim() : "";
+    if (!value) throw new Error("Please answer every Ahmadi verification question");
+    picked[key] = value;
+  }
+  return picked;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { email, password, profileData, photoDataUrl, plan } = await req.json();
+    const { email, password, profileData, photoDataUrl, plan, verification } = await req.json();
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("A valid email is required");
     if (!password || password.length < 8) throw new Error("Password must be at least 8 characters");
     if (!profileData || typeof profileData !== "object") throw new Error("Missing profile data");
     if (!["monthly", "annual"].includes(plan)) throw new Error("Invalid plan");
+    const verificationFields = validateVerification(verification);
 
     const { data: existing } = await admin.auth.admin.listUsers();
     if (existing?.users?.some((u) => u.email?.toLowerCase() === email.toLowerCase())) {
@@ -67,6 +82,12 @@ Deno.serve(async (req) => {
         plan,
       });
       if (profileError) throw profileError;
+
+      const { error: verificationError } = await admin.from("profile_verification").insert({
+        profile_id: userId,
+        ...verificationFields,
+      });
+      if (verificationError) throw verificationError;
 
       if (photoDataUrl) {
         const match = photoDataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
