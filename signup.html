@@ -188,7 +188,7 @@
       </div>
       <div class="field">
         <label for="countryOfResidence">Country of Residence</label>
-        <select id="countryOfResidence"></select>
+        <select id="countryOfResidence" onchange="updateLocalJamaatVisibility()"></select>
         <input type="text" id="countryOfResidenceOther" placeholder="Please specify your country" style="display:none;margin-top:10px;">
         <p class="field-hint">This is shown alongside your age on the search page — your city and county are only visible once someone opens your full profile.</p>
       </div>
@@ -222,10 +222,11 @@
       </div>
 
       <div id="ahmadiEligibleFields">
-        <div class="field">
+        <div class="field" id="localJamaatField">
           <label for="localJamaat">What is your Local Jamaat?</label>
           <input type="text" id="localJamaat" placeholder="e.g. Baitul Futuh">
         </div>
+        <p id="localJamaatPakistanNote" style="display:none;font-size:.82rem;color:var(--ink-soft);margin:-8px 0 16px;">For the safety of Ahmadis in Pakistan, we don't ask for your Local Jamaat.</p>
         <div class="field">
           <label>Have you had any previous engagement, Nikah, or marriage?</label>
           <div class="radio-pill-group">
@@ -286,7 +287,8 @@
         </div>
       </div>
       <div class="field">
-        <label for="additionalNote">Anything else to add? (optional)</label>
+        <label for="additionalNote">Expand more on your preferences</label>
+        <p style="font-size:.82rem;color:var(--ink-soft);margin:-4px 0 8px;">The more detailed the preference, the better chance that someone more suitable will reach out to you.</p>
         <textarea id="additionalNote" placeholder="Add any additional preference or note here"></textarea>
       </div>
 
@@ -305,7 +307,8 @@
 
       <div class="field" style="margin-top:28px;">
         <label for="aboutYourself">About Yourself</label>
-        <textarea id="aboutYourself" style="min-height:140px;" placeholder="Describe your personality, likes and hobbies in a few sentences..."></textarea>
+        <p style="font-size:.82rem;color:var(--ink-soft);margin:-4px 0 8px;">The more quality information you put, the better chances you have of finding a suitable Rishta.</p>
+        <textarea id="aboutYourself" style="min-height:140px;" placeholder="Describe your personality, likes, hobbies, and anything else you would like to share about yourself..."></textarea>
       </div>
 
       <div id="photoSection">
@@ -527,6 +530,7 @@
   });
 
   function renderStep(){
+    updateLocalJamaatVisibility();
     document.querySelectorAll('.step').forEach(s => s.classList.toggle('active', +s.dataset.step === current));
     document.getElementById('progressFill').style.width = (current/TOTAL_STEPS*100) + '%';
     document.getElementById('stepLabel').textContent = `Step ${current} of ${TOTAL_STEPS}`;
@@ -538,6 +542,16 @@
     window.scrollTo({top:0, behavior:'smooth'});
   }
   function goToStep(n){ current = n; renderStep(); }
+
+  // Ahmadis in Pakistan face real security risk if their local Jamaat is on
+  // record anywhere — so the field is hidden entirely, not just optional,
+  // for anyone residing in Pakistan.
+  function updateLocalJamaatVisibility(){
+    const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
+    document.getElementById('localJamaatField').style.display = isPakistan ? 'none' : '';
+    document.getElementById('localJamaatPakistanNote').style.display = isPakistan ? 'block' : 'none';
+    if (isPakistan) document.getElementById('localJamaat').value = '';
+  }
   function nextStep(){ if(current < TOTAL_STEPS){ current++; renderStep(); } }
   function prevStep(){ if(current > 1){ current--; renderStep(); } }
 
@@ -573,7 +587,8 @@
       const isAhmadi = document.querySelector('input[name="isAhmadi"]:checked');
       if (!isAhmadi) return 'Please let us know if you are an Ahmadi Muslim.';
       if (isAhmadi.value === 'No') return 'This service is only for Ahmadi Muslims — see the note above.';
-      if (!document.getElementById('localJamaat').value.trim()) return 'Please enter your local Jamaat.';
+      const residesInPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
+      if (!residesInPakistan && !document.getElementById('localJamaat').value.trim()) return 'Please enter your local Jamaat.';
       const previousChoice = document.querySelector('input[name="hadPrevious"]:checked');
       if (!previousChoice) return 'Please let us know if you have had any previous engagement, Nikah, or marriage.';
       if (previousChoice.value === 'Yes') {
@@ -589,11 +604,16 @@
         return 'Please specify which country you are looking in.';
       }
       if (!document.querySelector('input[name="considerPakistan"]:checked')) return 'Please let us know if you\'d consider a match from Pakistan.';
+      if (vrnWordCount(document.getElementById('additionalNote').value) < 30) return 'Please write at least 30 words — the more detail you give, the better chance someone suitable will reach out to you.';
     }
     if (stepNum === 5) {
-      if (!document.getElementById('aboutYourself').value.trim()) return 'Please tell us a little about yourself.';
+      if (vrnWordCount(document.getElementById('aboutYourself').value) < 30) return 'Please write at least 30 words about yourself — quality information gives you a much better chance of finding a suitable Rishta.';
     }
     return null;
+  }
+
+  function vrnWordCount(text){
+    return (text || '').trim().split(/\s+/).filter(Boolean).length;
   }
 
   function tryNextStep(stepNum){
@@ -642,7 +662,7 @@
       county: document.getElementById('county').value,
       country: vrnResolveCountryValue(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther')),
       is_ahmadi: document.querySelector('input[name="isAhmadi"]:checked')?.value === 'Yes',
-      local_jamaat: document.getElementById('localJamaat').value,
+      local_jamaat: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('localJamaat').value,
       had_previous: document.querySelector('input[name="hadPrevious"]:checked')?.value === 'Yes',
       previous_type: document.querySelector('input[name="previousType"]:checked')?.value || null,
       previous_duration: document.getElementById('previousDuration').value || null,

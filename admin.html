@@ -299,8 +299,8 @@
           <div style="font-size:.86rem;color:var(--ink-soft);display:grid;gap:6px;margin-bottom:14px;">
             ${p.local_jamaat ? `<div><strong>Jamaat:</strong> ${escapeHtml(p.local_jamaat)}</div>` : ''}
             ${p.preference_line ? `<div><strong>Preference:</strong> ${escapeHtml(p.preference_line)}</div>` : ''}
-            ${p.about ? `<div><strong>About:</strong> ${escapeHtml(p.about)}</div>` : ''}
-            ${p.additional_note ? `<div><strong>Additional note:</strong> ${escapeHtml(p.additional_note)}</div>` : ''}
+            ${p.about ? `<div><strong>About:</strong> ${escapeHtml(p.about)}${aiFlagBadge(p.about)}</div>` : ''}
+            ${p.additional_note ? `<div><strong>Additional note:</strong> ${escapeHtml(p.additional_note)}${aiFlagBadge(p.additional_note)}</div>` : ''}
           </div>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','approve')">Approve</button>
@@ -427,6 +427,31 @@
     const d = document.createElement('div');
     d.textContent = str;
     return d.innerHTML;
+  }
+
+  // Heuristic-only flag for admin attention — not a verdict. Looks for stock
+  // phrasing common in LLM-generated text that's uncommon in first-person,
+  // informal profile writing. Two-or-more matches trips the flag.
+  const AI_SOUNDING_PHRASES = [
+    'delve', 'tapestry', 'boundless', 'unwavering', 'holistic', 'seamless',
+    'foster', 'embark', 'realm', 'testament to', 'cultivate', 'encompass',
+    'multifaceted', 'nuanced', 'paramount', 'underscore', 'pivotal',
+    'resonate', 'in essence', "it's important to note", 'it is important to note',
+    'it is worth noting', 'navigate the', 'genuine connection', 'vibrant tapestry',
+    'plays a crucial role', 'plays a vital role', 'i am a firm believer',
+    'i am a strong believer', 'when it comes to finding', 'life partner who',
+    'passionate about life', 'genuine and caring individual'
+  ];
+  function looksAiGenerated(text){
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    const hits = AI_SOUNDING_PHRASES.filter(p => lower.includes(p));
+    return hits.length >= 2;
+  }
+  function aiFlagBadge(text){
+    return looksAiGenerated(text)
+      ? ` <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#FBEAEA;color:#B23B3B;font-size:.7rem;font-weight:600;vertical-align:middle;">⚠ Possibly AI-generated — review closely</span>`
+      : '';
   }
 
   async function loadFlaggedMessages(){
@@ -556,10 +581,10 @@
       const { data, error } = await sb.functions.invoke('admin-get-profile', { body: { ref_code: ref } });
       if (error) throw error;
       const p = data.profile;
-      const row = (label, value) => `
+      const row = (label, value, flagText) => `
         <div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid rgba(19,75,53,.08);">
           <span style="font-family:'Montserrat',sans-serif;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--green);flex-shrink:0;">${escapeHtml(label)}</span>
-          <span style="text-align:right;color:var(--ink);">${value === null || value === undefined || value === '' ? '—' : escapeHtml(String(value))}</span>
+          <span style="text-align:right;color:var(--ink);">${value === null || value === undefined || value === '' ? '—' : escapeHtml(String(value))}${flagText ? aiFlagBadge(flagText) : ''}</span>
         </div>`;
       const status = deriveStatus(p);
       body.innerHTML = `
@@ -583,8 +608,8 @@
         ${row('Preference', p.preference_line)}
         ${row('Looking In', p.country_looking_in)}
         ${row('Considers Pakistan', p.consider_pakistan === null ? null : (p.consider_pakistan ? 'Yes' : 'No'))}
-        ${row('Additional Note', p.additional_note)}
-        ${row('About', p.about)}
+        ${row('Additional Note', p.additional_note, p.additional_note)}
+        ${row('About', p.about, p.about)}
         ${row('Contact Email', p.contact_email)}
         ${row('Plan', p.plan)}
         ${row('Profile Status', p.profile_status)}
