@@ -80,6 +80,12 @@ create table if not exists public.profiles (
   -- just means subscription_status never has to become 'active'. Only ever
   -- set by admin-set-comped (service role) — never in the update grant.
   is_comped boolean not null default false,
+  -- For internal/reviewer test accounts (e.g. Apple App Review's TestFlight
+  -- sign-in) that need full is_active_member() functionality to browse and
+  -- message real members, but must never appear in real members' own browse
+  -- results. Same exclusion shape as is_admin below, just for a different
+  -- reason. Never in the update grant — service role only.
+  is_hidden_from_browse boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -302,6 +308,7 @@ create policy "profiles_select_active_members" on public.profiles
   for select using (
     (subscription_status = 'active' or is_comped = true) and profile_status = 'approved'
     and not is_admin
+    and not is_hidden_from_browse
     and public.is_active_member()
     and not public.is_blocked_pair(auth.uid(), id)
   );
