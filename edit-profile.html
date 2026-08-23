@@ -259,7 +259,7 @@
     </button>
   </div>
   <p style="font-size:.85rem;color:var(--ink-soft);margin-bottom:18px;">Seen only by our admin team to help confirm genuine Ahmadi members, then permanently deleted the moment your profile is reviewed.</p>
-  <div class="field">
+  <div class="field" id="verifyLocalJamaatField">
     <label for="verifyLocalJamaat">Local Jamaat</label>
     <input type="text" id="verifyLocalJamaat" placeholder="e.g. Baitul Futuh">
   </div>
@@ -317,6 +317,12 @@
       document.getElementById('city').value = '';
       document.getElementById('county').value = '';
     }
+    // Non-Pakistan residents already gave their Local Jamaat on the main
+    // form (above) — no need to ask again inside verification. Pakistan
+    // residents never see that main field, so this is their only chance to
+    // give it, in this ephemeral, admin-only, one-time-view form instead.
+    const verifyField = document.getElementById('verifyLocalJamaatField');
+    if (verifyField) verifyField.style.display = isPakistan ? '' : 'none';
   }
 
   // Selects a radio in a group by value if it exists — used to restore the
@@ -435,15 +441,21 @@
     return (text || '').trim().split(/\s+/).filter(Boolean).length;
   }
 
-  const AHMADI_VERIFICATION_FIELD_IDS = ['verifyLocalJamaat', 'verifySadrContact', 'verifyPositions', 'verifyJoinedJamaat', 'verifyActivity'];
+  // Local Jamaat is only asked inside verification for Pakistan residents
+  // (see updatePakistanSensitiveFields) — everyone else already gave it on
+  // the main form, so it's excluded here to avoid asking twice.
+  const AHMADI_VERIFICATION_FIELD_IDS = ['verifySadrContact', 'verifyPositions', 'verifyJoinedJamaat', 'verifyActivity'];
 
   function vrnAhmadiVerificationComplete(){
+    const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
+    if (isPakistan && !document.getElementById('verifyLocalJamaat').value.trim()) return false;
     return AHMADI_VERIFICATION_FIELD_IDS.every(id => document.getElementById(id).value.trim());
   }
 
   function collectAhmadiVerification(){
+    const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
     return {
-      local_jamaat: document.getElementById('verifyLocalJamaat').value.trim(),
+      local_jamaat: (isPakistan ? document.getElementById('verifyLocalJamaat').value : document.getElementById('localJamaat').value).trim(),
       sadr_name_contact: document.getElementById('verifySadrContact').value.trim(),
       positions_held: document.getElementById('verifyPositions').value.trim(),
       joined_jamaat: document.getElementById('verifyJoinedJamaat').value.trim(),
