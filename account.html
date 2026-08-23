@@ -524,12 +524,17 @@
       await vrnUnlinkGoogleIdentity();
       document.getElementById('googleLinkedNote').style.display = 'none';
       document.getElementById('googleLinkBtn').style.display = 'block';
+      try { localStorage.removeItem('vrn_google_linked'); } catch (e) { /* ignore */ }
     } catch (err) {
       alert('Could not unlink Google: ' + (err.message || 'please try again.'));
     }
     return false;
   }
 
+  // Sets the flag login.html checks before ever showing its "Continue with
+  // Google" button — keeps that button hidden from anyone who hasn't
+  // actually linked Google, on this specific device, rather than showing it
+  // to every visitor (see login.html for why).
   async function loadGoogleLinkState(){
     let identities = [];
     try {
@@ -540,6 +545,7 @@
     if (linked) {
       document.getElementById('googleLinkBtn').style.display = 'none';
       document.getElementById('googleLinkedNote').style.display = 'block';
+      try { localStorage.setItem('vrn_google_linked', '1'); } catch (e) { /* ignore */ }
     }
   }
 
@@ -600,6 +606,7 @@
   if (new URLSearchParams(window.location.search).get('googleLinked') === '1') {
     document.getElementById('googleLinkBtn').style.display = 'none';
     document.getElementById('googleLinkedNote').style.display = 'block';
+    try { localStorage.setItem('vrn_google_linked', '1'); } catch (e) { /* ignore */ }
   }
 
   // Stripe's webhook usually lands within a second of this redirect, but not

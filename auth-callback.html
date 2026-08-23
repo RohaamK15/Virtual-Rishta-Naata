@@ -89,6 +89,12 @@
       return;
     }
 
+    // Backstop for login.html's hidden-by-default Google button: a
+    // legitimate member successfully signing in via Google means this
+    // device should show that button next time, even if the flag was
+    // never set here before (e.g. linked on a different device).
+    try { localStorage.setItem('vrn_google_linked', '1'); } catch (e) { /* ignore */ }
+
     window.location.href = '/search.html';
   })();
 </script>
