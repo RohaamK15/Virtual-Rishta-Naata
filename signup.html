@@ -617,10 +617,10 @@
         return 'Please specify which country you are looking in.';
       }
       if (!document.querySelector('input[name="considerPakistan"]:checked')) return 'Please let us know if you\'d consider a match from Pakistan.';
-      if (vrnWordCount(document.getElementById('additionalNote').value) < 30) return 'Please write at least 30 words — the more detail you give, the better chance someone suitable will reach out to you.';
+      if (vrnWordCount(document.getElementById('additionalNote').value) < 20) return 'Please write at least 20 words — the more detail you give, the better chance someone suitable will reach out to you.';
     }
     if (stepNum === 5) {
-      if (vrnWordCount(document.getElementById('aboutYourself').value) < 30) return 'Please write at least 30 words about yourself — quality information gives you a much better chance of finding a suitable Rishta.';
+      if (vrnWordCount(document.getElementById('aboutYourself').value) < 20) return 'Please write at least 20 words about yourself — quality information gives you a much better chance of finding a suitable Rishta.';
     }
     return null;
   }

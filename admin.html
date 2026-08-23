@@ -303,6 +303,9 @@
             ${p.additional_note ? `<div><strong>Additional note:</strong> ${escapeHtml(p.additional_note)}${aiFlagBadge(p.additional_note)}</div>` : ''}
           </div>
           <div style="display:flex;gap:8px;">
+            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="openProfile('${p.ref_code}')">View Full Profile</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
             <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','approve')">Approve</button>
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','reject')">Reject</button>
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="grantCompedAccess('${p.id}')" title="Grant free access — they won't be asked to pay">Comp (Free)</button>
@@ -618,10 +621,22 @@
         ${row('Admin', p.is_admin ? 'Yes' : 'No')}
         ${row('Photo Status', p.photo_status)}
         ${row('Joined', p.created_at ? new Date(p.created_at).toLocaleString('en-GB') : null)}
+        ${p.profile_status === 'pending' ? `
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFromModal('${p.id}','approve')">Approve</button>
+            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFromModal('${p.id}','reject')">Reject</button>
+            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="grantCompedAccess('${p.id}')" title="Grant free access — they won't be asked to pay">Comp (Free)</button>
+          </div>
+        ` : ''}
       `;
     } catch (err) {
       body.innerHTML = `<p style="color:var(--error);">Couldn't load this profile (${await vrnFunctionErrorMessage(err)}).</p>`;
     }
+  }
+
+  async function reviewProfileFromModal(profileId, action){
+    await reviewProfileFull(profileId, action);
+    closeSheet('profileDetailModal');
   }
 
   document.getElementById('adminSearch').addEventListener('input', e => renderTable(e.target.value));
