@@ -39,6 +39,8 @@
 
   .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:30px;}
   @media (max-width:860px){.stat-row{grid-template-columns:1fr 1fr;}}
+  .stat-row-3{grid-template-columns:repeat(3,1fr);margin-bottom:0;}
+  @media (max-width:860px){.stat-row-3{grid-template-columns:1fr;}}
   .stat-card{background:var(--surface);border-radius:var(--radius-m);box-shadow:var(--shadow-1);padding:22px 22px;}
   .stat-card span{font-family:'Montserrat',sans-serif;font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);}
   .stat-card strong{display:block;font-family:'Cinzel',serif;font-size:1.7rem;color:var(--green);margin-top:8px;}
@@ -94,6 +96,10 @@
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1a5 5 0 015-5h3a5 5 0 015 5v1"/><circle cx="17.5" cy="8" r="3"/><path d="M16 12a4.5 4.5 0 015.5 4.4V18"/></svg>
         Members
       </a>
+      <a href="#revenue">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Revenue
+      </a>
       <a href="#notifications">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
         Notifications
@@ -133,6 +139,24 @@
       <div class="stat-card" data-reveal><span>Active Members</span><strong id="statActive">0</strong></div>
       <div class="stat-card" data-reveal><span>New This Week</span><strong id="statNewWeek">0</strong></div>
       <div class="stat-card alert" data-reveal><span>Flagged Accounts</span><strong id="statFlagged">0</strong></div>
+    </div>
+
+    <div class="panel" id="revenue" data-reveal>
+      <div class="panel-head">
+        <h3>Revenue</h3>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span id="revenuePeriodLabel" style="font-size:.78rem;color:var(--ink-soft);">Live from Stripe</span>
+          <button type="button" class="action-btn" title="Refresh" onclick="loadRevenueStats()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="stat-row stat-row-3" style="padding:20px 24px 24px;">
+        <div class="stat-card"><span>Gross Volume (this month)</span><strong id="statGrossVolume">—</strong></div>
+        <div class="stat-card"><span>Net Volume (this month)</span><strong id="statNetVolume">—</strong></div>
+        <div class="stat-card"><span>MRR</span><strong id="statMrr">—</strong></div>
+      </div>
+      <p id="revenueError" style="display:none;padding:0 24px 20px;color:var(--error);font-size:.85rem;"></p>
     </div>
 
     <div class="panel" id="notifications" data-reveal>
@@ -312,6 +336,26 @@
     loadPendingPhotos();
     loadPendingProfiles();
     loadOrphanedGoogleUsers();
+    loadRevenueStats();
+  }
+
+  function formatGBP(amount){
+    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(amount);
+  }
+  async function loadRevenueStats(){
+    const errorEl = document.getElementById('revenueError');
+    errorEl.style.display = 'none';
+    try {
+      const { data, error } = await sb.functions.invoke('admin-get-revenue-stats');
+      if (error) throw error;
+      document.getElementById('statGrossVolume').textContent = formatGBP(data.grossVolume);
+      document.getElementById('statNetVolume').textContent = formatGBP(data.netVolume);
+      document.getElementById('statMrr').textContent = formatGBP(data.mrr);
+      document.getElementById('revenuePeriodLabel').textContent = `Live from Stripe · ${data.periodLabel}`;
+    } catch (err) {
+      errorEl.textContent = `Couldn't load revenue figures (${await vrnFunctionErrorMessage(err)}).`;
+      errorEl.style.display = 'block';
+    }
   }
 
   let ALL_ORPHANS = [];
