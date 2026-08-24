@@ -6,13 +6,14 @@
 import Stripe from "https://esm.sh/stripe@14?target=deno";
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/requireAdmin.ts";
+import { logAdminAction } from "../_shared/logAdminAction.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { admin } = await requireAdmin(req);
+    const { admin, user } = await requireAdmin(req);
     const { ref_code } = await req.json();
     if (!ref_code) throw new Error("ref_code is required");
 
@@ -22,6 +23,11 @@ Deno.serve(async (req) => {
       .eq("ref_code", ref_code)
       .single();
     if (findError || !target) throw new Error("Profile not found");
+    // Logged before the delete itself (with SET NULL on target_profile_id's
+    // FK, the row would otherwise lose this link the instant the delete
+    // below runs) — detail carries the ref_code since target_profile_id
+    // can't be looked back up once the account is gone.
+    await logAdminAction(admin, user.id, "profile_delete", target.id, ref_code);
 
     if (target.stripe_subscription_id) {
       try {

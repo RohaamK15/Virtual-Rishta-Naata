@@ -7,11 +7,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/requireAdmin.ts";
+import { logAdminAction } from "../_shared/logAdminAction.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { admin } = await requireAdmin(req);
+    const { admin, user } = await requireAdmin(req);
     const { id } = await req.json();
     if (!id) throw new Error("id is required");
 
@@ -20,6 +21,10 @@ Deno.serve(async (req) => {
 
     const { error } = await admin.auth.admin.deleteUser(id);
     if (error) throw error;
+    // No profiles row exists for an orphan, so target_profile_id can't
+    // reference it (the FK would fail) — the orphaned auth user's id goes in
+    // detail instead.
+    await logAdminAction(admin, user.id, "orphaned_user_delete", null, id);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

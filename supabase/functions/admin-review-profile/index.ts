@@ -6,11 +6,12 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/requireAdmin.ts";
 import { sendFcmPush } from "../_shared/fcm.ts";
+import { logAdminAction } from "../_shared/logAdminAction.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { admin } = await requireAdmin(req);
+    const { admin, user } = await requireAdmin(req);
     const { profile_id, action, reason } = await req.json();
     if (!profile_id) throw new Error("profile_id is required");
     if (!["approve", "reject"].includes(action)) throw new Error("action must be 'approve' or 'reject'");
@@ -20,6 +21,7 @@ Deno.serve(async (req) => {
       profile_rejection_reason: action === "reject" ? (reason || "Did not meet our community standards") : null,
     }).eq("id", profile_id);
     if (error) throw error;
+    await logAdminAction(admin, user.id, `profile_${action}`, profile_id, reason || null);
 
     // Ahmadi verification answers (including the intro video) are one-time-
     // viewing data for this decision only — never retained past the moment a

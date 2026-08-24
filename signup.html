@@ -8,6 +8,20 @@
 <title>Create Your Profile — Virtual Rishta Naata</title>
 <link rel="stylesheet" href="/assets/css/styles.css">
 <script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
+<script>
+  // Defense-in-depth: the intended path here is home.html's "Create Profile"
+  // link, reachable only after the guidance + Terms-of-Service gate chain
+  // (index.html -> agree-terms.html). This catches anyone landing directly
+  // on this URL instead (an old bookmark, a shared link) before they can see
+  // any signup content. The real enforcement is server-side, in
+  // submit-profile-for-review, which independently requires and records
+  // tosAgreed — this redirect is just so a legitimate user is guided back
+  // through the proper flow rather than filling out a form only to be
+  // rejected at the very end.
+  if (localStorage.getItem('vrn_tos_agreed') !== '1') {
+    window.location.replace('/agree-terms.html');
+  }
+</script>
 <style>
   body{background:var(--beige);}
   .wizard-nav{padding:22px 0;}
@@ -223,6 +237,12 @@
       </div>
 
       <div id="ahmadiEligibleFields">
+        <div class="field" style="margin-top:0;">
+          <label class="radio-pill" style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;cursor:pointer;">
+            <input type="checkbox" id="religiousDataConsent">
+            <span style="font-size:.86rem;line-height:1.5;">I explicitly consent to Virtual Rishta Naata collecting and processing information about my religious belief — my Ahmadi Muslim status, Local Jamaat, and Ahmadi Verification details — for the purpose of providing this matrimonial service. See our <a href="/privacy.html" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;">Privacy Policy</a> for how this is used and protected.</span>
+          </label>
+        </div>
         <div class="field" id="localJamaatField">
           <label for="localJamaat">What is your Local Jamaat?</label>
           <input type="text" id="localJamaat" placeholder="e.g. Baitul Futuh">
@@ -684,6 +704,7 @@
       const isAhmadi = document.querySelector('input[name="isAhmadi"]:checked');
       if (!isAhmadi) return 'Please let us know if you are an Ahmadi Muslim.';
       if (isAhmadi.value === 'No') return 'This service is only for Ahmadi Muslims — see the note above.';
+      if (!document.getElementById('religiousDataConsent').checked) return 'Please confirm you consent to us processing your Ahmadi Muslim community information before continuing.';
       const residesInPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
       if (!residesInPakistan && !document.getElementById('localJamaat').value.trim()) return 'Please enter your local Jamaat.';
       const previousChoice = document.querySelector('input[name="hadPrevious"]:checked');
@@ -871,8 +892,10 @@
       // Ahmadi Verification answers (including the video) are saved
       // separately below, once signed in — the video needs a real
       // authenticated session to upload directly to storage.
+      const tosAgreed = localStorage.getItem('vrn_tos_agreed') === '1';
+      const religiousDataConsent = document.getElementById('religiousDataConsent').checked;
       const { error } = await sb.functions.invoke('submit-profile-for-review', {
-        body: { email, password, profileData, photoDataUrl, plan }
+        body: { email, password, profileData, photoDataUrl, plan, tosAgreed, religiousDataConsent }
       });
       if (error) throw error;
 

@@ -86,6 +86,22 @@ create table if not exists public.profiles (
   -- results. Same exclusion shape as is_admin below, just for a different
   -- reason. Never in the update grant — service role only.
   is_hidden_from_browse boolean not null default false,
+  -- GDPR consent evidence, set once by submit-profile-for-review at the
+  -- moment an account is actually created — deliberately NOT in the member
+  -- update grant below, so it's an immutable record of when consent was
+  -- given, not something a member (or a bug) could later rewrite or clear.
+  -- tos_accepted_at backs the mandatory Terms-of-Service gate (agree-
+  -- terms.html) with a real per-account record, since a browser localStorage
+  -- flag alone can't prove any specific account agreed to anything.
+  tos_accepted_at timestamptz,
+  -- Ahmadi Muslim status and Ahmadi Verification details are "special
+  -- category data" (religious belief) under UK GDPR Article 9 — processing
+  -- it requires a specific Article 9(2) condition, and explicit consent is
+  -- the one that applies here. This must be its own affirmative action,
+  -- separate from general Terms-of-Service agreement (bundling the two
+  -- would not meet the "explicit" and "specific" bar), captured at signup
+  -- alongside the Ahmadi Muslim question itself. See signup.html Step 3.
+  religious_data_consent_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -274,7 +290,8 @@ grant select (
   consider_pakistan, additional_note, about, has_photo, photo_path,
   photo_status, photo_rejection_reason, profile_status, profile_rejection_reason,
   plan, subscription_status, is_comped, is_admin, chat_guidelines_accepted_at,
-  onboarding_completed_at, theme_preference, push_enabled, created_at
+  onboarding_completed_at, theme_preference, push_enabled, created_at,
+  tos_accepted_at, religious_data_consent_at
 ) on public.profiles to authenticated;
 
 -- Any active, paying member can view the full details of another active member.
@@ -737,7 +754,33 @@ revoke insert on public.profile_reports from authenticated;
 grant insert (reporter_id, reported_id, reason) on public.profile_reports to authenticated;
 
 -- ============================================================
--- 9. FIRST ADMIN
+-- 9. ADMIN ACTION AUDIT LOG
+-- ============================================================
+-- Backs the Privacy Policy's promise that "administrative access is
+-- restricted to verified admin accounts and logged" — previously that
+-- second half wasn't actually true anywhere in the codebase. Every
+-- sensitive admin action (approving/rejecting a profile or photo, granting
+-- comp access, deleting an account, viewing a flagged/reported member's
+-- conversation history) writes a row here. Deliberately a separate table
+-- with ZERO RLS policies, same reasoning as profile_verification — reachable
+-- only through the service-role client inside admin-* Edge Functions, never
+-- directly from any client, not even an admin's own. Nothing here is ever
+-- deleted automatically; it's a permanent accountability record.
+create table if not exists public.admin_action_log (
+  id uuid primary key default gen_random_uuid(),
+  -- Nullable (not "not null") specifically so `on delete set null` can work —
+  -- if an admin account is ever removed, existing log rows survive with
+  -- admin_id cleared rather than being deleted or blocking the removal.
+  admin_id uuid references public.profiles(id) on delete set null,
+  action text not null,
+  target_profile_id uuid references public.profiles(id) on delete set null,
+  detail text,
+  created_at timestamptz not null default now()
+);
+alter table public.admin_action_log enable row level security;
+
+-- ============================================================
+-- 10. FIRST ADMIN
 -- ============================================================
 -- After you've created your own account through the normal signup flow once,
 -- run this (with your real user id from auth.users) to make yourself an admin:

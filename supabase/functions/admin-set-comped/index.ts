@@ -4,17 +4,19 @@
 // schema.sql); this only ever substitutes for payment, never for approval.
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/requireAdmin.ts";
+import { logAdminAction } from "../_shared/logAdminAction.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { admin } = await requireAdmin(req);
+    const { admin, user } = await requireAdmin(req);
     const { profile_id, comped } = await req.json();
     if (!profile_id) throw new Error("profile_id is required");
     if (typeof comped !== "boolean") throw new Error("comped must be a boolean");
 
     const { error } = await admin.from("profiles").update({ is_comped: comped }).eq("id", profile_id);
     if (error) throw error;
+    await logAdminAction(admin, user.id, comped ? "comp_grant" : "comp_revoke", profile_id);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

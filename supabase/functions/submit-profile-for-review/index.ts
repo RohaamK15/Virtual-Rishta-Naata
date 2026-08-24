@@ -39,13 +39,21 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { email, password, profileData, photoDataUrl, plan } = await req.json();
+    const { email, password, profileData, photoDataUrl, plan, tosAgreed, religiousDataConsent } = await req.json();
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("A valid email is required");
     if (!password || password.length < 8) throw new Error("Password must be at least 8 characters");
     if (!profileData || typeof profileData !== "object") throw new Error("Missing profile data");
     if (!["monthly", "annual"].includes(plan)) throw new Error("Invalid plan");
     if (!photoDataUrl) throw new Error("A profile photo is required");
+    // The real enforcement of both consents lives here, not in the client-side
+    // redirect guards on signup.html/agree-terms.html (those are UX-only —
+    // trivial to bypass from dev tools). Ahmadi Muslim status is "special
+    // category data" (religious belief) under UK GDPR Article 9, which needs
+    // its own explicit, specific consent — never satisfied by bundling it
+    // into general Terms-of-Service agreement.
+    if (tosAgreed !== true) throw new Error("You must agree to the Terms of Service before continuing.");
+    if (religiousDataConsent !== true) throw new Error("You must consent to us processing your Ahmadi Muslim community information before continuing.");
 
     const { data: existing } = await admin.auth.admin.listUsers();
     if (existing?.users?.some((u) => u.email?.toLowerCase() === email.toLowerCase())) {
@@ -61,11 +69,14 @@ Deno.serve(async (req) => {
     const userId = created.user!.id;
 
     try {
+      const now = new Date().toISOString();
       const { error: profileError } = await admin.from("profiles").insert({
         id: userId,
         ...pickAllowedFields(profileData),
         contact_email: email,
         plan,
+        tos_accepted_at: now,
+        religious_data_consent_at: now,
       });
       if (profileError) throw profileError;
 

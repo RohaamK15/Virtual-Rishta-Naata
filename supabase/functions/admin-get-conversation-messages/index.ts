@@ -6,11 +6,12 @@
 // conversation between them, if any, has to be looked up first).
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/requireAdmin.ts";
+import { logAdminAction } from "../_shared/logAdminAction.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const { admin } = await requireAdmin(req);
+    const { admin, user } = await requireAdmin(req);
     const { conversation_id, member_a, member_b } = await req.json();
 
     let conversationId = conversation_id || null;
@@ -58,6 +59,12 @@ Deno.serve(async (req) => {
       ...m,
       sender_ref: refCodeById[m.sender_id] || "Unknown",
     }));
+
+    // Viewing private message content is the most sensitive thing an admin
+    // can do here — logged against both members, not just one, since it's
+    // one shared conversation.
+    await logAdminAction(admin, user.id, "conversation_view", conversation.member_a, `with ${refCodeById[conversation.member_b] || conversation.member_b}`);
+    await logAdminAction(admin, user.id, "conversation_view", conversation.member_b, `with ${refCodeById[conversation.member_a] || conversation.member_a}`);
 
     return new Response(JSON.stringify({
       messages: enriched,
