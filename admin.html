@@ -672,7 +672,8 @@
     if (p.is_comped) return { label: 'Active (Comped)', bg: 'var(--green-soft)', fg: 'var(--green)' };
     if (p.subscription_status === 'active') return { label: 'Active Member', bg: 'var(--green-soft)', fg: 'var(--green)' };
     if (p.subscription_status === 'past_due') return { label: 'Payment Past Due', bg: 'var(--warn-bg)', fg: 'var(--warn-text)' };
-    return { label: 'Approved — Awaiting Payment', bg: 'var(--gold-soft)', fg: 'var(--gold-ink)' };
+    if (p.subscription_status === 'cancelled') return { label: 'Membership Cancelled', bg: 'var(--rose-soft)', fg: 'var(--error)' };
+    return { label: 'Approved — Awaiting First Payment', bg: 'var(--gold-soft)', fg: 'var(--gold-ink)' };
   }
 
   function renderTable(filterText = ''){
