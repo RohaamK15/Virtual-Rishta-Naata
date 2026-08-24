@@ -118,9 +118,11 @@
           <tr><td>Photo</td><td>A required photo, reviewed by our team before it goes live, shown only to members who open your profile</td></tr>
           <tr><td>Ahmadi Verification</td><td>Your Local Jamaat, your Local Sadr's name and contact details, any positions you hold or have held, when you joined the Jamaat, your Jamaat activity, and a short self-introduction video — collected once, as part of getting your profile approved. See "Who Can See Your Information" below: this is seen only by our admin team during that one review, and is permanently deleted, video included, the instant a decision is made.</td></tr>
           <tr><td>Messages</td><td>Chat messages you send other members are retained as part of your account, same as your profile details</td></tr>
-          <tr><td>Account & billing</td><td>Login credentials, subscription status, and payment processing details. Handled by Stripe for web and Android members, or by Apple's In-App Purchase system (via RevenueCat) for iOS members — we never see or store your card details either way.</td></tr>
+          <tr><td>Account & billing</td><td>Login credentials, subscription status, and payment processing details, handled by Stripe — we never see or store your card details.</td></tr>
+          <!-- Restore when iOS ships: <tr><td>Account & billing</td><td>Login credentials, subscription status, and payment processing details. Handled by Stripe for web and Android members, or by Apple's In-App Purchase system (via RevenueCat) for iOS members — we never see or store your card details either way.</td></tr> -->
           <tr><td>Google account (optional)</td><td>If you choose to sign in with Google, we receive your Google account's email address, used only to match you to your existing membership — this never creates a new account on its own.</td></tr>
-          <tr><td>Push notification token</td><td>A device identifier issued by Google/Apple's push service, used only to deliver "you have a new message" and "your profile was reviewed" notifications — not used for tracking or advertising</td></tr>
+          <tr><td>Push notification token</td><td>A device identifier issued by Google's push service, used only to deliver "you have a new message" and "your profile was reviewed" notifications — not used for tracking or advertising</td></tr>
+          <!-- Restore when iOS ships: <tr><td>Push notification token</td><td>A device identifier issued by Google/Apple's push service, used only to deliver "you have a new message" and "your profile was reviewed" notifications — not used for tracking or advertising</td></tr> -->
           <tr><td>Phone number</td><td>Optional, collected only if you book a 1-1 consultation, so our facilitator can contact you to arrange the session — not collected anywhere else on the platform, and only visible to our admin team</td></tr>
         </tbody>
       </table>
@@ -134,7 +136,8 @@
         <li>To create and display your profile to other active members.</li>
         <li>To operate search and filtering.</li>
         <li>To confirm genuine Ahmadi community involvement before your profile is approved (Ahmadi Verification).</li>
-        <li>To process your subscription payment via Stripe, or via Apple's In-App Purchase system on iOS.</li>
+        <li>To process your subscription payment via Stripe.</li>
+        <!-- Restore when iOS ships: <li>To process your subscription payment via Stripe, or via Apple's In-App Purchase system on iOS.</li> -->
         <li>To communicate with you about your account, and to respond to consultation requests.</li>
         <li>To keep the community safe — including reviewing accounts reported for breaching our Terms or Community Guidelines, and reviewing the conversation around a flagged message to understand its context.</li>
       </ul>
@@ -165,7 +168,8 @@
       <div class="highlight-box">
         <p><strong>To delete your account:</strong> open the app, log in, go to <strong>Account</strong>, and select <strong>Delete My Account &amp; Data</strong> under Quick Links, then confirm twice. If you're unable to log in for any reason, email <a href="mailto:virtualrishtanaata@gmail.com" style="color:var(--green);font-weight:600;">virtualrishtanaata@gmail.com</a> from your account's contact email address and we'll delete it on your behalf.</p>
       </div>
-      <p>We may retain a minimal record (such as the fact that a payment was made) for a limited period where we're legally required to, for example for financial/tax record-keeping — this is held by our payment processor (Stripe, or Apple/RevenueCat on iOS) in line with their own retention obligations, not by us.</p>
+      <p>We may retain a minimal record (such as the fact that a payment was made) for a limited period where we're legally required to, for example for financial/tax record-keeping — this is held by our payment processor (Stripe) in line with their own retention obligations, not by us.</p>
+      <!-- Restore when iOS ships: <p>We may retain a minimal record (such as the fact that a payment was made) for a limited period where we're legally required to, for example for financial/tax record-keeping — this is held by our payment processor (Stripe, or Apple/RevenueCat on iOS) in line with their own retention obligations, not by us.</p> -->
       <p>Your Ahmadi Verification answers and introduction video are the one exception to "kept for as long as your account exists": these are permanently deleted, video included, the moment our admin team approves or rejects your profile — there is no way to retrieve them afterward, by you or by us.</p>
     </div>
 
@@ -178,8 +182,8 @@
       <h2><span class="legal-num">6</span>Third-Party Services</h2>
       <p>We use a small number of trusted providers to run the platform, each of which processes a limited slice of your data solely to provide their service to us:</p>
       <ul>
-        <li><strong>Stripe</strong> — payment processing for web and Android members (your card details never reach our own servers).</li>
-        <li><strong>Apple &amp; RevenueCat</strong> — in-app subscription purchases for iOS members, processed entirely through Apple's own In-App Purchase system.</li>
+        <li><strong>Stripe</strong> — payment processing (your card details never reach our own servers).</li>
+        <!-- Restore when iOS ships: <li><strong>Apple &amp; RevenueCat</strong> — in-app subscription purchases for iOS members, processed entirely through Apple's own In-App Purchase system.</li> -->
         <li><strong>Supabase</strong> — database, authentication, and secure file storage.</li>
         <li><strong>Google (Firebase)</strong> — delivering push notifications to the Android app, and, if you choose to use it, Google Sign-In.</li>
         <li><strong>EmailJS</strong> — delivering consultation request notifications.</li>
