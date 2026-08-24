@@ -195,13 +195,13 @@
 
     <div class="panel" id="orphanedGoogle" data-reveal>
       <div class="panel-head">
-        <h3>Orphaned Google Sign-Ins</h3>
-        <span style="font-size:.78rem;color:var(--ink-soft);">Someone clicked "Continue with Google" without an existing account — this reserves their email and blocks them from signing up for real until removed</span>
+        <h3>Orphaned Sign-In Accounts</h3>
+        <span style="font-size:.78rem;color:var(--ink-soft);">An auth account exists (often from "Continue with Google" before an account existed) but no profile was ever created — this reserves their email and blocks them from signing up for real until removed</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Email</th><th>Attempted</th><th>Actions</th></tr>
+            <tr><th>Email</th><th>Sign-In Method</th><th>Attempted</th><th>Actions</th></tr>
           </thead>
           <tbody id="orphanedGoogleTableBody"></tbody>
         </table>
@@ -317,14 +317,14 @@
   let ALL_ORPHANS = [];
   async function loadOrphanedGoogleUsers(){
     const tbody = document.getElementById('orphanedGoogleTableBody');
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:20px;">Loading…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;">Loading…</td></tr>`;
     try {
       const { data, error } = await sb.functions.invoke('admin-list-orphaned-google-users');
       if (error) throw error;
       ALL_ORPHANS = data.orphans;
       renderOrphanedGoogleTable();
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--error);">Couldn't load (${await vrnFunctionErrorMessage(err)}).</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--error);">Couldn't load (${await vrnFunctionErrorMessage(err)}).</td></tr>`;
     }
   }
   function renderOrphanedGoogleTable(){
@@ -332,6 +332,7 @@
     tbody.innerHTML = ALL_ORPHANS.map(o => `
       <tr data-id="${o.id}">
         <td>${escapeHtml(o.email)}</td>
+        <td>${escapeHtml((o.providers || ['email']).join(', '))}</td>
         <td>${new Date(o.created_at).toLocaleString('en-GB')}</td>
         <td>
           <div class="row-actions">
@@ -341,7 +342,7 @@
           </div>
         </td>
       </tr>
-    `).join('') || `<tr><td colspan="3" style="text-align:center;padding:20px;">None found — no cleanup needed.</td></tr>`;
+    `).join('') || `<tr><td colspan="4" style="text-align:center;padding:20px;">None found — no cleanup needed.</td></tr>`;
   }
   async function deleteOrphanedGoogleUser(id, email){
     if (!confirm(`Delete the orphaned Google sign-in for ${email}? They'll then be able to sign up normally with that email.`)) return;

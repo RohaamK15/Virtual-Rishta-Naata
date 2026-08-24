@@ -1,9 +1,14 @@
-// Lists auth users who started a Google sign-in (creating an auth.users row
-// and, since auth-callback.html now signs them straight back out, nothing
-// else) but never actually signed up — no matching profiles row exists.
-// These orphaned rows silently occupy their email, so a later real signup
-// with the same email fails with "User already registered" even though the
-// person has no working account. Admin-only, service-role.
+// Lists any auth.users row that has no matching profiles row — an orphaned
+// sign-in that never became a real account. Most commonly this is someone
+// who clicked "Continue with Google" before that button was gated to
+// existing members (creating an auth.users row via OAuth, then getting
+// signed straight back out by auth-callback.html with nothing else ever
+// created), but a plain email/password identity with no profile can happen
+// too (e.g. a stray test account, or a signup that failed between creating
+// the auth user and the profile insert in some older code path). Either way
+// these rows silently occupy their email, so a later real signup with the
+// same email fails with "User already registered" even though the person
+// has no working account. Admin-only, service-role.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireAdmin } from "../_shared/requireAdmin.ts";
@@ -17,7 +22,7 @@ Deno.serve(async (req) => {
     if (profileError) throw profileError;
     const profileIds = new Set(profileRows.map((p) => p.id));
 
-    const orphans: { id: string; email: string; created_at: string }[] = [];
+    const orphans: { id: string; email: string; created_at: string; providers: string[] }[] = [];
     let page = 1;
     const perPage = 200;
     while (true) {
@@ -25,9 +30,13 @@ Deno.serve(async (req) => {
       if (error) throw error;
       for (const u of data.users) {
         if (profileIds.has(u.id)) continue;
-        const isGoogle = (u.identities || []).some((i: { provider: string }) => i.provider === "google");
-        if (!isGoogle) continue;
-        orphans.push({ id: u.id, email: u.email || "(no email)", created_at: u.created_at });
+        const providers = (u.identities || []).map((i: { provider: string }) => i.provider);
+        orphans.push({
+          id: u.id,
+          email: u.email || "(no email)",
+          created_at: u.created_at,
+          providers: providers.length ? providers : ["email"],
+        });
       }
       if (data.users.length < perPage) break;
       page++;
