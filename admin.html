@@ -240,6 +240,17 @@
   <div id="profileDetailBody" style="display:grid;gap:10px;font-size:.86rem;color:var(--ink-soft);max-height:70vh;overflow-y:auto;"></div>
 </div>
 
+<div class="overlay" id="conversationHistoryModal-overlay" onclick="closeSheet('conversationHistoryModal')"></div>
+<div class="sheet" id="conversationHistoryModal" style="max-width:560px;padding:32px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;">
+    <h3 id="conversationHistoryTitle">Conversation</h3>
+    <button type="button" class="action-btn" onclick="closeSheet('conversationHistoryModal')" aria-label="Close">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div id="conversationHistoryBody" style="display:grid;gap:10px;font-size:.86rem;color:var(--ink-soft);max-height:70vh;overflow-y:auto;"></div>
+</div>
+
 <script src="/assets/js/app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/assets/js/supabase-config.js"></script>
@@ -405,7 +416,10 @@
           <td>${r.reported_ref}</td>
           <td style="white-space:normal;max-width:320px;">${escapeHtml(r.reason)}</td>
           <td>${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
-          <td>
+          <td style="display:flex;gap:6px;">
+            <button class="action-btn" title="View message history" onclick="openConversationHistory({member_a:'${r.reporter_id}', member_b:'${r.reported_id}'}, '${r.reporter_ref} & ${r.reported_ref}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+            </button>
             <button class="action-btn" title="Mark reviewed" onclick="markProfileReportReviewed('${r.id}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
             </button>
@@ -497,7 +511,10 @@
         <td style="white-space:normal;max-width:320px;">${escapeHtml(m.body)}</td>
         <td>${m.reported ? `Reported: ${escapeHtml(m.reported_reason || '—')}` : escapeHtml(m.flag_reason || 'Auto-flagged')}</td>
         <td>${new Date(m.created_at).toLocaleDateString('en-GB')}</td>
-        <td>
+        <td style="display:flex;gap:6px;">
+          <button class="action-btn" title="View full conversation" onclick="openConversationHistory({conversation_id:'${m.conversation_id}'}, '${m.sender_ref} & ${m.recipient_ref}')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+          </button>
           <button class="action-btn" title="Mark reviewed" onclick="markReviewed('${m.id}')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
           </button>
@@ -513,6 +530,41 @@
       await loadFlaggedMessages();
     } catch (err) {
       alert('Could not mark this message reviewed: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+
+  // params is either {conversation_id} (flagged messages already have one)
+  // or {member_a, member_b} (profile reports don't - looked up server-side).
+  // pairLabel is just for the modal title, e.g. "VRN-1234 & VRN-5678".
+  async function openConversationHistory(params, pairLabel){
+    document.getElementById('conversationHistoryTitle').textContent = pairLabel || 'Conversation';
+    const body = document.getElementById('conversationHistoryBody');
+    body.innerHTML = '<p>Loading…</p>';
+    openSheet('conversationHistoryModal');
+    try {
+      const { data, error } = await sb.functions.invoke('admin-get-conversation-messages', { body: params });
+      if (error) throw error;
+      if (!data.conversation_found) {
+        body.innerHTML = `<p style="font-style:italic;">No conversation exists between these two members.</p>`;
+        return;
+      }
+      if (!data.messages.length) {
+        body.innerHTML = `<p style="font-style:italic;">This conversation has no messages yet.</p>`;
+        return;
+      }
+      body.innerHTML = data.messages.map(m => `
+        <div style="background:var(--beige);border-radius:var(--radius-s);padding:10px 14px;${m.flagged || m.reported ? 'border:1.5px solid var(--error);' : ''}">
+          <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--ink-soft);margin-bottom:4px;">
+            <strong style="color:var(--green);">${escapeHtml(m.sender_ref)}</strong>
+            <span>${new Date(m.created_at).toLocaleString('en-GB')}</span>
+          </div>
+          <div style="color:var(--ink);white-space:pre-wrap;">${escapeHtml(m.body)}</div>
+          ${m.flagged ? `<div style="font-size:.72rem;color:var(--error);margin-top:4px;">⚠ Auto-flagged: ${escapeHtml(m.flag_reason || '—')}</div>` : ''}
+          ${m.reported ? `<div style="font-size:.72rem;color:var(--error);margin-top:4px;">⚠ Reported: ${escapeHtml(m.reported_reason || '—')}</div>` : ''}
+        </div>
+      `).join('');
+    } catch (err) {
+      body.innerHTML = `<p style="color:var(--error);">Couldn't load this conversation (${await vrnFunctionErrorMessage(err)}).</p>`;
     }
   }
 
