@@ -425,7 +425,13 @@
     if (!document.querySelector('input[name="gender"]:checked')) return 'Please select whether you are male or female.';
     const age = document.getElementById('age').value;
     if (!age || !/^\d+$/.test(age) || age < 18 || age > 90) return 'Please enter a valid age (between 18 and 90) using digits only.';
-    const height = document.getElementById('height').value.trim();
+    // Mobile keyboards (especially iOS) routinely auto-correct a typed
+    // straight apostrophe into a curly one — normalize every apostrophe-like
+    // character back to a plain ' before validating, or "5'10" typed exactly
+    // as instructed still fails this check.
+    const heightInput = document.getElementById('height');
+    const height = heightInput.value.trim().replace(/[‘’‛′`]/g, "'");
+    heightInput.value = height; // write the normalized value back so what's saved matches what's validated
     const heightMatch = height.match(/^([3-8])'(\d{1,2})"?$/);
     if (!heightMatch || +heightMatch[2] > 11) return "Please enter your height in the format feet'inches, e.g. 5'9";
 
