@@ -166,7 +166,7 @@
           <li><a href="/search.html">Browse Profiles <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="/services.html">Book a Consultation <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="#" id="pushToggleLink" onclick="return toggleNotificationPreference()">Turn Off Push Notifications <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
-          <li><a href="#" style="color:var(--error);" onclick="return handleDeactivate()">Deactivate My Account <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
+          <li id="deactivateLink" style="display:none;"><a href="#" style="color:var(--error);" onclick="return handleDeactivate()">Deactivate My Account <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="#" style="color:var(--error);" onclick="return handleDeleteAccount()">Delete My Account &amp; Data <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
         </ul>
       </div>
@@ -315,6 +315,14 @@
       profileEditCta.style.display = 'none';
     }
     profilePayCta.style.display = (p.profile_status === 'approved' && !isFullyActive) ? 'block' : 'none';
+
+    // Only ever meaningful for someone who has actually paid or been comped —
+    // showing it to a never-subscribed member (approved-but-unpaid, pending,
+    // or rejected) led to real confusion: the confirm dialog talks about
+    // "cancelling your subscription" and "not being charged again", neither
+    // of which makes sense if they were never charged, and it silently set
+    // subscription_status to 'cancelled' instead of leaving it 'pending'.
+    document.getElementById('deactivateLink').style.display = isFullyActive ? 'block' : 'none';
 
     document.getElementById('photoCard').style.display = 'block';
     const photoPreview = document.getElementById('photo-preview');
