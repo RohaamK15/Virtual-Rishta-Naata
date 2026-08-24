@@ -15,8 +15,11 @@
   // loads first, not just a first-time visit. Without this check, a member
   // who already committed to these standards would be forced to re-read this
   // page and re-tick the checkbox every single time they open the app.
+  // Terms of Service agreement (agree-terms.html) is a separate, second gate
+  // chained right after this one — a member must have agreed to both before
+  // ever reaching home.html.
   if (localStorage.getItem('vrn_guidance_agreed') === '1') {
-    window.location.replace('/home.html');
+    window.location.replace(localStorage.getItem('vrn_tos_agreed') === '1' ? '/home.html' : '/agree-terms.html');
   }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -270,7 +273,7 @@
         <input type="checkbox" id="agree" onchange="document.getElementById('continueBtn').disabled = !this.checked;">
         <label for="agree">I have read and understood the above. I commit, In Sha Allah, to embodying these Islamic principles, values and standards of conduct throughout my time on Virtual Rishta Naata.</label>
       </div>
-      <a href="/home.html" id="continueBtn" class="btn btn-primary btn-block" style="pointer-events:none;opacity:.45;" disabled onclick="localStorage.setItem('vrn_guidance_agreed', '1');">
+      <a href="/agree-terms.html" id="continueBtn" class="btn btn-primary btn-block" style="pointer-events:none;opacity:.45;" disabled onclick="localStorage.setItem('vrn_guidance_agreed', '1');">
         Continue
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>

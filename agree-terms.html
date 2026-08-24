@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FFF9F2">
+<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<title>Virtual Rishta Naata — Terms of Service</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
+<script>
+  // Chained right after index.html's religious guidance gate, using the same
+  // one-time-per-browser pattern — a member who already agreed here
+  // shouldn't have to re-read and re-tick it on every visit. Anyone who
+  // lands on this URL directly without having agreed to the guidance page
+  // first is sent back there, since this only makes sense as the second
+  // half of that same start-of-journey checkpoint.
+  if (localStorage.getItem('vrn_tos_agreed') === '1') {
+    window.location.replace('/home.html');
+  } else if (localStorage.getItem('vrn_guidance_agreed') !== '1') {
+    window.location.replace('/index.html');
+  }
+</script>
+<style>
+  body{background:var(--ivory);}
+  .tos-gate-hero{
+    min-height:30vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;color:var(--ink);padding:56px 24px 28px;position:relative;overflow:hidden;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 0%, rgba(197,157,82,.14), transparent),
+      radial-gradient(ellipse 60% 50% at 85% 100%, rgba(216,137,111,.12), transparent),
+      var(--ivory);
+  }
+  .tos-gate-hero .arch-portal{
+    width:96px;height:120px;border:1.5px solid var(--gold);
+    border-radius:50% 50% 8px 8px / 40% 40% 8px 8px;
+    display:flex;align-items:center;justify-content:center;margin-bottom:22px;
+    background:rgba(197,157,82,.08);
+  }
+  .tos-gate-hero .arch-portal svg{width:36px;height:36px;color:var(--gold);}
+  .tos-gate-hero h1{color:var(--green);max-width:560px;}
+  .tos-gate-hero .lede{max-width:520px;color:var(--ink-soft);margin-top:16px;font-size:1.02rem;}
+
+  .tos-gate-body{padding:8px 0 40px;}
+  .tos-frame-wrap{
+    max-width:760px;margin:0 auto;border:1.5px solid rgba(19,75,53,.16);border-radius:var(--radius-m);overflow:hidden;
+  }
+  #tosFrame{width:100%;height:min(58vh,520px);border:none;display:block;background:var(--surface);}
+  #tosScrollHint{max-width:760px;margin:10px auto 0;font-size:.82rem;color:var(--ink-soft);text-align:center;}
+
+  .commit-panel{
+    position:sticky;bottom:0;background:var(--surface-translucent);backdrop-filter:blur(12px);
+    border-top:1px solid rgba(19,75,53,.1);padding:22px 0;margin-top:32px;
+    box-shadow:0 -12px 30px rgba(19,75,53,.08);
+  }
+  .commit-row{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;max-width:560px;margin-left:auto;margin-right:auto;}
+  .commit-row input{width:22px;height:22px;margin-top:2px;accent-color:var(--green);flex-shrink:0;cursor:pointer;}
+  .commit-row label{margin:0;font-family:'Lato',sans-serif;font-weight:400;font-size:.9rem;color:var(--ink);line-height:1.55;}
+  #continueBtn{max-width:560px;margin:0 auto;display:block;}
+</style>
+</head>
+<body>
+
+<header class="tos-gate-hero">
+  <div class="arch-portal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 3v4a1 1 0 001 1h4"/><path d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><path d="M9 13h6M9 17h6M9 9h1"/></svg>
+  </div>
+  <h1>One Last Thing — Our Terms of Service</h1>
+  <p class="lede">Please read the Terms of Service in full below, then confirm you've read and agree to them before continuing to Virtual Rishta Naata.</p>
+</header>
+
+<main class="tos-gate-body">
+  <div class="wrap wrap--narrow">
+    <div class="tos-frame-wrap">
+      <iframe src="/terms.html?embed=1" id="tosFrame" title="Terms of Service"></iframe>
+    </div>
+    <p id="tosScrollHint">Scroll to the bottom of the box above to finish reading.</p>
+  </div>
+
+  <div class="commit-panel">
+    <div class="wrap wrap--narrow">
+      <div class="commit-row">
+        <input type="checkbox" id="agree" disabled onchange="document.getElementById('continueBtn').disabled = !this.checked;">
+        <label for="agree">I have fully read the Terms of Service and agree to the terms therein.</label>
+      </div>
+      <a href="/home.html" id="continueBtn" class="btn btn-primary btn-block" style="pointer-events:none;opacity:.45;" disabled onclick="localStorage.setItem('vrn_tos_agreed', '1');">
+        Continue
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+</main>
+
+<script src="/assets/js/app.js"></script>
+<script>
+  const agree = document.getElementById('agree');
+  const btn = document.getElementById('continueBtn');
+  agree.addEventListener('change', () => {
+    if (agree.checked) {
+      btn.removeAttribute('disabled');
+      btn.style.pointerEvents = 'auto';
+      btn.style.opacity = '1';
+    } else {
+      btn.setAttribute('disabled','');
+      btn.style.pointerEvents = 'none';
+      btn.style.opacity = '.45';
+    }
+  });
+
+  // The checkbox stays disabled (and unmissable) until the member has
+  // actually scrolled the embedded Terms of Service to the bottom — same
+  // origin as this page, so contentWindow is fully accessible, not blocked
+  // by cross-origin iframe restrictions.
+  document.getElementById('tosFrame').addEventListener('load', function(){
+    const win = this.contentWindow;
+    // Deliberately no immediate check here (e.g. "maybe it already fits with
+    // no scrolling needed") — right as the iframe's load event fires, its
+    // content hasn't necessarily finished laying out yet, so scrollHeight
+    // can briefly read as artificially small and wrongly unlock the box
+    // before the member has seen anything at all. Only a real scroll event
+    // (which by definition only fires once the frame is interactive and
+    // correctly sized) is trusted to unlock it.
+    win.addEventListener('scroll', () => {
+      const doc = win.document.documentElement;
+      const scrolledToBottom = win.scrollY + win.innerHeight >= doc.scrollHeight - 20;
+      if (scrolledToBottom) {
+        agree.disabled = false;
+        document.getElementById('tosScrollHint').style.display = 'none';
+      }
+    });
+  });
+</script>
+</body>
+</html>
