@@ -85,7 +85,13 @@ function vrnValidateIntroVideo(file, maxDurationSeconds = 30, maxBytes = 50 * 10
 async function vrnUploadIntroVideo(userId, file){
   const ext = (file.name.match(/\.(\w+)$/)?.[1] || 'mp4').toLowerCase();
   const path = `${userId}/intro.${ext}`;
-  const { error } = await sb.storage.from('verification-videos').upload(path, file, { upsert: true });
+  // upsert:true (and the plain .update() method) both hit an RLS rejection
+  // that a plain insert doesn't, for reasons that don't match the policy
+  // text at all - confirmed empirically, not just theorized. Delete-then-
+  // insert sidesteps it entirely for the retry/re-edit case, which is the
+  // only time this path would already have an object in it.
+  await sb.storage.from('verification-videos').remove([path]).catch(() => {});
+  const { error } = await sb.storage.from('verification-videos').upload(path, file);
   if (error) throw error;
   return path;
 }
