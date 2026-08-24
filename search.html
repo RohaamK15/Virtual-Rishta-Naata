@@ -221,6 +221,18 @@
     return d.innerHTML;
   }
 
+  // 4'0" to 7'11", matching the outer bound of the signup form's own height
+  // format check — used for both the min and max height dropdowns.
+  function heightOptionsHTML(){
+    let opts = '<option value="">Any</option>';
+    for (let totalInches = 48; totalInches <= 95; totalInches++) {
+      const feet = Math.floor(totalInches / 12);
+      const inches = totalInches % 12;
+      opts += `<option value="${totalInches}">${feet}'${inches}"</option>`;
+    }
+    return opts;
+  }
+
   function filterFieldsHTML(prefix){
     return `
       <div class="filter-group">
@@ -232,9 +244,55 @@
         </div>
       </div>
       <div class="filter-group">
+        <label>Height Range</label>
+        <div class="range-row">
+          <select id="${prefix}heightMin">${heightOptionsHTML()}</select>
+          <span style="color:var(--ink-soft);">–</span>
+          <select id="${prefix}heightMax">${heightOptionsHTML()}</select>
+        </div>
+      </div>
+      <div class="filter-group">
         <label>Country of Residence</label>
         <select id="${prefix}country"></select>
         <input type="text" id="${prefix}countryOther" placeholder="Specify country" style="display:none;margin-top:10px;">
+      </div>
+      <div class="filter-group">
+        <label>City</label>
+        <input type="text" id="${prefix}city" placeholder="e.g. Manchester">
+      </div>
+      <div class="filter-group">
+        <label>County</label>
+        <input type="text" id="${prefix}county" placeholder="e.g. Greater Manchester">
+      </div>
+      <div class="filter-group">
+        <label>Immigration/Residency Status</label>
+        <select id="${prefix}immigrationStatus">
+          <option value="">Any</option>
+          <option value="Citizen">Citizen</option>
+          <option value="Permanent Resident / ILR">Permanent Resident / ILR</option>
+          <option value="Work Visa">Work Visa</option>
+          <option value="Student Visa">Student Visa</option>
+          <option value="Spouse/Family Visa">Spouse/Family Visa</option>
+          <option value="Asylum Seeker/Refugee">Asylum Seeker/Refugee</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Marital History</label>
+        <div class="radio-pill-group">
+          <label class="radio-pill"><input type="radio" name="${prefix}marital" value="" checked>Any</label>
+          <label class="radio-pill"><input type="radio" name="${prefix}marital" value="Never">Never Married</label>
+          <label class="radio-pill"><input type="radio" name="${prefix}marital" value="Engaged">Prev. Engaged</label>
+          <label class="radio-pill"><input type="radio" name="${prefix}marital" value="Married">Prev. Married</label>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Has Children</label>
+        <div class="radio-pill-group">
+          <label class="radio-pill"><input type="radio" name="${prefix}children" value="" checked>Any</label>
+          <label class="radio-pill"><input type="radio" name="${prefix}children" value="Yes">Yes</label>
+          <label class="radio-pill"><input type="radio" name="${prefix}children" value="No">No</label>
+        </div>
       </div>
       <div class="filter-group">
         <label>Considers Matches From Pakistan</label>
@@ -255,47 +313,60 @@
     vrnWireCountryOther(document.getElementById(`${prefix}country`), document.getElementById(`${prefix}countryOther`));
   }
 
+  const RADIO_FILTER_GROUPS = ['pak', 'marital', 'children'];
+  const TEXT_FILTER_IDS = ['ageMin', 'ageMax', 'heightMin', 'heightMax', 'country', 'countryOther', 'city', 'county', 'immigrationStatus'];
+
   function currentFilters(){
     const min = document.getElementById('d_ageMin').value;
     const max = document.getElementById('d_ageMax').value;
+    const heightMin = document.getElementById('d_heightMin').value;
+    const heightMax = document.getElementById('d_heightMax').value;
     const country = vrnResolveCountryValue(document.getElementById('d_country'), document.getElementById('d_countryOther'));
+    const city = document.getElementById('d_city').value;
+    const county = document.getElementById('d_county').value;
+    const immigrationStatus = document.getElementById('d_immigrationStatus').value;
     const pak = document.querySelector('input[name="d_pak"]:checked')?.value || '';
-    return {min, max, country, pak};
+    const marital = document.querySelector('input[name="d_marital"]:checked')?.value || '';
+    const children = document.querySelector('input[name="d_children"]:checked')?.value || '';
+    return {min, max, heightMin, heightMax, country, city, county, immigrationStatus, pak, marital, children};
   }
 
+  // Keep the two filter panels in sync so currentFilters() can always just
+  // read from the 'd_' fields. Only call the relevant one in response to
+  // that specific panel's input changing — calling both unconditionally from
+  // renderGrid() (the old behaviour) meant every change was immediately
+  // overwritten by whatever the other (untouched) panel still had.
   function syncMobileToDesktop(){
-    // Keep the two filter panels in sync so currentFilters() can always just
-    // read from the 'd_' fields. Only call this in response to a MOBILE
-    // input changing — calling it unconditionally from renderGrid() (the old
-    // behaviour) meant every desktop filter change was immediately
-    // overwritten by whatever the (untouched) mobile panel still had.
-    document.getElementById('d_ageMin').value = document.getElementById('m_ageMin').value;
-    document.getElementById('d_ageMax').value = document.getElementById('m_ageMax').value;
-    document.getElementById('d_country').value = document.getElementById('m_country').value;
-    document.getElementById('d_countryOther').value = document.getElementById('m_countryOther').value;
+    for (const id of TEXT_FILTER_IDS) document.getElementById(`d_${id}`).value = document.getElementById(`m_${id}`).value;
     document.getElementById('d_countryOther').style.display = document.getElementById('m_countryOther').style.display;
-    const pak = document.querySelector('input[name="m_pak"]:checked')?.value || '';
-    document.querySelector(`input[name="d_pak"][value="${pak}"]`).checked = true;
+    for (const group of RADIO_FILTER_GROUPS) {
+      const val = document.querySelector(`input[name="m_${group}"]:checked`)?.value || '';
+      document.querySelector(`input[name="d_${group}"][value="${val}"]`).checked = true;
+    }
   }
 
   function syncDesktopToMobile(){
-    document.getElementById('m_ageMin').value = document.getElementById('d_ageMin').value;
-    document.getElementById('m_ageMax').value = document.getElementById('d_ageMax').value;
-    document.getElementById('m_country').value = document.getElementById('d_country').value;
-    document.getElementById('m_countryOther').value = document.getElementById('d_countryOther').value;
+    for (const id of TEXT_FILTER_IDS) document.getElementById(`m_${id}`).value = document.getElementById(`d_${id}`).value;
     document.getElementById('m_countryOther').style.display = document.getElementById('d_countryOther').style.display;
-    const pak = document.querySelector('input[name="d_pak"]:checked')?.value || '';
-    document.querySelector(`input[name="m_pak"][value="${pak}"]`).checked = true;
+    for (const group of RADIO_FILTER_GROUPS) {
+      const val = document.querySelector(`input[name="d_${group}"]:checked`)?.value || '';
+      document.querySelector(`input[name="m_${group}"][value="${val}"]`).checked = true;
+    }
   }
 
   async function renderGrid(){
-    const {min, max, country, pak} = currentFilters();
+    const {min, max, heightMin, heightMax, country, city, county, immigrationStatus, pak, marital, children} = currentFilters();
     const grid = document.getElementById('profileGrid');
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><p>Loading profiles…</p></div>`;
 
     let results = [];
     try {
-      results = await vrnSearchProfiles({ minAge: min, maxAge: max, country, considerPakistan: pak });
+      results = await vrnSearchProfiles({
+        minAge: min, maxAge: max,
+        minHeightInches: heightMin ? +heightMin : null, maxHeightInches: heightMax ? +heightMax : null,
+        country, city, county, immigrationStatus,
+        considerPakistan: pak, maritalHistory: marital, hasChildren: children,
+      });
     } catch (err) {
       grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><h3>Couldn't load profiles</h3><p style="margin-top:8px;">${err.message || 'Please try again.'}</p></div>`;
       document.getElementById('resultsCount').textContent = '';
@@ -419,10 +490,16 @@
     }
   }
 
-  ['d_ageMin','d_ageMax','d_country','d_countryOther'].forEach(id => document.getElementById(id).addEventListener('input', () => { syncDesktopToMobile(); renderGrid(); }));
-  ['m_ageMin','m_ageMax','m_country','m_countryOther'].forEach(id => document.getElementById(id).addEventListener('input', () => { syncMobileToDesktop(); renderGrid(); }));
-  document.querySelectorAll('input[name="d_gender"],input[name="d_pak"]').forEach(el => el.addEventListener('change', () => { syncDesktopToMobile(); renderGrid(); }));
-  document.querySelectorAll('input[name="m_gender"],input[name="m_pak"]').forEach(el => el.addEventListener('change', () => { syncMobileToDesktop(); renderGrid(); }));
+  for (const id of TEXT_FILTER_IDS) {
+    document.getElementById(`d_${id}`).addEventListener('input', () => { syncDesktopToMobile(); renderGrid(); });
+    document.getElementById(`d_${id}`).addEventListener('change', () => { syncDesktopToMobile(); renderGrid(); });
+    document.getElementById(`m_${id}`).addEventListener('input', () => { syncMobileToDesktop(); renderGrid(); });
+    document.getElementById(`m_${id}`).addEventListener('change', () => { syncMobileToDesktop(); renderGrid(); });
+  }
+  for (const group of RADIO_FILTER_GROUPS) {
+    document.querySelectorAll(`input[name="d_${group}"]`).forEach(el => el.addEventListener('change', () => { syncDesktopToMobile(); renderGrid(); }));
+    document.querySelectorAll(`input[name="m_${group}"]`).forEach(el => el.addEventListener('change', () => { syncMobileToDesktop(); renderGrid(); }));
+  }
 
   renderGrid().then(() => {
     const replay = new URLSearchParams(window.location.search).get('replayTour') === '1';

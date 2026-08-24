@@ -166,13 +166,41 @@ async function vrnSearchProfiles(filters = {}) {
   const { data: myBlocks } = await sb.from("blocks").select("blocked_id").eq("blocker_id", me.id);
   const blockedIds = (myBlocks || []).map((b) => b.blocked_id);
 
-  let query = sb.from("profiles").select("id, ref_code, gender, age, country, consider_pakistan").neq("id", me.id).eq("gender", oppositeGender);
+  let query = sb.from("profiles")
+    .select("id, ref_code, gender, age, height, country, city, county, consider_pakistan, had_previous, previous_type, has_children, immigration_status")
+    .neq("id", me.id).eq("gender", oppositeGender);
   if (blockedIds.length) query = query.not("id", "in", `(${blockedIds.join(",")})`);
   if (filters.minAge) query = query.gte("age", filters.minAge);
   if (filters.maxAge) query = query.lte("age", filters.maxAge);
   if (filters.country) query = query.eq("country", filters.country);
+  if (filters.city) query = query.ilike("city", `%${filters.city}%`);
+  if (filters.county) query = query.ilike("county", `%${filters.county}%`);
   if (filters.considerPakistan) query = query.eq("consider_pakistan", filters.considerPakistan === "Yes");
+  if (filters.hasChildren) query = query.eq("has_children", filters.hasChildren === "Yes");
+  if (filters.immigrationStatus) query = query.eq("immigration_status", filters.immigrationStatus);
+  if (filters.maritalHistory === "Never") {
+    query = query.eq("had_previous", false);
+  } else if (filters.maritalHistory === "Engaged") {
+    query = query.eq("had_previous", true).eq("previous_type", "Engagement");
+  } else if (filters.maritalHistory === "Married") {
+    query = query.eq("had_previous", true).in("previous_type", ["Nikah", "Marriage"]);
+  }
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+
+  // Height is free-text ("5'9" etc.) so a numeric range can't be done as a
+  // database query — parsed and filtered here instead, same reasoning as the
+  // signup form's own height format check.
+  let results = data;
+  if (filters.minHeightInches || filters.maxHeightInches) {
+    results = results.filter((p) => {
+      const match = String(p.height || "").match(/^(\d)'(\d{1,2})"?$/);
+      if (!match) return false;
+      const totalInches = +match[1] * 12 + +match[2];
+      if (filters.minHeightInches && totalInches < filters.minHeightInches) return false;
+      if (filters.maxHeightInches && totalInches > filters.maxHeightInches) return false;
+      return true;
+    });
+  }
+  return results;
 }
