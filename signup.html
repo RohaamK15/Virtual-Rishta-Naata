@@ -271,8 +271,33 @@
       </div>
     </div>
 
-    <!-- STEP 4: Preferences -->
+    <!-- STEP 4: Terms of Service -->
     <div class="step" data-step="4">
+      <span class="eyebrow step-eyebrow">Before You Continue</span>
+      <h2>Terms of Service</h2>
+      <p class="step-desc">Please read our Terms of Service in full before continuing — you'll need to confirm you've read and agree to them.</p>
+
+      <div style="margin-top:24px;border:1.5px solid rgba(19,75,53,.16);border-radius:var(--radius-m);overflow:hidden;">
+        <iframe src="/terms.html?embed=1" id="tosFrame" title="Terms of Service" style="width:100%;height:360px;border:none;display:block;background:var(--surface);" onscroll=""></iframe>
+      </div>
+      <p id="tosScrollHint" style="font-size:.78rem;color:var(--ink-soft);margin-top:8px;">Scroll to the bottom of the box above to finish reading.</p>
+
+      <div class="field" style="margin-top:20px;">
+        <label class="radio-pill" style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;cursor:pointer;">
+          <input type="checkbox" id="tosAgreeCheckbox" style="margin-top:3px;" disabled onchange="onTosCheckboxChange()">
+          <span style="font-size:.88rem;line-height:1.5;">I have fully read the Terms of Service and agree to the terms therein.</span>
+        </label>
+      </div>
+
+      <p class="step-error" style="display:none;color:var(--error);font-size:.85rem;margin-top:16px;"></p>
+      <div class="step-actions">
+        <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(4)">Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Preferences -->
+    <div class="step" data-step="5">
       <span class="eyebrow step-eyebrow">What You're Looking For</span>
       <h2>Your Preferences</h2>
       <p class="step-desc">Be as specific or as general as you like — this helps us and other members understand what matters to you.</p>
@@ -302,12 +327,12 @@
       <p class="step-error" style="display:none;color:var(--error);font-size:.85rem;margin-top:16px;"></p>
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" onclick="tryNextStep(4)">Continue</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(5)">Continue</button>
       </div>
     </div>
 
-    <!-- STEP 5: About You -->
-    <div class="step" data-step="5">
+    <!-- STEP 6: About You -->
+    <div class="step" data-step="6">
       <span class="eyebrow step-eyebrow">In Your Own Words</span>
       <h2>Tell Us About Yourself</h2>
       <p class="step-desc">A short, honest description goes a long way. Think personality, likes, and hobbies.</p>
@@ -335,12 +360,12 @@
       <p class="step-error" style="display:none;color:var(--error);font-size:.85rem;margin-top:16px;"></p>
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" onclick="tryNextStep(5)">Continue</button>
+        <button type="button" class="btn btn-primary" onclick="tryNextStep(6)">Continue</button>
       </div>
     </div>
 
-    <!-- STEP 6: Contact -->
-    <div class="step" data-step="6">
+    <!-- STEP 7: Contact -->
+    <div class="step" data-step="7">
       <span class="eyebrow step-eyebrow">Stay in Touch</span>
       <h2>Contact & Account</h2>
       <p class="step-desc">Your email is how interested members will reach you. It is never shown publicly on your profile card.</p>
@@ -377,8 +402,8 @@
       </div>
     </div>
 
-    <!-- STEP 7: Plan -->
-    <div class="step" data-step="7">
+    <!-- STEP 8: Plan -->
+    <div class="step" data-step="8">
       <span class="eyebrow step-eyebrow">Almost There</span>
       <h2>Choose Your Membership</h2>
       <p class="step-desc">Your reference code will be generated the moment you submit — payment only happens after our team approves your profile.</p>
@@ -407,8 +432,8 @@
       </div>
     </div>
 
-    <!-- STEP 8: Confirmation -->
-    <div class="step" data-step="8">
+    <!-- STEP 9: Confirmation -->
+    <div class="step" data-step="9">
       <div class="confirm-panel" id="confirmDone">
         <div class="check-circle">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
@@ -521,14 +546,41 @@
     if (radio) radio.checked = true;
   })();
 
-  const TOTAL_STEPS = 8;
-  const stepNames = ["Basics","Background","Community & History","Preferences","About You","Contact","Membership","Complete"];
+  const TOTAL_STEPS = 9;
+  const stepNames = ["Basics","Background","Community & History","Terms of Service","Preferences","About You","Contact","Membership","Complete"];
   let current = 1;
   let selectedPhotoFile = null;
   let selectedVerifyVideoFile = null;
 
   vrnPopulateCountrySelect(document.getElementById('countryOfResidence'), { placeholder: 'Select a country' });
   vrnWireCountryOther(document.getElementById('countryOfResidence'), document.getElementById('countryOfResidenceOther'));
+
+  // The checkbox stays disabled (and unmissable) until the member has
+  // actually scrolled the embedded Terms of Service to the bottom — same
+  // origin as this page, so contentWindow is fully accessible, not blocked
+  // by cross-origin iframe restrictions.
+  document.getElementById('tosFrame').addEventListener('load', function(){
+    const win = this.contentWindow;
+    // Deliberately no immediate check here (e.g. "maybe it already fits with
+    // no scrolling needed") — right as the iframe's load event fires, its
+    // content hasn't necessarily finished laying out yet, so scrollHeight
+    // can briefly read as artificially small and wrongly unlock the box
+    // before the member has seen anything at all. Only a real scroll event
+    // (which by definition only fires once the frame is interactive and
+    // correctly sized) is trusted to unlock it.
+    win.addEventListener('scroll', () => {
+      const doc = win.document.documentElement;
+      const scrolledToBottom = win.scrollY + win.innerHeight >= doc.scrollHeight - 20;
+      if (scrolledToBottom) {
+        document.getElementById('tosAgreeCheckbox').disabled = false;
+        document.getElementById('tosScrollHint').style.display = 'none';
+      }
+    });
+  });
+
+  function onTosCheckboxChange(){
+    clearStepError(4);
+  }
 
   // Pakistan is deliberately left out here — the "Would you consider a match
   // from Pakistan?" Yes/No question right below already covers it, so
@@ -696,6 +748,9 @@
       if (!vrnAhmadiVerificationComplete()) return 'Please complete the Ahmadi Verification questions before continuing.';
     }
     if (stepNum === 4) {
+      if (!document.getElementById('tosAgreeCheckbox').checked) return 'Please read the Terms of Service in full and tick the box to confirm you agree before continuing.';
+    }
+    if (stepNum === 5) {
       if (!document.getElementById('preferenceLine').value.trim()) return 'Please describe your preference in a line.';
       if (!document.getElementById('countryLookingIn').value) return 'Please select which country you are looking in.';
       if (document.getElementById('countryLookingIn').value === 'Other' && !document.getElementById('countryLookingInOther').value.trim()) {
@@ -704,7 +759,7 @@
       if (!document.querySelector('input[name="considerPakistan"]:checked')) return 'Please let us know if you\'d consider a match from Pakistan.';
       if (vrnWordCount(document.getElementById('additionalNote').value) < 20) return 'Please write at least 20 words — the more detail you give, the better chance someone suitable will reach out to you.';
     }
-    if (stepNum === 5) {
+    if (stepNum === 6) {
       if (vrnWordCount(document.getElementById('aboutYourself').value) < 20) return 'Please write at least 20 words about yourself — quality information gives you a much better chance of finding a suitable Rishta.';
       if (!selectedPhotoFile) return 'Please upload a profile photo before continuing.';
     }
@@ -906,7 +961,7 @@
 
       const profile = await vrnMyProfile();
       document.getElementById('refCodeOut').textContent = profile.ref_code;
-      goToStep(8);
+      goToStep(9);
       document.getElementById('confirmDone').style.display = 'block';
       document.getElementById('confirmError').style.display = 'none';
       notifyNewSignup(profile, email);
