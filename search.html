@@ -224,14 +224,6 @@
   function filterFieldsHTML(prefix){
     return `
       <div class="filter-group">
-        <label>Gender</label>
-        <div class="radio-pill-group">
-          <label class="radio-pill"><input type="radio" name="${prefix}gender" value="" checked>All</label>
-          <label class="radio-pill"><input type="radio" name="${prefix}gender" value="M">Male</label>
-          <label class="radio-pill"><input type="radio" name="${prefix}gender" value="F">Female</label>
-        </div>
-      </div>
-      <div class="filter-group">
         <label>Age Range</label>
         <div class="range-row">
           <input type="number" id="${prefix}ageMin" placeholder="Min" min="18" max="90">
@@ -264,12 +256,11 @@
   }
 
   function currentFilters(){
-    const g = document.querySelector('input[name="d_gender"]:checked')?.value || '';
     const min = document.getElementById('d_ageMin').value;
     const max = document.getElementById('d_ageMax').value;
     const country = vrnResolveCountryValue(document.getElementById('d_country'), document.getElementById('d_countryOther'));
     const pak = document.querySelector('input[name="d_pak"]:checked')?.value || '';
-    return {g, min, max, country, pak};
+    return {min, max, country, pak};
   }
 
   function syncMobileToDesktop(){
@@ -278,8 +269,6 @@
     // input changing — calling it unconditionally from renderGrid() (the old
     // behaviour) meant every desktop filter change was immediately
     // overwritten by whatever the (untouched) mobile panel still had.
-    const g = document.querySelector('input[name="m_gender"]:checked')?.value || '';
-    document.querySelector(`input[name="d_gender"][value="${g}"]`).checked = true;
     document.getElementById('d_ageMin').value = document.getElementById('m_ageMin').value;
     document.getElementById('d_ageMax').value = document.getElementById('m_ageMax').value;
     document.getElementById('d_country').value = document.getElementById('m_country').value;
@@ -290,8 +279,6 @@
   }
 
   function syncDesktopToMobile(){
-    const g = document.querySelector('input[name="d_gender"]:checked')?.value || '';
-    document.querySelector(`input[name="m_gender"][value="${g}"]`).checked = true;
     document.getElementById('m_ageMin').value = document.getElementById('d_ageMin').value;
     document.getElementById('m_ageMax').value = document.getElementById('d_ageMax').value;
     document.getElementById('m_country').value = document.getElementById('d_country').value;
@@ -302,13 +289,13 @@
   }
 
   async function renderGrid(){
-    const {g, min, max, country, pak} = currentFilters();
+    const {min, max, country, pak} = currentFilters();
     const grid = document.getElementById('profileGrid');
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><p>Loading profiles…</p></div>`;
 
     let results = [];
     try {
-      results = await vrnSearchProfiles({ gender: g, minAge: min, maxAge: max, country, considerPakistan: pak });
+      results = await vrnSearchProfiles({ minAge: min, maxAge: max, country, considerPakistan: pak });
     } catch (err) {
       grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><h3>Couldn't load profiles</h3><p style="margin-top:8px;">${err.message || 'Please try again.'}</p></div>`;
       document.getElementById('resultsCount').textContent = '';

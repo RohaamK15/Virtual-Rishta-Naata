@@ -564,6 +564,8 @@ set search_path = public
 as $$
 declare
   me uuid := auth.uid();
+  my_gender text;
+  other_gender text;
   a uuid;
   b uuid;
   conv_id uuid;
@@ -577,14 +579,23 @@ begin
   if not public.is_active_member() then
     raise exception 'An active membership is required to message other members';
   end if;
-  if not exists (
-    select 1 from public.profiles
-    where id = other_user_id and profile_status = 'approved'
-      and (subscription_status = 'active' or is_comped = true)
-      and not is_admin
-  ) then
+
+  select gender into other_gender from public.profiles
+  where id = other_user_id and profile_status = 'approved'
+    and (subscription_status = 'active' or is_comped = true)
+    and not is_admin;
+  if other_gender is null then
     raise exception 'That member is not currently active';
   end if;
+
+  -- This is a matrimonial platform for opposite-gender matches only — never
+  -- weakened to a client-side/UI-only rule, since this function is the sole
+  -- way any conversation ever gets created (see comment above).
+  select gender into my_gender from public.profiles where id = me;
+  if my_gender = other_gender then
+    raise exception 'Messaging is only available between opposite-gender members';
+  end if;
+
   if public.is_blocked_pair(me, other_user_id) then
     raise exception 'You cannot message this member';
   end if;

@@ -156,12 +156,18 @@ async function vrnGetProfileByRef(refCode) {
 // contradicting what blocking a member promises. Filtered here instead.
 async function vrnSearchProfiles(filters = {}) {
   const me = await vrnCurrentUser();
+  const myProfile = await vrnMyProfile();
+  // This is a matrimonial platform for opposite-gender matches only — always
+  // enforced, never a user-choosable filter. The real security boundary is
+  // get_or_create_conversation's own gender check in schema.sql; this just
+  // keeps search results from showing profiles a member could never actually
+  // message anyway.
+  const oppositeGender = myProfile.gender === "M" ? "F" : "M";
   const { data: myBlocks } = await sb.from("blocks").select("blocked_id").eq("blocker_id", me.id);
   const blockedIds = (myBlocks || []).map((b) => b.blocked_id);
 
-  let query = sb.from("profiles").select("id, ref_code, gender, age, country, consider_pakistan").neq("id", me.id);
+  let query = sb.from("profiles").select("id, ref_code, gender, age, country, consider_pakistan").neq("id", me.id).eq("gender", oppositeGender);
   if (blockedIds.length) query = query.not("id", "in", `(${blockedIds.join(",")})`);
-  if (filters.gender) query = query.eq("gender", filters.gender);
   if (filters.minAge) query = query.gte("age", filters.minAge);
   if (filters.maxAge) query = query.lte("age", filters.maxAge);
   if (filters.country) query = query.eq("country", filters.country);
