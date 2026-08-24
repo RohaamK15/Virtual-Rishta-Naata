@@ -193,6 +193,24 @@
       </div>
     </div>
 
+    <div class="panel" id="orphanedGoogle" data-reveal>
+      <div class="panel-head">
+        <h3>Orphaned Google Sign-Ins</h3>
+        <span style="font-size:.78rem;color:var(--ink-soft);">Someone clicked "Continue with Google" without an existing account — this reserves their email and blocks them from signing up for real until removed</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Email</th><th>Attempted</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="orphanedGoogleTableBody"></tbody>
+        </table>
+      </div>
+      <div style="padding:16px 24px;border-top:1px solid rgba(19,75,53,.08);">
+        <button type="button" class="btn btn-outline btn-sm" id="deleteAllOrphansBtn" onclick="deleteAllOrphanedGoogleUsers()" style="padding:8px 16px;font-size:.8rem;">Delete All Listed</button>
+      </div>
+    </div>
+
     <div class="panel" id="members" data-reveal>
       <div class="panel-head">
         <h3>All Client Profiles</h3>
@@ -293,6 +311,67 @@
     loadReportedProfiles();
     loadPendingPhotos();
     loadPendingProfiles();
+    loadOrphanedGoogleUsers();
+  }
+
+  let ALL_ORPHANS = [];
+  async function loadOrphanedGoogleUsers(){
+    const tbody = document.getElementById('orphanedGoogleTableBody');
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:20px;">Loading…</td></tr>`;
+    try {
+      const { data, error } = await sb.functions.invoke('admin-list-orphaned-google-users');
+      if (error) throw error;
+      ALL_ORPHANS = data.orphans;
+      renderOrphanedGoogleTable();
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--error);">Couldn't load (${await vrnFunctionErrorMessage(err)}).</td></tr>`;
+    }
+  }
+  function renderOrphanedGoogleTable(){
+    const tbody = document.getElementById('orphanedGoogleTableBody');
+    tbody.innerHTML = ALL_ORPHANS.map(o => `
+      <tr data-id="${o.id}">
+        <td>${escapeHtml(o.email)}</td>
+        <td>${new Date(o.created_at).toLocaleString('en-GB')}</td>
+        <td>
+          <div class="row-actions">
+            <button class="action-btn danger" title="Delete this orphaned sign-in" onclick="deleteOrphanedGoogleUser('${o.id}','${escapeHtml(o.email)}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('') || `<tr><td colspan="3" style="text-align:center;padding:20px;">None found — no cleanup needed.</td></tr>`;
+  }
+  async function deleteOrphanedGoogleUser(id, email){
+    if (!confirm(`Delete the orphaned Google sign-in for ${email}? They'll then be able to sign up normally with that email.`)) return;
+    try {
+      const { error } = await sb.functions.invoke('admin-delete-orphaned-user', { body: { id } });
+      if (error) throw error;
+      ALL_ORPHANS = ALL_ORPHANS.filter(o => o.id !== id);
+      renderOrphanedGoogleTable();
+    } catch (err) {
+      alert('Could not delete this sign-in: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+  async function deleteAllOrphanedGoogleUsers(){
+    if (ALL_ORPHANS.length === 0) return;
+    if (!confirm(`Delete all ${ALL_ORPHANS.length} orphaned Google sign-ins listed? This frees up their emails for a real signup.`)) return;
+    const btn = document.getElementById('deleteAllOrphansBtn');
+    btn.disabled = true;
+    const failures = [];
+    for (const o of [...ALL_ORPHANS]) {
+      try {
+        const { error } = await sb.functions.invoke('admin-delete-orphaned-user', { body: { id: o.id } });
+        if (error) throw error;
+        ALL_ORPHANS = ALL_ORPHANS.filter(x => x.id !== o.id);
+        renderOrphanedGoogleTable();
+      } catch (err) {
+        failures.push(`${o.email}: ${await vrnFunctionErrorMessage(err)}`);
+      }
+    }
+    btn.disabled = false;
+    if (failures.length) alert('Some could not be deleted:\n' + failures.join('\n'));
   }
 
   async function loadPendingProfiles(){
