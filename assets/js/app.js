@@ -499,6 +499,34 @@ function closeSheet(id) {
   document.body.style.overflow = '';
 }
 
+// Back-to-top button, injected here rather than duplicated as markup across
+// every page — this file already loads everywhere. Appears once the page is
+// scrolled down a bit, scrolls smoothly back to the top on click.
+(function vrnInitBackToTop() {
+  const mount = () => {
+    if (document.querySelector('.back-to-top')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'back-to-top';
+    btn.setAttribute('aria-label', 'Back to top');
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    document.body.appendChild(btn);
+
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        btn.classList.toggle('visible', window.scrollY > 480);
+        ticking = false;
+      });
+    }, { passive: true });
+  };
+  if (document.body) mount();
+  else document.addEventListener('DOMContentLoaded', mount);
+})();
+
 // Force-update gate — a native app build already installed on someone's
 // phone can't be patched by a web deploy (see the Google sign-in disable
 // fix, 2026-08-24), so anything that MUST reach every user immediately
