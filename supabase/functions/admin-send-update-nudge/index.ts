@@ -21,14 +21,14 @@ Deno.serve(async (req) => {
 
     const { data: members, error } = await admin
       .from("profiles")
-      .select("id, push_token")
+      .select("id, ref_code, push_token")
       .eq("push_platform", "android")
       .eq("push_enabled", true)
       .not("push_token", "is", null);
     if (error) throw error;
 
     let sent = 0;
-    let failed = 0;
+    const failures: { ref_code: string; reason: string }[] = [];
     for (const m of members || []) {
       try {
         await sendFcmPush(
@@ -39,14 +39,18 @@ Deno.serve(async (req) => {
         );
         sent++;
       } catch (pushErr) {
-        console.warn("Update nudge push failed for", m.id, pushErr);
-        failed++;
+        const reason = pushErr instanceof Error ? pushErr.message : String(pushErr);
+        console.warn("Update nudge push failed for", m.ref_code, reason);
+        failures.push({ ref_code: m.ref_code, reason });
       }
     }
 
-    await logAdminAction(admin, user.id, "update_nudge_broadcast", null, `sent=${sent} failed=${failed}`);
+    await logAdminAction(
+      admin, user.id, "update_nudge_broadcast", null,
+      `sent=${sent} failed=${failures.length}${failures.length ? " (" + failures.map((f) => f.ref_code).join(", ") + ")" : ""}`
+    );
 
-    return new Response(JSON.stringify({ success: true, sent, failed }), {
+    return new Response(JSON.stringify({ success: true, sent, failed: failures.length, failures }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

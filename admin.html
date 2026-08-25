@@ -415,7 +415,11 @@
     try {
       const { data, error } = await sb.functions.invoke('admin-send-update-nudge');
       if (error) throw error;
-      alert(`Sent to ${data.sent} member(s)${data.failed ? `, ${data.failed} failed` : ''}.`);
+      let msg = `Sent to ${data.sent} member(s).`;
+      if (data.failed) {
+        msg += `\n\n${data.failed} failed:\n` + data.failures.map(f => `${f.ref_code}: ${f.reason}`).join('\n');
+      }
+      alert(msg);
     } catch (err) {
       alert('Could not send the update reminder: ' + await vrnFunctionErrorMessage(err));
     }
