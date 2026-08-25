@@ -264,9 +264,8 @@
         <span class="eyebrow">Anonymous · Faith-First · Ahmadi Community</span>
         <h1>Connecting Families. Creating Lifelong Bonds.</h1>
         <p class="hero-lede">With the Blessed Prayers of Hazrat Khalifatul Masih V (aba), We present Virtual Rishta Naata — a private, respectful platform built for Ahmadi Muslims seeking marriage the right way — anonymously, on your terms, guided by faith rather than a swipe.</p>
-        <div class="hero-ctas">
+        <div class="hero-ctas" id="heroCtas">
           <a href="/signup.html" class="btn btn-primary">Create Your Profile</a>
-          <a href="/search.html" class="btn btn-outline">Browse Profiles</a>
         </div>
         <div class="trust-row">
           <div class="trust-item"><strong>100%</strong><span>Anonymous by design</span></div>
@@ -367,7 +366,7 @@
         <div class="step-card surface" data-reveal>
           <span class="step-num">03</span>
           <div class="step-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z" opacity="0"/><path d="M21 6l-9 6-9-6"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg></div>
-          <h3>Make Contact</h3>
+          <h3>Message Directly</h3>
           <p>Message them directly through secure in-app chat once you find someone whose profile resonates with you.</p>
         </div>
         <div class="step-card surface" data-reveal>
@@ -412,7 +411,7 @@
         <div class="texture-noise"></div>
         <div>
           <span class="eyebrow" style="color:var(--gold);">Your Privacy, Protected</span>
-          <h2>You Are Never Your Name Here</h2>
+          <h2>Your Name Will Never Be Displayed</h2>
           <ul class="privacy-list">
             <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Assigned a unique reference code the moment you submit your profile.</li>
             <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Only age, gender and country show before someone opens your profile.</li>
@@ -550,6 +549,20 @@
   // Public aggregate count (see get-active-member-count) — no auth required,
   // safe for signed-out visitors, and reflects the real number instead of a
   // hardcoded marketing figure.
+  // Signed-out visitors only ever see "Create Your Profile" (the default
+  // markup) — they have no profile to view yet. A signed-in member has
+  // nothing to create, so the CTAs swap to their actual next actions.
+  (async function updateHeroCtas(){
+    try {
+      const user = await vrnCurrentUser();
+      if (!user) return;
+      document.getElementById('heroCtas').innerHTML = `
+        <a href="/account.html" class="btn btn-primary">View Your Profile</a>
+        <a href="/search.html" class="btn btn-outline">Browse Profiles</a>
+      `;
+    } catch (e) { /* leave the signed-out default in place */ }
+  })();
+
   (async function loadActiveMemberCount(){
     const el = document.getElementById('activeMemberCount');
     if (!el) return;
