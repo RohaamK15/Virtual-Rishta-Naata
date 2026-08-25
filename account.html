@@ -149,8 +149,12 @@
       </div>
       <div class="side-card" data-reveal>
         <h4>Sign-In Methods</h4>
-        <p style="font-size:.82rem;color:var(--ink-soft);margin-bottom:14px;">Link your Google account so you can log in either way.</p>
-        <button type="button" class="btn btn-outline btn-sm btn-block" id="googleLinkBtn" onclick="handleLinkGoogle()">Link Google Account</button>
+        <!-- Linking is temporarily disabled (2026-08-24) — see
+             vrnLinkGoogleIdentity in assets/js/auth.js for why. A member who
+             already linked Google before this can still see that state and
+             unlink if they want; only the "start a new link" path is hidden. -->
+        <p id="googleLinkUnavailableNote" style="font-size:.82rem;color:var(--ink-soft);">Linking a Google account is temporarily unavailable.</p>
+        <button type="button" class="btn btn-outline btn-sm btn-block" id="googleLinkBtn" onclick="handleLinkGoogle()" style="display:none;">Link Google Account</button>
         <div id="googleLinkedNote" style="display:none;">
           <p style="font-size:.82rem;color:var(--green);margin-bottom:10px;">&#10003; Google account linked.</p>
           <button type="button" class="btn btn-outline btn-sm btn-block" onclick="handleUnlinkGoogle()">Unlink Google Account</button>
@@ -552,6 +556,7 @@
     } catch (e) { return; }
     const linked = identities.some((i) => i.provider === 'google');
     if (linked) {
+      document.getElementById('googleLinkUnavailableNote').style.display = 'none';
       document.getElementById('googleLinkBtn').style.display = 'none';
       document.getElementById('googleLinkedNote').style.display = 'block';
       try { localStorage.setItem('vrn_google_linked', '1'); } catch (e) { /* ignore */ }
@@ -613,6 +618,7 @@
   loadGoogleLinkState();
 
   if (new URLSearchParams(window.location.search).get('googleLinked') === '1') {
+    document.getElementById('googleLinkUnavailableNote').style.display = 'none';
     document.getElementById('googleLinkBtn').style.display = 'none';
     document.getElementById('googleLinkedNote').style.display = 'block';
     try { localStorage.setItem('vrn_google_linked', '1'); } catch (e) { /* ignore */ }

@@ -159,16 +159,16 @@
     document.getElementById('googleNoAccountNotice').style.display = 'block';
   }
 
-  // Hidden by default so brand-new visitors never see it as a way to sign
-  // up — Supabase's signInWithOAuth happily creates a bare auth user for
-  // anyone, even someone who's never had a profile (see auth-callback.html).
-  // Only shown on a device where this member has actually linked Google
-  // before (flag set in account.html's handleLinkGoogle/loadGoogleLinkState).
-  try {
-    if (localStorage.getItem('vrn_google_linked') === '1') {
-      document.getElementById('googleSignInSection').style.display = 'block';
-    }
-  } catch (e) { /* localStorage unavailable — keep it hidden */ }
+  // Google sign-in is temporarily disabled entirely (2026-08-24) — see
+  // vrnSignInWithGoogle in assets/js/auth.js for why. Deliberately never
+  // shown at all right now, even on a device that previously linked Google —
+  // restore this localStorage-gated logic once the underlying flow is fixed:
+  //
+  // try {
+  //   if (localStorage.getItem('vrn_google_linked') === '1') {
+  //     document.getElementById('googleSignInSection').style.display = 'block';
+  //   }
+  // } catch (e) { /* localStorage unavailable — keep it hidden */ }
 
   async function handleGoogleSignIn() {
     try {

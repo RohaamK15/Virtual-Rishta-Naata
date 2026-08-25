@@ -12,40 +12,23 @@ async function vrnSignIn(email, password) {
   return data.user;
 }
 
-// Entry point from login.html's "Continue with Google" button — reachable
-// while signed out. Google sign-in here is scoped to EXISTING paying members
-// only: Supabase's signInWithOAuth will happily create a brand-new auth user
-// for anyone, even someone who's never signed up, so it's auth-callback.html
-// (the redirectTo target) that guards against that ever becoming real access
-// — no matching active + approved profile there means an immediate sign-out.
+// Google sign-in/linking is TEMPORARILY DISABLED (2026-08-24) — despite
+// hiding the "Continue with Google" button behind the vrn_google_linked
+// localStorage flag (see login.html), new orphaned Google sign-ins kept
+// appearing, most likely because the already-published Android app (a
+// separate native build, not this website) still bundles an older version
+// of this code from before that fix and can't be patched by a web deploy.
+// Disabling it here stops it for every client, old app builds included,
+// without depending on a new Play Store release. The Google provider is
+// also disabled directly in Supabase Dashboard > Authentication > Providers
+// as a second, server-side guarantee — restore both together once the
+// underlying flow is fixed and a fresh native build has actually shipped.
 async function vrnSignInWithGoogle() {
-  const { data, error } = await sb.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${window.location.origin}/auth-callback.html` },
-  });
-  if (error) throw error;
-  if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins?.Browser) {
-    await window.Capacitor.Plugins.Browser.open({ url: data.url });
-  } else {
-    window.location.href = data.url;
-  }
+  throw new Error("Google sign-in is temporarily unavailable — please sign in with your email and password.");
 }
 
-// Only ever called from account.html, by a member who is ALREADY signed in
-// with email/password — this links a Google identity onto their EXISTING
-// auth user so they can use either to log in from then on. Requires "Manual
-// Linking" to be enabled in Supabase Dashboard > Authentication > Settings.
 async function vrnLinkGoogleIdentity() {
-  const { data, error } = await sb.auth.linkIdentity({
-    provider: "google",
-    options: { redirectTo: `${window.location.origin}/account.html?googleLinked=1` },
-  });
-  if (error) throw error;
-  if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins?.Browser) {
-    await window.Capacitor.Plugins.Browser.open({ url: data.url });
-  } else {
-    window.location.href = data.url;
-  }
+  throw new Error("Linking a Google account is temporarily unavailable.");
 }
 
 // Called from account.html once a Google identity is already linked.

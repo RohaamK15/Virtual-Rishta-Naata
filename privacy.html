@@ -121,7 +121,7 @@
           <tr><td>Messages</td><td>Chat messages you send other members are retained as part of your account, same as your profile details</td></tr>
           <tr><td>Account & billing</td><td>Login credentials, subscription status, and payment processing details, handled by Stripe — we never see or store your card details.</td></tr>
           <!-- Restore when iOS ships: <tr><td>Account & billing</td><td>Login credentials, subscription status, and payment processing details. Handled by Stripe for web and Android members, or by Apple's In-App Purchase system (via RevenueCat) for iOS members — we never see or store your card details either way.</td></tr> -->
-          <tr><td>Google account (optional)</td><td>If you choose to sign in with Google, we receive your Google account's email address, used only to match you to your existing membership — this never creates a new account on its own.</td></tr>
+          <!-- Restore when Google Sign-In is re-enabled: <tr><td>Google account (optional)</td><td>If you choose to sign in with Google, we receive your Google account's email address, used only to match you to your existing membership — this never creates a new account on its own.</td></tr> -->
           <tr><td>Push notification token</td><td>A device identifier issued by Google's push service, used only to deliver "you have a new message" and "your profile was reviewed" notifications — not used for tracking or advertising</td></tr>
           <!-- Restore when iOS ships: <tr><td>Push notification token</td><td>A device identifier issued by Google/Apple's push service, used only to deliver "you have a new message" and "your profile was reviewed" notifications — not used for tracking or advertising</td></tr> -->
           <tr><td>Phone number</td><td>Optional, collected only if you book a 1-1 consultation, so our facilitator can contact you to arrange the session — not collected anywhere else on the platform, and only visible to our admin team</td></tr>
@@ -186,7 +186,8 @@
         <li><strong>Stripe</strong> — payment processing (your card details never reach our own servers).</li>
         <!-- Restore when iOS ships: <li><strong>Apple &amp; RevenueCat</strong> — in-app subscription purchases for iOS members, processed entirely through Apple's own In-App Purchase system.</li> -->
         <li><strong>Supabase</strong> — database, authentication, and secure file storage.</li>
-        <li><strong>Google (Firebase)</strong> — delivering push notifications to the Android app, and, if you choose to use it, Google Sign-In.</li>
+        <li><strong>Google (Firebase)</strong> — delivering push notifications to the Android app.</li>
+        <!-- Restore when Google Sign-In is re-enabled: append ", and, if you choose to use it, Google Sign-In." to the line above. -->
         <li><strong>EmailJS</strong> — delivering consultation request notifications.</li>
       </ul>
     </div>
