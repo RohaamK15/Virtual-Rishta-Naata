@@ -487,3 +487,84 @@ function closeSheet(id) {
   document.getElementById(id + '-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
 }
+
+// Force-update gate — a native app build already installed on someone's
+// phone can't be patched by a web deploy (see the Google sign-in disable
+// fix, 2026-08-24), so anything that MUST reach every user immediately
+// needs this: block all use of the app until it's updated to at least the
+// minimum version we currently require, checked against a small
+// admin-controlled table (app_min_version) rather than hardcoded here.
+// Runs on every page (this file is loaded everywhere) but is a total no-op
+// on the website itself — Capacitor.isNativePlatform() is only ever true
+// inside the actual native app wrapper, never a browser, so this can never
+// lock out a desktop/mobile-web visitor or the admin dashboard used from a
+// normal browser.
+(async function vrnEnforceMinAppVersion() {
+  try {
+    if (!window.Capacitor?.isNativePlatform?.()) return;
+    const platform = window.Capacitor.getPlatform();
+    if (platform !== 'android' && platform !== 'ios') return;
+
+    const appInfo = await window.Capacitor.Plugins.App.getInfo();
+    const currentBuild = parseInt(appInfo.build, 10);
+    if (!Number.isFinite(currentBuild)) return; // can't tell -> fail open, never lock someone out on a guess
+
+    // Every page loads this file BEFORE supabase-config.js (see the shared
+    // script order across every page) — awaiting the plugin call above only
+    // yields a microtask, which isn't a strong enough guarantee that a later
+    // <script> tag has actually executed yet. Poll with real macrotask
+    // delays (setTimeout) instead, which only fire once the browser has
+    // finished running every currently-queued script.
+    let cfg = window.SUPABASE_CONFIG;
+    for (let waited = 0; !cfg && waited < 5000; waited += 100) {
+      await new Promise((r) => setTimeout(r, 100));
+      cfg = window.SUPABASE_CONFIG;
+    }
+    if (!cfg) return;
+    const res = await fetch(
+      `${cfg.url}/rest/v1/app_min_version?platform=eq.${platform}&select=min_build_number`,
+      { headers: { apikey: cfg.anonKey, Authorization: `Bearer ${cfg.anonKey}` } }
+    );
+    if (!res.ok) return; // network hiccup -> fail open, never lock someone out over connectivity
+    const rows = await res.json();
+    const minBuild = rows?.[0]?.min_build_number;
+    // No row for this platform yet (e.g. iOS before its first real release)
+    // means nothing is enforced there yet — fail open, not closed.
+    if (!Number.isFinite(minBuild) || currentBuild >= minBuild) return;
+
+    vrnShowForceUpdateOverlay(platform);
+  } catch (e) {
+    console.warn('vrnEnforceMinAppVersion failed:', e);
+  }
+})();
+
+function vrnShowForceUpdateOverlay(platform) {
+  if (document.getElementById('vrnForceUpdateOverlay')) return;
+  const inject = () => {
+    document.documentElement.style.overflow = 'hidden';
+    const overlay = document.createElement('div');
+    overlay.id = 'vrnForceUpdateOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#FFF9F2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;font-family:Lato,sans-serif;';
+    overlay.innerHTML = `
+      <div style="width:64px;height:64px;border-radius:50%;background:#EFE6D5;display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#134B35" stroke-width="1.8"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg>
+      </div>
+      <h2 style="font-family:Cinzel,serif;color:#134B35;font-size:1.3rem;margin-bottom:12px;">Update Required</h2>
+      <p style="max-width:320px;color:#5c5850;line-height:1.6;margin-bottom:26px;font-size:.92rem;">A newer version of Virtual Rishta Naata is available. Please update the app to continue.</p>
+      <button id="vrnForceUpdateBtn" style="background:#134B35;color:#fff;border:none;border-radius:999px;padding:14px 34px;font-weight:700;font-size:.9rem;cursor:pointer;">Update Now</button>
+    `;
+    document.body.appendChild(overlay);
+    document.getElementById('vrnForceUpdateBtn').addEventListener('click', () => {
+      const url = platform === 'ios'
+        ? 'https://apps.apple.com/app/id0000000000'
+        : 'https://play.google.com/store/apps/details?id=com.virtualrishtanaata.app';
+      if (window.Capacitor?.Plugins?.Browser) {
+        window.Capacitor.Plugins.Browser.open({ url });
+      } else {
+        window.location.href = url;
+      }
+    });
+  };
+  if (document.body) inject();
+  else document.addEventListener('DOMContentLoaded', inject);
+}

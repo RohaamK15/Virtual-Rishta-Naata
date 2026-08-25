@@ -780,7 +780,41 @@ create table if not exists public.admin_action_log (
 alter table public.admin_action_log enable row level security;
 
 -- ============================================================
--- 10. FIRST ADMIN
+-- 10. MINIMUM APP VERSION (force-update gate)
+-- ============================================================
+-- Backs assets/js/app.js's vrnEnforceMinAppVersion — a native app build
+-- already installed on someone's phone can't be patched by a web deploy, so
+-- anything that must reach every user immediately (like disabling Google
+-- sign-in, 2026-08-24) needs a way to force an update. Public SELECT since
+-- the app checks this before the member is even signed in; no INSERT/
+-- UPDATE/DELETE policy at all for anon/authenticated, so this can only ever
+-- be changed by hand via the SQL Editor (or a future admin-only function) —
+-- never by any client, which matters since a malicious write here could
+-- lock every user out of the app.
+create table if not exists public.app_min_version (
+  platform text primary key check (platform in ('android','ios')),
+  min_build_number int not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.app_min_version enable row level security;
+
+create policy "app_min_version_select_anyone" on public.app_min_version
+  for select using (true);
+
+revoke insert, update, delete on public.app_min_version from anon, authenticated;
+grant select on public.app_min_version to anon, authenticated;
+
+-- Android's min_build_number is bumped to 17 alongside this release (the one
+-- that actually disables Google sign-in) specifically so every build at or
+-- below 16 — which still shows the Google button with no server-side
+-- backstop other than the Supabase provider toggle — is forced to update.
+-- No iOS row yet: the app hasn't shipped there, so nothing is enforced for
+-- that platform until its first real release adds one.
+insert into public.app_min_version (platform, min_build_number) values ('android', 17)
+on conflict (platform) do update set min_build_number = excluded.min_build_number, updated_at = now();
+
+-- ============================================================
+-- 11. FIRST ADMIN
 -- ============================================================
 -- After you've created your own account through the normal signup flow once,
 -- run this (with your real user id from auth.users) to make yourself an admin:
