@@ -256,7 +256,18 @@ async function vrnRegisterForPush(){
   // whichever page happens to be active when the tap is handled.
   PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
     const url = action?.notification?.data?.url;
-    if (url) window.location.href = url;
+    if (!url) return;
+    // An absolute external URL (e.g. a Play Store link, see
+    // admin-send-update-nudge) should open via the system/Play Store app,
+    // not load as a webpage inside our own WebView — everywhere else in the
+    // app that opens an external URL already goes through Browser.open for
+    // the same reason. A relative in-app path (e.g. "/account.html") keeps
+    // using direct navigation as before.
+    if (/^https?:\/\//.test(url) && window.Capacitor?.Plugins?.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url });
+    } else {
+      window.location.href = url;
+    }
   });
 }
 

@@ -235,6 +235,17 @@
       </div>
     </div>
 
+    <div class="panel" id="appUpdates" data-reveal>
+      <div class="panel-head">
+        <h3>App Update Reminder</h3>
+        <span style="font-size:.78rem;color:var(--ink-soft);">After publishing a new Android release, nudge everyone still on an old build to update</span>
+      </div>
+      <div style="padding:16px 24px;">
+        <p style="font-size:.85rem;color:var(--ink-soft);margin-bottom:14px;">Sends a push notification to every Android member with notifications enabled, linking to the Play Store. We can't tell who's actually still on an old build (the app doesn't report its version to us), so this goes to everyone on Android — harmless for anyone already up to date.</p>
+        <button type="button" class="btn btn-outline btn-sm" onclick="sendUpdateNudge()" style="padding:8px 16px;font-size:.8rem;">Send Update Reminder</button>
+      </div>
+    </div>
+
     <div class="panel" id="members" data-reveal>
       <div class="panel-head">
         <h3>All Client Profiles</h3>
@@ -399,6 +410,17 @@
       alert('Could not delete this sign-in: ' + await vrnFunctionErrorMessage(err));
     }
   }
+  async function sendUpdateNudge(){
+    if (!confirm("Send an update-reminder push notification to every Android member with notifications enabled?")) return;
+    try {
+      const { data, error } = await sb.functions.invoke('admin-send-update-nudge');
+      if (error) throw error;
+      alert(`Sent to ${data.sent} member(s)${data.failed ? `, ${data.failed} failed` : ''}.`);
+    } catch (err) {
+      alert('Could not send the update reminder: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+
   async function deleteAllOrphanedGoogleUsers(){
     if (ALL_ORPHANS.length === 0) return;
     if (!confirm(`Delete all ${ALL_ORPHANS.length} orphaned Google sign-ins listed? This frees up their emails for a real signup.`)) return;
