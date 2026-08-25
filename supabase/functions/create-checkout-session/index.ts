@@ -73,6 +73,14 @@ Deno.serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: { supabase_user_id: user.id, plan },
+      // The promo-code entry field on Stripe's hosted Checkout page is opt-in
+      // (defaults to hidden) — only shown for the monthly plan, since the
+      // first-40-members 40% off coupon is monthly-only. Restricting it here
+      // rather than trusting a Stripe-side product restriction, since
+      // monthly/annual may be two Prices on the same Product rather than two
+      // separate Products, which a coupon's own "limit to product" setting
+      // can't tell apart.
+      allow_promotion_codes: plan === "monthly",
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
