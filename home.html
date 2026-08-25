@@ -31,19 +31,6 @@
   .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;}
   @media (max-width:900px){.hero-grid{grid-template-columns:1fr;gap:40px;}}
   .hero h1{margin-top:18px;}
-  /* Fetched live from site_announcement on every load (see the script near
-     the bottom) rather than hardcoded — an admin can turn this on/off or
-     edit its text at any time with zero app release involved (see
-     schema.sql's HOME PAGE ANNOUNCEMENT BANNER section for why that matters
-     for anyone using the native app, not just the website). */
-  .promo-banner{
-    display:none;background:linear-gradient(100deg,var(--green-2),var(--green));color:var(--on-dark);
-    padding:12px 24px;text-align:center;position:relative;z-index:40;
-  }
-  .promo-banner.visible{display:block;}
-  .promo-banner .wrap{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;}
-  .promo-banner p{margin:0;font-size:.88rem;font-weight:600;}
-  .promo-banner .btn{padding:6px 18px;font-size:.78rem;}
   .hero-lede{margin-top:22px;color:var(--ink-soft);font-size:1.08rem;max-width:520px;}
   .hero-ctas{display:flex;gap:16px;margin-top:34px;flex-wrap:wrap;}
   .trust-row{display:flex;gap:28px;margin-top:44px;flex-wrap:wrap;}
@@ -231,13 +218,6 @@
 </head>
 <body>
 <a href="#main" class="skip-link">Skip to content</a>
-
-<div class="promo-banner" id="promoBanner">
-  <div class="wrap">
-    <p id="promoBannerMessage"></p>
-    <a href="#" class="btn btn-primary" id="promoBannerLink" style="display:none;"></a>
-  </div>
-</div>
 
 <nav class="site-nav">
   <div class="wrap">
@@ -570,22 +550,6 @@
   // Public aggregate count (see get-active-member-count) — no auth required,
   // safe for signed-out visitors, and reflects the real number instead of a
   // hardcoded marketing figure.
-  (async function loadPromoBanner(){
-    try {
-      const { data, error } = await sb.from('site_announcement').select('active, message, link_url, link_text').eq('id', 'home_banner').single();
-      if (error) throw error;
-      if (!data?.active || !data.message) return;
-      document.getElementById('promoBannerMessage').textContent = data.message;
-      if (data.link_url && data.link_text) {
-        const link = document.getElementById('promoBannerLink');
-        link.href = data.link_url;
-        link.textContent = data.link_text;
-        link.style.display = '';
-      }
-      document.getElementById('promoBanner').classList.add('visible');
-    } catch (e) { /* leave the banner hidden on any error */ }
-  })();
-
   // Signed-out visitors only ever see "Create Your Profile" (the default
   // markup) — they have no profile to view yet. A signed-in member has
   // nothing to create, so the CTAs swap to their actual next actions.
