@@ -452,10 +452,13 @@
       const { data, error } = await sb.functions.invoke('admin-list-pending-profiles');
       if (error) throw error;
       list.innerHTML = data.profiles.map(p => `
-        <div style="background:var(--beige);border-radius:var(--radius-m);padding:18px 20px;">
+        <div style="background:var(--beige);border-radius:var(--radius-m);padding:18px 20px;${p.is_resubmission ? 'border-left:4px solid var(--gold);' : ''}">
+          ${p.is_resubmission
+            ? `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--gold-soft);color:var(--gold-ink);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:10px;">🔄 Existing Member — Edited &amp; Resubmitted, Not a New Signup</span>`
+            : `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--green-soft);color:var(--green);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:10px;">🆕 New Signup — First Review</span>`}
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
             <strong>${p.ref_code}</strong>
-            <span style="font-size:.8rem;color:var(--ink-soft);">${p.gender}, ${p.age} · ${escapeHtml(p.city || '')}${p.city ? ', ' : ''}${escapeHtml(p.country || '')}</span>
+            <span style="font-size:.8rem;color:var(--ink-soft);">${p.gender}, ${p.age} · ${escapeHtml(p.city || '')}${p.city ? ', ' : ''}${escapeHtml(p.country || '')} · Joined ${new Date(p.created_at).toLocaleDateString('en-GB')}</span>
           </div>
           <div style="font-size:.86rem;color:var(--ink-soft);display:grid;gap:6px;margin-bottom:14px;">
             ${p.local_jamaat ? `<div><strong>Jamaat:</strong> ${escapeHtml(p.local_jamaat)}</div>` : ''}

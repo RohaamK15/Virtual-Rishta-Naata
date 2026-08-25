@@ -24,6 +24,28 @@ Deno.serve(async (req) => {
       .order("created_at", { ascending: true });
     if (error) throw error;
 
+    // A profile lands here identically whether it's a brand-new signup
+    // awaiting its first review, or an existing, already-approved member
+    // who just edited something and got reset to 'pending' for re-review
+    // (see trg_reset_profile_status_on_change in schema.sql) — nothing
+    // about the row itself says which. That ambiguity is exactly what
+    // caused a real incident: an admin mistook an existing member's edit +
+    // resubmitted Ahmadi Verification for a new troll signup. admin_action_
+    // log (added 2026-08-24) records every past approval, so any profile
+    // with a prior 'profile_approve' entry is unambiguously a resubmission,
+    // not a new member — this can only be accurate for approvals that
+    // happened after that table started being written to, though.
+    const ids = (profiles || []).map((p) => p.id);
+    let previouslyApprovedIds = new Set<string>();
+    if (ids.length) {
+      const { data: approvals } = await admin
+        .from("admin_action_log")
+        .select("target_profile_id")
+        .eq("action", "profile_approve")
+        .in("target_profile_id", ids);
+      previouslyApprovedIds = new Set((approvals || []).map((a) => a.target_profile_id));
+    }
+
     // profile_verification is a to-one relation via primary key, but
     // PostgREST always returns embedded relations as an array — flatten it
     // for the dashboard, and be explicit when it's missing (already
@@ -32,13 +54,14 @@ Deno.serve(async (req) => {
     // via this short-lived signed URL — never a public/permanent one.
     const withVerification = await Promise.all((profiles || []).map(async (p: Record<string, unknown>) => {
       const v = Array.isArray(p.profile_verification) ? p.profile_verification[0] as Record<string, unknown> | undefined : p.profile_verification as Record<string, unknown> | undefined;
-      if (!v) return { ...p, profile_verification: null };
+      const is_resubmission = previouslyApprovedIds.has(p.id as string);
+      if (!v) return { ...p, profile_verification: null, is_resubmission };
       let video_url = null;
       if (v.video_path) {
         const { data: signed } = await admin.storage.from("verification-videos").createSignedUrl(v.video_path as string, 300);
         video_url = signed?.signedUrl || null;
       }
-      return { ...p, profile_verification: { ...v, video_url } };
+      return { ...p, profile_verification: { ...v, video_url }, is_resubmission };
     }));
 
     return new Response(JSON.stringify({ profiles: withVerification }), {
