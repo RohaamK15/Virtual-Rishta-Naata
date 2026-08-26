@@ -71,7 +71,7 @@ const SEGMENTS: Record<string, (q: any) => any> = {
   all_members: (q) => q,
 };
 
-function wrapHtml(bodyHtml: string, unsubscribeUrl: string | null): string {
+function wrapHtml(bodyHtml: string): string {
   return `
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;color:#2b2b28;">
       <div style="text-align:center;margin-bottom:26px;">
@@ -82,22 +82,8 @@ function wrapHtml(bodyHtml: string, unsubscribeUrl: string | null): string {
       <div style="font-size:15px;line-height:1.65;">${bodyHtml}</div>
       <hr style="margin:34px 0 18px;border:none;border-top:1px solid #e5ddd0;">
       <p style="font-size:12px;color:#8a8578;text-align:center;margin:0;">Virtual Rishta Naata · virtualrishtanaata.com</p>
-      ${unsubscribeUrl ? `<p style="font-size:12px;color:#8a8578;text-align:center;margin:8px 0 0;"><a href="${unsubscribeUrl}" style="color:#8a8578;">Unsubscribe</a> from emails like this.</p>` : ""}
     </div>
   `;
-}
-
-// PECR (UK e-marketing regulations) requires every marketing email to carry
-// a working, honoured opt-out — see the email_marketing_opt_out column and
-// the public unsubscribe-email function. Raw-HTML sends (isHtml=true) are
-// complete, self-contained templates the admin wrote — this stitches the
-// unsubscribe link in just before </body> rather than trusting every
-// template to remember to include one itself; falls back to appending at
-// the very end if the template has no </body> to anchor to.
-function injectUnsubscribeFooter(html: string, unsubscribeUrl: string): string {
-  const footer = `<p style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9AA79A;text-align:center;padding:16px 0;margin:0;"><a href="${unsubscribeUrl}" style="color:#9AA79A;">Unsubscribe</a> from emails like this.</p>`;
-  if (html.includes("</body>")) return html.replace(/<\/body>/i, `${footer}</body>`);
-  return html + footer;
 }
 
 Deno.serve(async (req) => {
@@ -106,34 +92,23 @@ Deno.serve(async (req) => {
     const { admin, user } = await requireAdmin(req);
     const { segment, subject, body, dryRun, testEmail, isHtml, fromAlias } = await req.json();
 
-    // Recipients carry their own unsubscribe_token so each email gets a
-    // working, member-specific unsubscribe link (PECR requirement — see
-    // wrapHtml/injectUnsubscribeFooter and the unsubscribe-email function).
-    // testEmail has no real profile/token behind it, so it's represented
-    // with a null token and skips the opt-out filter entirely — it's a
-    // debugging aid the admin sends to themselves, not a real member.
-    type Recipient = { id: string | null; contact_email: string; unsubscribe_token: string | null };
-    let recipients: Recipient[];
+    let emails: string[];
     if (testEmail) {
-      recipients = [{ id: null, contact_email: testEmail, unsubscribe_token: null }];
+      // Bypasses the real member list entirely — lets admin verify Resend
+      // setup (domain, EMAIL_FROM, deliverability) without emailing anyone
+      // real while debugging.
+      emails = [testEmail];
     } else {
       if (!SEGMENTS[segment]) throw new Error("Invalid segment");
-      let query = admin.from("profiles").select("id, contact_email, unsubscribe_token")
-        .eq("is_admin", false).eq("email_marketing_opt_out", false);
+      let query = admin.from("profiles").select("contact_email").eq("is_admin", false);
       query = SEGMENTS[segment](query);
       const { data: rows, error } = await query;
       if (error) throw error;
-      const seen = new Set<string>();
-      recipients = [];
-      for (const r of (rows || []) as { id: string; contact_email: string; unsubscribe_token: string }[]) {
-        if (!r.contact_email || seen.has(r.contact_email)) continue;
-        seen.add(r.contact_email);
-        recipients.push(r);
-      }
+      emails = [...new Set((rows || []).map((r: { contact_email: string }) => r.contact_email).filter(Boolean))];
     }
 
     if (dryRun) {
-      return new Response(JSON.stringify({ success: true, recipientCount: recipients.length }), {
+      return new Response(JSON.stringify({ success: true, recipientCount: emails.length }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -160,29 +135,20 @@ Deno.serve(async (req) => {
         (err: unknown) => console.warn("Could not record from-alias:", err),
       );
     }
-    const rawHtml = String(body);
-    const plainHtml = String(body).replace(/\n/g, "<br>");
-
-    function buildHtmlFor(r: Recipient): string {
-      const unsubscribeUrl = r.id && r.unsubscribe_token
-        ? `https://virtualrishtanaata.com/unsubscribe.html?id=${r.id}&t=${r.unsubscribe_token}`
-        : null;
-      // Plain-text mode (default) converts line breaks to <br> and wraps the
-      // result in a minimal branded header/footer, since a bare paragraph
-      // with no styling looks unfinished. Raw-HTML mode assumes the admin
-      // has written (or pasted) a complete, self-contained email — e.g.
-      // matching the EmailJS templates' own full branded layout, logo
-      // included — and sends it exactly as written except for the
-      // unsubscribe link stitched in above.
-      if (isHtml) return unsubscribeUrl ? injectUnsubscribeFooter(rawHtml, unsubscribeUrl) : rawHtml;
-      return wrapHtml(plainHtml, unsubscribeUrl);
-    }
+    // Plain-text mode (default) converts line breaks to <br> and wraps the
+    // result in a minimal branded header/footer, since a bare paragraph
+    // with no styling looks unfinished. Raw-HTML mode assumes the admin has
+    // written (or pasted) a complete, self-contained email — e.g. matching
+    // the EmailJS templates' own full branded layout, logo included — and
+    // sends it exactly as written with nothing added, since double-wrapping
+    // a complete template in another header/footer would look broken.
+    const html = isHtml ? String(body) : wrapHtml(String(body).replace(/\n/g, "<br>"));
 
     let sent = 0;
     const failures: string[] = [];
     // Resend's batch endpoint accepts up to 100 emails per call.
-    for (let i = 0; i < recipients.length; i += 100) {
-      const chunk = recipients.slice(i, i + 100);
+    for (let i = 0; i < emails.length; i += 100) {
+      const chunk = emails.slice(i, i + 100);
       const res = await fetch("https://api.resend.com/emails/batch", {
         method: "POST",
         headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
@@ -190,13 +156,13 @@ Deno.serve(async (req) => {
         // alias actually sent the email (announcements@, memberships@,
         // etc.) — one consistent address for members to reply to, forwarded
         // to a real inbox, rather than a different reply target per alias.
-        body: JSON.stringify(chunk.map((r) => ({
-          from: FROM, to: [r.contact_email], subject, html: buildHtmlFor(r),
+        body: JSON.stringify(chunk.map((email) => ({
+          from: FROM, to: [email], subject, html,
           reply_to: "support@virtualrishtanaata.com",
         }))),
       });
       if (!res.ok) {
-        failures.push(...chunk.map((r) => r.contact_email));
+        failures.push(...chunk);
         console.warn("Resend batch failed:", await res.text());
       } else {
         sent += chunk.length;
@@ -205,7 +171,7 @@ Deno.serve(async (req) => {
 
     await logAdminAction(admin, user.id, "email_broadcast", null, `segment=${segment} subject="${subject}" sent=${sent} failed=${failures.length}`);
 
-    return new Response(JSON.stringify({ success: true, recipientCount: recipients.length, sent, failed: failures.length }), {
+    return new Response(JSON.stringify({ success: true, recipientCount: emails.length, sent, failed: failures.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
