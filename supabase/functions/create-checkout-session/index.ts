@@ -10,10 +10,47 @@
 //   APP_URL                (e.g. https://virtualrishtanaata.com or your Capacitor app's web origin)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14?target=deno";
-import { corsHeaders } from "../_shared/cors.ts";
-import { buildReturnUrls } from "../_shared/checkoutUrls.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2023-10-16" });
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Builds Stripe success/cancel URLs. Both web and native callers get the
+// same real website URL (APP_URL) back.
+//
+// Native used to get a custom URL scheme (myapp://return?...) instead, so the
+// external browser tab could hand control back to the app once Stripe
+// redirected. That broke in practice: Chrome on Android refuses to launch an
+// external app for a navigation that isn't tied to a direct user gesture, and
+// Stripe's post-payment redirect fires asynchronously — well after the
+// original "Pay" click — so Chrome silently fell back to treating the scheme
+// text as a literal (nonexistent) hostname, producing a DNS error instead of
+// returning to the app.
+//
+// A verified Android App Link doesn't have that restriction: the OS
+// intercepts navigation to these URLs before Chrome's gesture check ever
+// applies, as long as the app declares a matching autoVerify intent-filter
+// (see android/app/src/main/AndroidManifest.xml) and the domain serves a
+// matching /.well-known/assetlinks.json. That manifest's intent-filter must
+// list every successPage/cancelPage this function is ever called with.
+function buildReturnUrls(opts: {
+  appUrl: string;
+  successPage: string;
+  cancelPage: string;
+  successParams: Record<string, string>;
+  cancelParams: Record<string, string>;
+}) {
+  const { appUrl, successPage, cancelPage, successParams, cancelParams } = opts;
+  const successQuery = new URLSearchParams(successParams).toString();
+  const cancelQuery = new URLSearchParams(cancelParams).toString();
+  return {
+    successUrl: `${appUrl}/${successPage}${successQuery ? `?${successQuery}` : ""}`,
+    cancelUrl: `${appUrl}/${cancelPage}${cancelQuery ? `?${cancelQuery}` : ""}`,
+  };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -32,8 +69,18 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) throw new Error("Not authenticated");
 
-    const { plan } = await req.json();
+    const { plan, waiverAccepted } = await req.json();
     if (!["monthly", "annual"].includes(plan)) throw new Error("Invalid plan");
+    // Consumer Contracts Regulations 2013: a UK consumer buying a digital
+    // subscription online normally gets a 14-day cooling-off right to cancel
+    // for a refund. That right can be waived, but only if the consumer
+    // expressly acknowledges — before paying — that they want immediate
+    // access and are giving it up. account.html's checkoutWaiverModal
+    // collects that acknowledgement client-side; this check is the real
+    // enforcement point, same reasoning as submit-profile-for-review's
+    // server-side tosAgreed/religiousDataConsent checks, since a client-side
+    // checkbox alone is trivially bypassable.
+    if (waiverAccepted !== true) throw new Error("You must acknowledge the cancellation-rights notice before continuing to payment");
 
     const priceId = plan === "annual"
       ? Deno.env.get("STRIPE_PRICE_ANNUAL")!
@@ -82,6 +129,13 @@ Deno.serve(async (req) => {
       // can't tell apart.
       allow_promotion_codes: plan === "monthly",
     });
+
+    // Fire-and-forget: recording the waiver acknowledgement must never block
+    // or fail the actual checkout redirect.
+    admin.from("profiles").update({ checkout_waiver_accepted_at: new Date().toISOString() }).eq("id", user.id).then(
+      () => {},
+      (err: unknown) => console.warn("Could not record checkout waiver acceptance:", err),
+    );
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

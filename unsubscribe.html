@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FFF9F2">
+<link rel="icon" type="image/png" href="/assets/img/favicon.png">
+<title>Unsubscribe — Virtual Rishta Naata</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<script>(function(){var m=document.cookie.match(/(?:^|; )vrn_theme=(dark|light)/);if(m){document.documentElement.setAttribute("data-theme",m[1]);var tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute("content",m[1]==="dark"?"#100E0B":"#FFF9F2");}})();</script>
+<style>
+  body{background:var(--beige);min-height:100vh;display:flex;flex-direction:column;}
+  .confirm-wrap{max-width:560px;margin:0 auto;padding:60px 24px;flex:1;display:flex;align-items:center;}
+  .confirm-card{background:var(--surface);border-radius:var(--radius-l);box-shadow:var(--shadow-2);padding:48px 40px;text-align:center;width:100%;}
+  @media (max-width:600px){.confirm-card{padding:36px 26px;}}
+  .brand-mini{display:flex;align-items:center;justify-content:center;gap:10px;}
+  .brand-mini img{height:36px;width:auto;}
+  .brand-mini span{font-family:'Cinzel',serif;font-weight:600;color:var(--green);font-size:.95rem;}
+  .check-circle{
+    width:64px;height:64px;border-radius:50%;background:var(--green-soft);color:var(--green);
+    display:flex;align-items:center;justify-content:center;margin:22px auto 0;
+  }
+  .error-circle{
+    width:64px;height:64px;border-radius:50%;background:var(--rose-soft);color:var(--error);
+    display:flex;align-items:center;justify-content:center;margin:22px auto 0;
+  }
+</style>
+</head>
+<body>
+<div class="confirm-wrap">
+  <div class="confirm-card" data-reveal>
+    <a href="/home.html" class="brand-mini">
+      <img src="/assets/img/logo-icon.png" alt="">
+      <span>Virtual Rishta Naata</span>
+    </a>
+    <div id="stateIcon"></div>
+    <h2 id="stateTitle" style="margin-top:22px;">Unsubscribing...</h2>
+    <p class="step-desc" id="stateDesc" style="max-width:400px;margin:12px auto 0;">One moment.</p>
+    <a href="/home.html" class="btn btn-outline btn-block" style="margin-top:28px;">Back to Home</a>
+  </div>
+</div>
+
+<script src="/assets/js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="/assets/js/supabase-config.js"></script>
+<script src="/assets/js/supabase-client.js"></script>
+<script>
+  (async function init(){
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const t = params.get('t');
+    const iconEl = document.getElementById('stateIcon');
+    const titleEl = document.getElementById('stateTitle');
+    const descEl = document.getElementById('stateDesc');
+
+    function showSuccess(){
+      iconEl.innerHTML = '<div class="check-circle"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></div>';
+      titleEl.textContent = "You're Unsubscribed";
+      descEl.textContent = "You won't receive promotional or announcement emails from us again. You can turn these back on anytime from your Account page, and you'll still receive essential emails about your own account.";
+    }
+    function showError(message){
+      iconEl.innerHTML = '<div class="error-circle"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></div>';
+      titleEl.textContent = "Couldn't Unsubscribe";
+      descEl.textContent = message || "This link is invalid or has expired. If you keep receiving emails you'd like to stop, just reply to one and let us know.";
+    }
+
+    if (!id || !t) { showError(); return; }
+
+    try {
+      const { data, error } = await sb.functions.invoke('unsubscribe-email', { body: { id, t } });
+      if (error) throw error;
+      showSuccess();
+    } catch (err) {
+      showError(await vrnFunctionErrorMessage(err));
+    }
+  })();
+</script>
+</body>
+</html>

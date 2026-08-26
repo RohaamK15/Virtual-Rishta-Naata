@@ -171,6 +171,7 @@
           <li><a href="/search.html">Browse Profiles <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="/services.html">Book a Consultation <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="#" id="pushToggleLink" onclick="return toggleNotificationPreference()">Turn Off Push Notifications <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
+          <li><a href="#" id="marketingToggleLink" onclick="return toggleMarketingEmailPreference()">Turn Off Marketing Emails <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li id="deactivateLink" style="display:none;"><a href="#" style="color:var(--error);" onclick="return handleDeactivate()">Deactivate My Account <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
           <li><a href="#" style="color:var(--error);" onclick="return handleDeleteAccount()">Delete My Account &amp; Data <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></a></li>
         </ul>
@@ -178,6 +179,22 @@
     </div>
   </div>
 </main>
+
+<div class="overlay" id="checkoutWaiverModal-overlay" onclick="closeSheet('checkoutWaiverModal')"></div>
+<div class="sheet" id="checkoutWaiverModal" style="max-width:480px;padding:32px;">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+    <h3 style="margin:0;">Before You Pay</h3>
+    <button type="button" class="action-btn" onclick="closeSheet('checkoutWaiverModal')" aria-label="Close">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <p style="font-size:.85rem;color:var(--ink-soft);margin-bottom:18px;">Under UK consumer law, buying a digital subscription online normally comes with a 14-day right to cancel for a refund. Because your membership gives you immediate access to browse and message other members, we need you to confirm you're giving up that 14-day right in exchange for starting straight away.</p>
+  <label style="display:flex;align-items:flex-start;gap:10px;font-size:.85rem;color:var(--ink);cursor:pointer;margin-bottom:20px;">
+    <input type="checkbox" id="checkoutWaiverCheckbox" onchange="document.getElementById('checkoutWaiverContinueBtn').disabled = !this.checked" style="margin-top:3px;">
+    <span>I understand my membership begins immediately and I'm giving up my 14-day right to cancel for a refund.</span>
+  </label>
+  <button type="button" id="checkoutWaiverContinueBtn" class="btn btn-primary btn-block" disabled onclick="confirmCheckoutWaiver()">Continue to Payment</button>
+</div>
 
 <nav class="app-bottom-nav">
   <a href="/home.html" class="app-tab">
@@ -219,6 +236,7 @@
     if (!p) return;
     currentProfile = p;
     renderPushToggleLabel();
+    renderMarketingToggleLabel();
 
     document.getElementById('f-ref').textContent = p.ref_code || '—';
     document.getElementById('f-joined').textContent = 'Member since ' + new Date(p.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -463,6 +481,11 @@
     return false;
   }
 
+  // Holds the calling button-state setter between opening the waiver modal
+  // and the member actually confirming it — see handleCompleteMembership /
+  // confirmCheckoutWaiver below.
+  let pendingCheckoutSetState = null;
+
   async function handleCompleteMembership(){
     // Two buttons trigger this (the Profile Status card's inline CTA and the
     // Membership card's own one) — keep both in sync regardless of which was
@@ -475,15 +498,29 @@
 
     // iOS must use Apple IAP (via RevenueCat) rather than Stripe — App Store
     // guideline 3.1.1 requires it for unlocking in-app digital content.
-    // Android and web are unaffected and keep the existing Stripe flow.
+    // Android and web are unaffected and keep the existing Stripe flow. Apple
+    // IAP purchases are covered by Apple's own App Store purchase terms, so
+    // the UK cancellation-rights waiver below only applies to the direct
+    // Stripe path.
     if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.getPlatform() === 'ios') {
       return handleCompleteMembershipIOS(setState);
     }
 
+    pendingCheckoutSetState = setState;
+    document.getElementById('checkoutWaiverCheckbox').checked = false;
+    document.getElementById('checkoutWaiverContinueBtn').disabled = true;
+    openSheet('checkoutWaiverModal');
+  }
+
+  async function confirmCheckoutWaiver(){
+    const setState = pendingCheckoutSetState;
+    closeSheet('checkoutWaiverModal');
+    if (!setState) return;
+
     setState(true, 'Redirecting to Stripe...');
     try {
       const plan = currentProfile?.plan || 'monthly';
-      const { data, error } = await sb.functions.invoke('create-checkout-session', { body: { plan } });
+      const { data, error } = await sb.functions.invoke('create-checkout-session', { body: { plan, waiverAccepted: true } });
       if (error) throw error;
       await vrnOpenCheckout(data.url, () => setState(false, 'Complete Your Membership'));
     } catch (err) {
@@ -568,6 +605,27 @@
     if (!link || !currentProfile) return;
     const on = currentProfile.push_enabled !== false;
     link.childNodes[0].textContent = on ? 'Turn Off Push Notifications ' : 'Turn On Push Notifications ';
+  }
+
+  function renderMarketingToggleLabel(){
+    const link = document.getElementById('marketingToggleLink');
+    if (!link || !currentProfile) return;
+    const optedOut = currentProfile.email_marketing_opt_out === true;
+    link.childNodes[0].textContent = optedOut ? 'Turn On Marketing Emails ' : 'Turn Off Marketing Emails ';
+  }
+
+  async function toggleMarketingEmailPreference(){
+    const next = !(currentProfile?.email_marketing_opt_out === true);
+    try {
+      const user = await vrnCurrentUser();
+      const { error } = await sb.from('profiles').update({ email_marketing_opt_out: next }).eq('id', user.id);
+      if (error) throw error;
+      currentProfile.email_marketing_opt_out = next;
+      renderMarketingToggleLabel();
+    } catch (err) {
+      alert('Could not update your email preference — please try again.');
+    }
+    return false;
   }
 
   async function toggleNotificationPreference(){

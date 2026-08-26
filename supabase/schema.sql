@@ -74,6 +74,20 @@ create table if not exists public.profiles (
   -- devices. Signed-out visitors get a cookie-based fallback instead (see
   -- vrnApplyTheme in app.js) since they have no profile row yet.
   theme_preference text check (theme_preference in ('light','dark')),
+  -- PECR (UK e-marketing regulations) requires a working opt-out on every
+  -- marketing email, honoured going forward — see admin-send-email-broadcast,
+  -- which excludes opted-out members from every segment query and stamps an
+  -- unsubscribe link into every send. Member-controlled two ways: directly
+  -- from account.html (like push_enabled), or via the emailed link, which
+  -- hits the public unsubscribe-email function using unsubscribe_token below
+  -- (never through an authenticated update, since the member clicking that
+  -- link usually isn't signed in on that device).
+  email_marketing_opt_out boolean not null default false,
+  -- Unguessable per-member token backing the public unsubscribe link. Never
+  -- exposed to any client (not in the select grant) — only unsubscribe-email
+  -- (service role) ever reads it, matching it against the ?id=&t= query
+  -- params in the emailed link before flipping email_marketing_opt_out.
+  unsubscribe_token uuid not null default gen_random_uuid(),
   -- Admin-granted free access — bypasses the payment requirement only, never
   -- the content-approval requirement. See is_active_member() below: a comped
   -- member still needs profile_status = 'approved' like everyone else, this
@@ -102,6 +116,16 @@ create table if not exists public.profiles (
   -- would not meet the "explicit" and "specific" bar), captured at signup
   -- alongside the Ahmadi Muslim question itself. See signup.html Step 3.
   religious_data_consent_at timestamptz,
+  -- Evidence of the Consumer Contracts Regulations 2013 cancellation-right
+  -- waiver: a UK consumer buying a digital subscription online normally has
+  -- a 14-day cooling-off right to cancel for a refund, unless they expressly
+  -- acknowledge (before paying) that they want immediate access and are
+  -- giving that right up. Set once by create-checkout-session the moment a
+  -- member ticks the waiver checkbox and Stripe Checkout is actually created
+  -- — see account.html's checkoutWaiverModal. Deliberately not in the member
+  -- update grant, same reasoning as tos_accepted_at: it's a record of when
+  -- the acknowledgement was given, not something rewritable later.
+  checkout_waiver_accepted_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -272,7 +296,7 @@ grant update (
   preference_line, country_looking_in,
   consider_pakistan, additional_note, about, contact_email,
   has_photo, photo_path, chat_guidelines_accepted_at, onboarding_completed_at,
-  theme_preference, push_token, push_platform, push_enabled
+  theme_preference, push_token, push_platform, push_enabled, email_marketing_opt_out
 ) on public.profiles to authenticated;
 
 -- Supabase grants SELECT on every column of every new table to `authenticated`
@@ -291,7 +315,8 @@ grant select (
   photo_status, photo_rejection_reason, profile_status, profile_rejection_reason,
   plan, subscription_status, is_comped, is_admin, chat_guidelines_accepted_at,
   onboarding_completed_at, theme_preference, push_enabled, created_at,
-  tos_accepted_at, religious_data_consent_at
+  tos_accepted_at, religious_data_consent_at, email_marketing_opt_out,
+  checkout_waiver_accepted_at
 ) on public.profiles to authenticated;
 
 -- Any active, paying member can view the full details of another active member.
