@@ -829,6 +829,13 @@ create table if not exists public.email_template (
   subject text not null,
   body text not null,
   is_html boolean not null default false,
+  -- Optional per-template sender, e.g. "Virtual Rishta Naata <memberships@
+  -- virtualrishtanaata.com>" for payment-related templates vs "...
+  -- <announcements@...>" for general ones — null falls back to the
+  -- EMAIL_FROM secret. Only the domain needs verifying in Resend, not each
+  -- individual address, so any local part at a verified domain works with
+  -- no extra setup.
+  from_address text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

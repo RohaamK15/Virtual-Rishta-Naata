@@ -8,18 +8,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, user } = await requireAdmin(req);
-    const { id, name, subject, body, is_html } = await req.json();
+    const { id, name, subject, body, is_html, from_address } = await req.json();
     if (!name || !subject || !body) throw new Error("Name, subject, and message are required");
 
     let savedId = id;
     if (id) {
       const { error } = await admin.from("email_template").update({
-        name, subject, body, is_html: !!is_html, updated_at: new Date().toISOString(),
+        name, subject, body, is_html: !!is_html, from_address: from_address || null, updated_at: new Date().toISOString(),
       }).eq("id", id);
       if (error) throw error;
     } else {
       const { data, error } = await admin.from("email_template").insert({
-        name, subject, body, is_html: !!is_html,
+        name, subject, body, is_html: !!is_html, from_address: from_address || null,
       }).select("id").single();
       if (error) throw error;
       savedId = data.id;

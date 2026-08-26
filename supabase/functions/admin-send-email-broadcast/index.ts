@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, user } = await requireAdmin(req);
-    const { segment, subject, body, dryRun, testEmail, isHtml } = await req.json();
+    const { segment, subject, body, dryRun, testEmail, isHtml, fromAddress } = await req.json();
 
     let emails: string[];
     if (testEmail) {
@@ -64,7 +64,12 @@ Deno.serve(async (req) => {
     if (!subject || !body) throw new Error("Subject and message are required");
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
-    const FROM = Deno.env.get("EMAIL_FROM") || "Virtual Rishta Naata <onboarding@resend.dev>";
+    // A per-send/per-template override, e.g. "memberships@..." for payment
+    // emails vs "announcements@..." for general ones — only the domain
+    // needs verifying in Resend, not each address, so any local part at a
+    // verified domain works with zero extra setup. Falls back to the
+    // EMAIL_FROM secret, then to Resend's shared test sender.
+    const FROM = fromAddress || Deno.env.get("EMAIL_FROM") || "Virtual Rishta Naata <onboarding@resend.dev>";
     // Plain-text mode (default) converts line breaks to <br> and wraps the
     // result in a minimal branded header/footer, since a bare paragraph
     // with no styling looks unfinished. Raw-HTML mode assumes the admin has
