@@ -65,12 +65,14 @@ Deno.serve(async (req) => {
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
     const FROM = Deno.env.get("EMAIL_FROM") || "Virtual Rishta Naata <onboarding@resend.dev>";
-    // Plain-text mode (default) converts line breaks to <br> since a
-    // textarea's newlines are otherwise invisible in HTML email. Raw-HTML
-    // mode trusts the admin to have written real markup themselves and
-    // passes it through untouched — admin.html is an internal, admin-only
-    // tool, so there's no untrusted-input concern here.
-    const html = wrapHtml(isHtml ? String(body) : String(body).replace(/\n/g, "<br>"));
+    // Plain-text mode (default) converts line breaks to <br> and wraps the
+    // result in a minimal branded header/footer, since a bare paragraph
+    // with no styling looks unfinished. Raw-HTML mode assumes the admin has
+    // written (or pasted) a complete, self-contained email — e.g. matching
+    // the EmailJS templates' own full branded layout, logo included — and
+    // sends it exactly as written with nothing added, since double-wrapping
+    // a complete template in another header/footer would look broken.
+    const html = isHtml ? String(body) : wrapHtml(String(body).replace(/\n/g, "<br>"));
 
     let sent = 0;
     const failures: string[] = [];
