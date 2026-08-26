@@ -254,11 +254,19 @@
           <label for="emailSubject">Subject</label>
           <input type="text" id="emailSubject" placeholder="e.g. Complete your Virtual Rishta Naata membership">
         </div>
+        <label class="radio-pill" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;width:fit-content;">
+          <input type="checkbox" id="emailIsHtml" onchange="document.getElementById('emailBody').placeholder = this.checked ? 'Write full HTML here — sent exactly as written, wrapped in the branded header/footer' : 'Write your message here — plain text is fine, line breaks are kept';">
+          <span style="font-size:.86rem;">This is custom HTML, not plain text</span>
+        </label>
         <div class="field">
           <label for="emailBody">Message</label>
-          <textarea id="emailBody" style="min-height:160px;" placeholder="Write your message here — plain text is fine, line breaks are kept"></textarea>
+          <textarea id="emailBody" style="min-height:160px;font-family:monospace;" placeholder="Write your message here — plain text is fine, line breaks are kept"></textarea>
         </div>
-        <button type="button" class="btn btn-primary btn-sm" style="width:fit-content;padding:10px 20px;font-size:.82rem;" onclick="sendEmailBroadcast()">Send</button>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:6px;border-top:1px solid rgba(19,75,53,.08);">
+          <input type="email" id="emailTestAddress" placeholder="your@email.com" style="flex:1;min-width:200px;">
+          <button type="button" class="btn btn-outline btn-sm" style="padding:10px 18px;font-size:.82rem;" onclick="sendTestEmail()">Send Test to This Address</button>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" style="width:fit-content;padding:10px 20px;font-size:.82rem;" onclick="sendEmailBroadcast()">Send to Audience</button>
       </div>
     </div>
 
@@ -455,14 +463,31 @@
     const segment = document.getElementById('emailSegment').value;
     const subject = document.getElementById('emailSubject').value.trim();
     const body = document.getElementById('emailBody').value.trim();
+    const isHtml = document.getElementById('emailIsHtml').checked;
     if (!subject || !body) { alert('Please fill in both the subject and message.'); return; }
     if (!confirm('Send this email now? This cannot be undone once sent.')) return;
     try {
-      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, subject, body } });
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, subject, body, isHtml } });
       if (error) throw error;
       alert(`Sent to ${data.sent} of ${data.recipientCount} recipient(s)${data.failed ? ` — ${data.failed} failed` : ''}.`);
     } catch (err) {
       alert('Could not send: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+
+  async function sendTestEmail(){
+    const testEmail = document.getElementById('emailTestAddress').value.trim();
+    const subject = document.getElementById('emailSubject').value.trim();
+    const body = document.getElementById('emailBody').value.trim();
+    const isHtml = document.getElementById('emailIsHtml').checked;
+    if (!testEmail) { alert('Enter an email address to send the test to.'); return; }
+    if (!subject || !body) { alert('Please fill in both the subject and message.'); return; }
+    try {
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { testEmail, subject, body, isHtml } });
+      if (error) throw error;
+      alert(data.sent ? `Test sent to ${testEmail}.` : `Test failed to send to ${testEmail} — check Resend setup.`);
+    } catch (err) {
+      alert('Could not send test: ' + await vrnFunctionErrorMessage(err));
     }
   }
 

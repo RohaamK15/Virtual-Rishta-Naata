@@ -39,14 +39,22 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, user } = await requireAdmin(req);
-    const { segment, subject, body, dryRun } = await req.json();
-    if (!SEGMENTS[segment]) throw new Error("Invalid segment");
+    const { segment, subject, body, dryRun, testEmail, isHtml } = await req.json();
 
-    let query = admin.from("profiles").select("contact_email").eq("is_admin", false);
-    query = SEGMENTS[segment](query);
-    const { data: rows, error } = await query;
-    if (error) throw error;
-    const emails = [...new Set((rows || []).map((r: { contact_email: string }) => r.contact_email).filter(Boolean))];
+    let emails: string[];
+    if (testEmail) {
+      // Bypasses the real member list entirely — lets admin verify Resend
+      // setup (domain, EMAIL_FROM, deliverability) without emailing anyone
+      // real while debugging.
+      emails = [testEmail];
+    } else {
+      if (!SEGMENTS[segment]) throw new Error("Invalid segment");
+      let query = admin.from("profiles").select("contact_email").eq("is_admin", false);
+      query = SEGMENTS[segment](query);
+      const { data: rows, error } = await query;
+      if (error) throw error;
+      emails = [...new Set((rows || []).map((r: { contact_email: string }) => r.contact_email).filter(Boolean))];
+    }
 
     if (dryRun) {
       return new Response(JSON.stringify({ success: true, recipientCount: emails.length }), {
@@ -57,7 +65,12 @@ Deno.serve(async (req) => {
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
     const FROM = Deno.env.get("EMAIL_FROM") || "Virtual Rishta Naata <onboarding@resend.dev>";
-    const html = wrapHtml(String(body).replace(/\n/g, "<br>"));
+    // Plain-text mode (default) converts line breaks to <br> since a
+    // textarea's newlines are otherwise invisible in HTML email. Raw-HTML
+    // mode trusts the admin to have written real markup themselves and
+    // passes it through untouched — admin.html is an internal, admin-only
+    // tool, so there's no untrusted-input concern here.
+    const html = wrapHtml(isHtml ? String(body) : String(body).replace(/\n/g, "<br>"));
 
     let sent = 0;
     const failures: string[] = [];
