@@ -485,6 +485,12 @@
   async function reviewProfileFull(profileId, action){
     let reason = null;
     if (action === 'reject') {
+      // Reject sits right next to Approve and Comp in the same row — a real
+      // confirmation step matters here, not just an optional-reason prompt
+      // that fires the rejection regardless of what's typed or whether it's
+      // cancelled (that's exactly what silently rejected VRN-4224 from a
+      // misclick, with neither admin realizing it).
+      if (!confirm('Reject this profile? The member will need to edit and resubmit before it can be reviewed again.')) return;
       reason = prompt('Optional: reason to show the member (e.g. "Please tell us more about yourself in the About section")') || undefined;
     }
     try {
@@ -769,6 +775,10 @@
             <button class="action-btn" title="View full record" onclick="openProfile('${p.ref_code}')">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
+            ${p.profile_status === 'rejected' ? `
+            <button class="action-btn" title="Reinstate — approve this profile again" onclick="reinstateProfile('${p.id}','${p.ref_code}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>` : ''}
             <button class="action-btn" title="${p.is_comped ? 'Revoke free access' : 'Grant free access'}" onclick="toggleComped('${p.id}', ${!p.is_comped})">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             </button>
@@ -783,6 +793,27 @@
     document.getElementById('statActive').textContent = ALL_PROFILES.filter(p => !p.is_admin && p.profile_status === 'approved' && (p.subscription_status === 'active' || p.is_comped)).length;
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     document.getElementById('statNewWeek').textContent = ALL_PROFILES.filter(p => !p.is_admin && new Date(p.created_at).getTime() > oneWeekAgo).length;
+  }
+
+  // Reinstates a rejected profile directly from the main members table —
+  // once rejected, a profile drops out of the pending-review queue entirely
+  // (admin-list-pending-profiles only ever selects profile_status='pending'),
+  // so without this there was no way back to 'approved' short of asking the
+  // member to edit their profile again (which resets it to pending) or
+  // running SQL by hand. admin-review-profile's 'approve' action works on a
+  // profile in any status, not just pending, so no backend change was
+  // needed — just this missing UI path.
+  async function reinstateProfile(profileId, ref){
+    if (!confirm(`Reinstate ${ref}? This approves their profile again, exactly as if reviewing it fresh.`)) return;
+    try {
+      const { error } = await sb.functions.invoke('admin-review-profile', { body: { profile_id: profileId, action: 'approve' } });
+      if (error) throw error;
+      const p = ALL_PROFILES.find((x) => x.id === profileId);
+      if (p) { p.profile_status = 'approved'; p.profile_rejection_reason = null; }
+      renderTable(document.getElementById('adminSearch').value);
+    } catch (err) {
+      alert('Could not reinstate this profile: ' + await vrnFunctionErrorMessage(err));
+    }
   }
 
   function askDelete(ref){
