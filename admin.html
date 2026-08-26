@@ -264,7 +264,8 @@
         <div class="field">
           <label for="emailFromAlias">From alias (optional)</label>
           <div style="display:flex;align-items:center;gap:8px;">
-            <input type="text" id="emailFromAlias" placeholder="e.g. memberships" style="flex:1;" oninput="updateFromAliasPreview()">
+            <input type="text" id="emailFromAlias" list="emailFromAliasList" placeholder="e.g. memberships" style="flex:1;" oninput="updateFromAliasPreview()">
+            <datalist id="emailFromAliasList"></datalist>
             <span style="color:var(--ink-soft);font-size:.85rem;white-space:nowrap;">@virtualrishtanaata.com</span>
           </div>
           <p id="emailFromPreview" style="font-size:.78rem;color:var(--ink-soft);margin-top:6px;">Leave blank to use the default sender. Any alias at the verified domain works — no extra setup needed.</p>
@@ -407,6 +408,7 @@
     loadRevenueStats();
     previewEmailAudience();
     loadEmailTemplates();
+    loadFromAliases();
   }
 
   function formatGBP(amount){
@@ -469,6 +471,17 @@
       alert('Could not delete this sign-in: ' + await vrnFunctionErrorMessage(err));
     }
   }
+  async function loadFromAliases(){
+    try {
+      const { data, error } = await sb.functions.invoke('admin-list-from-aliases');
+      if (error) throw error;
+      document.getElementById('emailFromAliasList').innerHTML =
+        (data.aliases || []).map(a => `<option value="${escapeHtml(a)}">`).join('');
+    } catch (err) {
+      console.warn('Could not load from-aliases:', err);
+    }
+  }
+
   let ALL_EMAIL_TEMPLATES = [];
   async function loadEmailTemplates(){
     try {
@@ -591,6 +604,7 @@
       const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, subject, body, isHtml, fromAlias } });
       if (error) throw error;
       alert(`Sent to ${data.sent} of ${data.recipientCount} recipient(s)${data.failed ? ` — ${data.failed} failed` : ''}.`);
+      loadFromAliases();
     } catch (err) {
       alert('Could not send: ' + await vrnFunctionErrorMessage(err));
     }
@@ -608,6 +622,7 @@
       const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { testEmail, subject, body, isHtml, fromAlias } });
       if (error) throw error;
       alert(data.sent ? `Test sent to ${testEmail}.` : `Test failed to send to ${testEmail} — check Resend setup.`);
+      loadFromAliases();
     } catch (err) {
       alert('Could not send test: ' + await vrnFunctionErrorMessage(err));
     }

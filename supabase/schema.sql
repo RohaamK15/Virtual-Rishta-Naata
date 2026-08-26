@@ -841,6 +841,17 @@ create table if not exists public.email_template (
 );
 alter table public.email_template enable row level security;
 
+-- Every distinct From alias ever actually sent with (see
+-- admin-send-email-broadcast) — backs the "From alias" input's autocomplete
+-- dropdown in the Send Email panel, independent of which template (if any)
+-- is selected, since an alias can be typed fresh for a one-off send too.
+-- Same zero-RLS-policy, service-role-only pattern as email_template.
+create table if not exists public.email_from_alias (
+  alias text primary key,
+  last_used_at timestamptz not null default now()
+);
+alter table public.email_from_alias enable row level security;
+
 -- ============================================================
 -- 12. FIRST ADMIN
 -- ============================================================

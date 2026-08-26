@@ -76,6 +76,14 @@ Deno.serve(async (req) => {
     const FROM = cleanAlias
       ? `Virtual Rishta Naata <${cleanAlias}@virtualrishtanaata.com>`
       : Deno.env.get("EMAIL_FROM") || "Virtual Rishta Naata <onboarding@resend.dev>";
+    if (cleanAlias) {
+      // Fire-and-forget: remembering an alias for the autocomplete dropdown
+      // must never block or fail the actual send.
+      admin.from("email_from_alias").upsert({ alias: cleanAlias, last_used_at: new Date().toISOString() }).then(
+        () => {},
+        (err: unknown) => console.warn("Could not record from-alias:", err),
+      );
+    }
     // Plain-text mode (default) converts line breaks to <br> and wraps the
     // result in a minimal branded header/footer, since a bare paragraph
     // with no styling looks unfinished. Raw-HTML mode assumes the admin has
