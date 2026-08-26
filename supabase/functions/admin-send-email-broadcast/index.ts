@@ -101,7 +101,14 @@ Deno.serve(async (req) => {
       const res = await fetch("https://api.resend.com/emails/batch", {
         method: "POST",
         headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify(chunk.map((email) => ({ from: FROM, to: [email], subject, html }))),
+        // reply_to is deliberately fixed to support@ regardless of which
+        // alias actually sent the email (announcements@, memberships@,
+        // etc.) — one consistent address for members to reply to, forwarded
+        // to a real inbox, rather than a different reply target per alias.
+        body: JSON.stringify(chunk.map((email) => ({
+          from: FROM, to: [email], subject, html,
+          reply_to: "support@virtualrishtanaata.com",
+        }))),
       });
       if (!res.ok) {
         failures.push(...chunk);
