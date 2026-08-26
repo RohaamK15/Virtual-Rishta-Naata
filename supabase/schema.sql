@@ -814,7 +814,28 @@ insert into public.app_min_version (platform, min_build_number) values ('android
 on conflict (platform) do update set min_build_number = excluded.min_build_number, updated_at = now();
 
 -- ============================================================
--- 11. FIRST ADMIN
+-- 11. EMAIL TEMPLATES
+-- ============================================================
+-- Saved reusable messages for the admin email broadcast tool (see
+-- admin-send-email-broadcast) — lets admin reuse a message (like the
+-- first-40-members discount announcement) without retyping it, or pick
+-- "write your own" and compose fresh each time. Deliberately a separate
+-- table with ZERO RLS policies, same reasoning as profile_verification —
+-- reachable only through the service-role client inside admin-* Edge
+-- Functions, never directly from any client.
+create table if not exists public.email_template (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  subject text not null,
+  body text not null,
+  is_html boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.email_template enable row level security;
+
+-- ============================================================
+-- 12. FIRST ADMIN
 -- ============================================================
 -- After you've created your own account through the normal signup flow once,
 -- run this (with your real user id from auth.users) to make yourself an admin:

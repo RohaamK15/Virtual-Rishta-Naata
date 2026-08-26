@@ -251,6 +251,17 @@
           <p id="emailAudienceCount" style="font-size:.8rem;color:var(--ink-soft);margin-top:6px;"></p>
         </div>
         <div class="field">
+          <label for="emailTemplate">Template</label>
+          <div style="display:flex;gap:8px;">
+            <select id="emailTemplate" onchange="loadEmailTemplate()" style="flex:1;">
+              <option value="">— Write your own message —</option>
+            </select>
+            <button type="button" class="action-btn danger" id="deleteTemplateBtn" title="Delete this template" onclick="deleteEmailTemplate()" style="display:none;flex-shrink:0;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
           <label for="emailSubject">Subject</label>
           <input type="text" id="emailSubject" placeholder="e.g. Complete your Virtual Rishta Naata membership">
         </div>
@@ -266,7 +277,10 @@
           <input type="email" id="emailTestAddress" placeholder="your@email.com" style="flex:1;min-width:200px;">
           <button type="button" class="btn btn-outline btn-sm" style="padding:10px 18px;font-size:.82rem;" onclick="sendTestEmail()">Send Test to This Address</button>
         </div>
-        <button type="button" class="btn btn-primary btn-sm" style="width:fit-content;padding:10px 20px;font-size:.82rem;" onclick="sendEmailBroadcast()">Send to Audience</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="btn btn-primary btn-sm" style="padding:10px 20px;font-size:.82rem;" onclick="sendEmailBroadcast()">Send to Audience</button>
+          <button type="button" class="btn btn-outline btn-sm" style="padding:10px 20px;font-size:.82rem;" onclick="saveEmailTemplate()">Save as Template</button>
+        </div>
       </div>
     </div>
 
@@ -384,6 +398,7 @@
     loadOrphanedGoogleUsers();
     loadRevenueStats();
     previewEmailAudience();
+    loadEmailTemplates();
   }
 
   function formatGBP(amount){
@@ -446,6 +461,91 @@
       alert('Could not delete this sign-in: ' + await vrnFunctionErrorMessage(err));
     }
   }
+  let ALL_EMAIL_TEMPLATES = [];
+  async function loadEmailTemplates(){
+    try {
+      const { data, error } = await sb.functions.invoke('admin-list-email-templates');
+      if (error) throw error;
+      ALL_EMAIL_TEMPLATES = data.templates || [];
+      const select = document.getElementById('emailTemplate');
+      const current = select.value;
+      select.innerHTML = `<option value="">— Write your own message —</option>` +
+        ALL_EMAIL_TEMPLATES.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+      select.value = current && ALL_EMAIL_TEMPLATES.some(t => t.id === current) ? current : '';
+    } catch (err) {
+      console.warn('Could not load email templates:', err);
+    }
+  }
+  function loadEmailTemplate(){
+    const id = document.getElementById('emailTemplate').value;
+    document.getElementById('deleteTemplateBtn').style.display = id ? 'flex' : 'none';
+    if (!id) {
+      // "Write your own message" is a genuine blank slate, not just
+      // whatever was left over from a previously-selected template.
+      document.getElementById('emailSubject').value = '';
+      document.getElementById('emailBody').value = '';
+      document.getElementById('emailIsHtml').checked = false;
+      return;
+    }
+    const t = ALL_EMAIL_TEMPLATES.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('emailSubject').value = t.subject;
+    document.getElementById('emailBody').value = t.body;
+    document.getElementById('emailIsHtml').checked = !!t.is_html;
+  }
+  async function saveEmailTemplate(){
+    const subject = document.getElementById('emailSubject').value.trim();
+    const body = document.getElementById('emailBody').value.trim();
+    const is_html = document.getElementById('emailIsHtml').checked;
+    if (!subject || !body) { alert('Please fill in both the subject and message before saving as a template.'); return; }
+
+    const selectedId = document.getElementById('emailTemplate').value;
+    let id = null;
+    let name;
+    if (selectedId) {
+      const existing = ALL_EMAIL_TEMPLATES.find(x => x.id === selectedId);
+      if (confirm(`Update the "${existing?.name}" template with the current subject/message?`)) {
+        id = selectedId;
+        name = existing.name;
+      } else {
+        name = prompt('Save as a new template — give it a name:');
+        if (!name) return;
+      }
+    } else {
+      name = prompt('Save as a new template — give it a name:');
+      if (!name) return;
+    }
+
+    try {
+      const { data, error } = await sb.functions.invoke('admin-save-email-template', { body: { id, name, subject, body, is_html } });
+      if (error) throw error;
+      await loadEmailTemplates();
+      document.getElementById('emailTemplate').value = data.id;
+      document.getElementById('deleteTemplateBtn').style.display = 'flex';
+      alert(`Template "${name}" saved.`);
+    } catch (err) {
+      alert('Could not save template: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+  async function deleteEmailTemplate(){
+    const id = document.getElementById('emailTemplate').value;
+    if (!id) return;
+    const t = ALL_EMAIL_TEMPLATES.find(x => x.id === id);
+    if (!confirm(`Delete the "${t?.name}" template? This cannot be undone.`)) return;
+    try {
+      const { error } = await sb.functions.invoke('admin-delete-email-template', { body: { id } });
+      if (error) throw error;
+      document.getElementById('emailTemplate').value = '';
+      document.getElementById('deleteTemplateBtn').style.display = 'none';
+      document.getElementById('emailSubject').value = '';
+      document.getElementById('emailBody').value = '';
+      document.getElementById('emailIsHtml').checked = false;
+      await loadEmailTemplates();
+    } catch (err) {
+      alert('Could not delete template: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+
   async function previewEmailAudience(){
     const segment = document.getElementById('emailSegment').value;
     const countEl = document.getElementById('emailAudienceCount');
