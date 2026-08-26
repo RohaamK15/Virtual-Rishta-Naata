@@ -235,6 +235,33 @@
       </div>
     </div>
 
+    <div class="panel" id="emailBroadcast" data-reveal>
+      <div class="panel-head">
+        <h3>Send Email to Members</h3>
+        <span style="font-size:.78rem;color:var(--ink-soft);">Reaches everyone in the chosen group by email — the only channel that works regardless of device or app version</span>
+      </div>
+      <div style="padding:16px 24px;display:grid;gap:14px;max-width:640px;">
+        <div class="field">
+          <label for="emailSegment">Audience</label>
+          <select id="emailSegment" onchange="previewEmailAudience()">
+            <option value="approved_unpaid">Approved, not yet paid</option>
+            <option value="all_active">All active members</option>
+            <option value="all_members">Everyone with a profile</option>
+          </select>
+          <p id="emailAudienceCount" style="font-size:.8rem;color:var(--ink-soft);margin-top:6px;"></p>
+        </div>
+        <div class="field">
+          <label for="emailSubject">Subject</label>
+          <input type="text" id="emailSubject" placeholder="e.g. Complete your Virtual Rishta Naata membership">
+        </div>
+        <div class="field">
+          <label for="emailBody">Message</label>
+          <textarea id="emailBody" style="min-height:160px;" placeholder="Write your message here — plain text is fine, line breaks are kept"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" style="width:fit-content;padding:10px 20px;font-size:.82rem;" onclick="sendEmailBroadcast()">Send</button>
+      </div>
+    </div>
+
     <div class="panel" id="appUpdates" data-reveal>
       <div class="panel-head">
         <h3>App Update Reminder</h3>
@@ -348,6 +375,7 @@
     loadPendingProfiles();
     loadOrphanedGoogleUsers();
     loadRevenueStats();
+    previewEmailAudience();
   }
 
   function formatGBP(amount){
@@ -410,6 +438,34 @@
       alert('Could not delete this sign-in: ' + await vrnFunctionErrorMessage(err));
     }
   }
+  async function previewEmailAudience(){
+    const segment = document.getElementById('emailSegment').value;
+    const countEl = document.getElementById('emailAudienceCount');
+    countEl.textContent = 'Checking…';
+    try {
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, dryRun: true } });
+      if (error) throw error;
+      countEl.textContent = `${data.recipientCount} recipient(s) in this group.`;
+    } catch (err) {
+      countEl.textContent = 'Could not check recipient count.';
+    }
+  }
+
+  async function sendEmailBroadcast(){
+    const segment = document.getElementById('emailSegment').value;
+    const subject = document.getElementById('emailSubject').value.trim();
+    const body = document.getElementById('emailBody').value.trim();
+    if (!subject || !body) { alert('Please fill in both the subject and message.'); return; }
+    if (!confirm('Send this email now? This cannot be undone once sent.')) return;
+    try {
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, subject, body } });
+      if (error) throw error;
+      alert(`Sent to ${data.sent} of ${data.recipientCount} recipient(s)${data.failed ? ` — ${data.failed} failed` : ''}.`);
+    } catch (err) {
+      alert('Could not send: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+
   async function sendUpdateNudge(){
     if (!confirm("Send an update-reminder push notification to every Android member with notifications enabled?")) return;
     try {
