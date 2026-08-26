@@ -8,7 +8,7 @@ Deno.serve(async (req) => {
     const { admin } = await requireAdmin(req);
     const { data: templates, error } = await admin
       .from("email_template")
-      .select("id, name, subject, body, is_html, from_address")
+      .select("id, name, subject, body, is_html, from_alias")
       .order("name", { ascending: true });
     if (error) throw error;
 

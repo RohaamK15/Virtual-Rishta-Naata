@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, user } = await requireAdmin(req);
-    const { segment, subject, body, dryRun, testEmail, isHtml, fromAddress } = await req.json();
+    const { segment, subject, body, dryRun, testEmail, isHtml, fromAlias } = await req.json();
 
     let emails: string[];
     if (testEmail) {
@@ -64,12 +64,18 @@ Deno.serve(async (req) => {
     if (!subject || !body) throw new Error("Subject and message are required");
 
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
-    // A per-send/per-template override, e.g. "memberships@..." for payment
-    // emails vs "announcements@..." for general ones — only the domain
-    // needs verifying in Resend, not each address, so any local part at a
-    // verified domain works with zero extra setup. Falls back to the
-    // EMAIL_FROM secret, then to Resend's shared test sender.
-    const FROM = fromAddress || Deno.env.get("EMAIL_FROM") || "Virtual Rishta Naata <onboarding@resend.dev>";
+    // Admin only ever types the alias (e.g. "memberships"), not a full
+    // address — built into "Virtual Rishta Naata <alias@virtualrishtanaata.
+    // com>" here. Only the domain needs verifying in Resend, not each
+    // individual alias, so this works for anything with zero extra setup.
+    // Stripped down to a safe local-part shape (letters/digits/.  _ -) so a
+    // stray @ or space can't produce a malformed From header. Falls back to
+    // the EMAIL_FROM secret, then to Resend's shared test sender, when no
+    // alias is given.
+    const cleanAlias = typeof fromAlias === "string" ? fromAlias.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "") : "";
+    const FROM = cleanAlias
+      ? `Virtual Rishta Naata <${cleanAlias}@virtualrishtanaata.com>`
+      : Deno.env.get("EMAIL_FROM") || "Virtual Rishta Naata <onboarding@resend.dev>";
     // Plain-text mode (default) converts line breaks to <br> and wraps the
     // result in a minimal branded header/footer, since a bare paragraph
     // with no styling looks unfinished. Raw-HTML mode assumes the admin has

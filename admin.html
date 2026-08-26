@@ -262,9 +262,12 @@
           </div>
         </div>
         <div class="field">
-          <label for="emailFrom">From address (optional)</label>
-          <input type="text" id="emailFrom" placeholder="Virtual Rishta Naata <memberships@virtualrishtanaata.com>">
-          <p style="font-size:.78rem;color:var(--ink-soft);margin-top:6px;">Leave blank to use the default sender. Any address at your verified domain works — no extra setup per address.</p>
+          <label for="emailFromAlias">From alias (optional)</label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="text" id="emailFromAlias" placeholder="e.g. memberships" style="flex:1;" oninput="updateFromAliasPreview()">
+            <span style="color:var(--ink-soft);font-size:.85rem;white-space:nowrap;">@virtualrishtanaata.com</span>
+          </div>
+          <p id="emailFromPreview" style="font-size:.78rem;color:var(--ink-soft);margin-top:6px;">Leave blank to use the default sender. Any alias at the verified domain works — no extra setup needed.</p>
         </div>
         <div class="field">
           <label for="emailSubject">Subject</label>
@@ -490,7 +493,8 @@
       document.getElementById('emailSubject').value = '';
       document.getElementById('emailBody').value = '';
       document.getElementById('emailIsHtml').checked = false;
-      document.getElementById('emailFrom').value = '';
+      document.getElementById('emailFromAlias').value = '';
+      updateFromAliasPreview();
       return;
     }
     const t = ALL_EMAIL_TEMPLATES.find(x => x.id === id);
@@ -498,13 +502,21 @@
     document.getElementById('emailSubject').value = t.subject;
     document.getElementById('emailBody').value = t.body;
     document.getElementById('emailIsHtml').checked = !!t.is_html;
-    document.getElementById('emailFrom').value = t.from_address || '';
+    document.getElementById('emailFromAlias').value = t.from_alias || '';
+    updateFromAliasPreview();
+  }
+  function updateFromAliasPreview(){
+    const alias = document.getElementById('emailFromAlias').value.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+    const preview = document.getElementById('emailFromPreview');
+    preview.textContent = alias
+      ? `Will send as: Virtual Rishta Naata <${alias}@virtualrishtanaata.com>`
+      : 'Leave blank to use the default sender. Any alias at the verified domain works — no extra setup needed.';
   }
   async function saveEmailTemplate(){
     const subject = document.getElementById('emailSubject').value.trim();
     const body = document.getElementById('emailBody').value.trim();
     const is_html = document.getElementById('emailIsHtml').checked;
-    const from_address = document.getElementById('emailFrom').value.trim();
+    const from_alias = document.getElementById('emailFromAlias').value.trim();
     if (!subject || !body) { alert('Please fill in both the subject and message before saving as a template.'); return; }
 
     const selectedId = document.getElementById('emailTemplate').value;
@@ -525,7 +537,7 @@
     }
 
     try {
-      const { data, error } = await sb.functions.invoke('admin-save-email-template', { body: { id, name, subject, body, is_html, from_address } });
+      const { data, error } = await sb.functions.invoke('admin-save-email-template', { body: { id, name, subject, body, is_html, from_alias } });
       if (error) throw error;
       await loadEmailTemplates();
       document.getElementById('emailTemplate').value = data.id;
@@ -572,11 +584,11 @@
     const subject = document.getElementById('emailSubject').value.trim();
     const body = document.getElementById('emailBody').value.trim();
     const isHtml = document.getElementById('emailIsHtml').checked;
-    const fromAddress = document.getElementById('emailFrom').value.trim();
+    const fromAlias = document.getElementById('emailFromAlias').value.trim();
     if (!subject || !body) { alert('Please fill in both the subject and message.'); return; }
     if (!confirm('Send this email now? This cannot be undone once sent.')) return;
     try {
-      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, subject, body, isHtml, fromAddress } });
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, subject, body, isHtml, fromAlias } });
       if (error) throw error;
       alert(`Sent to ${data.sent} of ${data.recipientCount} recipient(s)${data.failed ? ` — ${data.failed} failed` : ''}.`);
     } catch (err) {
@@ -589,11 +601,11 @@
     const subject = document.getElementById('emailSubject').value.trim();
     const body = document.getElementById('emailBody').value.trim();
     const isHtml = document.getElementById('emailIsHtml').checked;
-    const fromAddress = document.getElementById('emailFrom').value.trim();
+    const fromAlias = document.getElementById('emailFromAlias').value.trim();
     if (!testEmail) { alert('Enter an email address to send the test to.'); return; }
     if (!subject || !body) { alert('Please fill in both the subject and message.'); return; }
     try {
-      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { testEmail, subject, body, isHtml, fromAddress } });
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { testEmail, subject, body, isHtml, fromAlias } });
       if (error) throw error;
       alert(data.sent ? `Test sent to ${testEmail}.` : `Test failed to send to ${testEmail} — check Resend setup.`);
     } catch (err) {
