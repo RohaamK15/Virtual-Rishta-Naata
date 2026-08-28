@@ -367,6 +367,8 @@
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase-client.js"></script>
 <script src="/assets/js/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="/assets/js/emailjs-config.js"></script>
 <script>
   let refToDelete = null;
   let ALL_PROFILES = [];
@@ -703,6 +705,44 @@
     }
   }
 
+  // Best-effort, non-blocking — a failure here must never affect the actual
+  // admin decision, same reasoning as every other EmailJS send in this app.
+  // Uses a separate EmailJS account (contact@virtualrishtanaata.com) from
+  // the signup/consultation confirmations, so it's configured independently
+  // via EMAILJS_DECISION_CONFIG rather than the shared EMAILJS_CONFIG — see
+  // assets/js/emailjs-config.js and email-templates/profile-decision.html.
+  async function notifyProfileDecision(contactEmail, refCode, kind, reason){
+    if (!contactEmail) return;
+    const cfg = window.EMAILJS_DECISION_CONFIG;
+    if (!cfg || !cfg.publicKey || cfg.publicKey === 'FILL_ME_IN') return; // not configured yet
+    const messages = {
+      approve: {
+        status_heading: 'Your Profile Has Been Approved!',
+        status_message: "Good news — your profile has been reviewed and approved. Complete your membership from your dashboard to start browsing and messaging other members.",
+      },
+      reject: {
+        status_heading: 'Your Profile Needs a Small Update',
+        status_message: reason || "Your profile needs a few changes before it can be approved. Please check your dashboard for details, make the changes, and resubmit — no need to start over.",
+      },
+      comp: {
+        status_heading: 'You Have Complimentary Access!',
+        status_message: "Good news — you've been granted complimentary access to Virtual Rishta Naata. Once your profile is approved, you'll be able to browse and message other members at no cost.",
+      },
+    };
+    const content = messages[kind];
+    if (!content) return;
+    try {
+      await emailjs.send(cfg.serviceId, cfg.templateId, {
+        to_email: contactEmail,
+        ref_code: refCode || '',
+        status_heading: content.status_heading,
+        status_message: content.status_message,
+      }, cfg.publicKey);
+    } catch (err) {
+      console.warn('Profile-decision email failed to send:', err);
+    }
+  }
+
   async function reviewProfileFull(profileId, action){
     let reason = null;
     if (action === 'reject') {
@@ -715,8 +755,9 @@
       reason = prompt('Optional: reason to show the member (e.g. "Please tell us more about yourself in the About section")') || undefined;
     }
     try {
-      const { error } = await sb.functions.invoke('admin-review-profile', { body: { profile_id: profileId, action, reason } });
+      const { data, error } = await sb.functions.invoke('admin-review-profile', { body: { profile_id: profileId, action, reason } });
       if (error) throw error;
+      notifyProfileDecision(data?.contact_email, data?.ref_code, action, reason);
       await loadPendingProfiles();
     } catch (err) {
       alert('Could not review this profile: ' + await vrnFunctionErrorMessage(err));
@@ -726,8 +767,9 @@
   async function grantCompedAccess(profileId){
     if (!confirm('Grant this member free access? They will never be asked to pay, but still need their profile approved separately.')) return;
     try {
-      const { error } = await sb.functions.invoke('admin-set-comped', { body: { profile_id: profileId, comped: true } });
+      const { data, error } = await sb.functions.invoke('admin-set-comped', { body: { profile_id: profileId, comped: true } });
       if (error) throw error;
+      notifyProfileDecision(data?.contact_email, data?.ref_code, 'comp');
       alert('Free access granted.');
       if (typeof loadProfiles === 'function') await loadProfiles();
     } catch (err) {
@@ -737,8 +779,9 @@
 
   async function toggleComped(profileId, next){
     try {
-      const { error } = await sb.functions.invoke('admin-set-comped', { body: { profile_id: profileId, comped: next } });
+      const { data, error } = await sb.functions.invoke('admin-set-comped', { body: { profile_id: profileId, comped: next } });
       if (error) throw error;
+      if (next) notifyProfileDecision(data?.contact_email, data?.ref_code, 'comp');
       const p = ALL_PROFILES.find((x) => x.id === profileId);
       if (p) p.is_comped = next;
       renderTable(document.getElementById('adminSearch').value);

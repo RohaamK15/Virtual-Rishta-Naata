@@ -1,0 +1,96 @@
+<!--
+  Paste this into EmailJS: Email Templates > (new template, in your new
+  contact@virtualrishtanaata.com account) > Code Editor (</> icon).
+
+  In the template's settings, set:
+  - To Email: {{to_email}}
+  - Subject: {{status_heading}} — Virtual Rishta Naata
+
+  Fired automatically from admin.html the moment an admin approves, rejects,
+  or grants complimentary access to a profile — see notifyProfileDecision()
+  in admin.html. One template covers all three outcomes: status_heading and
+  status_message are filled in with outcome-specific wording by that
+  function; ref_code and to_email come straight from the profile record.
+  Best-effort — a failure here never blocks or undoes the actual admin
+  action, same reasoning as every other EmailJS send in this app.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{status_heading}}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F3E8D6;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F3E8D6;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#FFF9F2;border-radius:14px;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#FFF9F2;padding:34px 40px 28px;text-align:center;border-bottom:1px solid #E4DCC8;">
+              <img src="https://virtualrishtanaata.com/assets/img/logo-full.png"
+                   alt="Virtual Rishta Naata — Connecting Families. Creating Lifelong Bonds."
+                   width="160"
+                   style="display:block;width:160px;max-width:160px;height:auto;margin:0 auto 18px;">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#134B35;font-weight:bold;">
+                {{status_heading}}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;text-align:left;">
+              <p style="margin:0 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#55604F;text-align:left;">
+                As-salamu alaykum,
+              </p>
+              <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#55604F;text-align:left;">
+                {{status_message}}
+              </p>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border-collapse:separate;">
+                <tr>
+                  <td align="center" style="padding:22px 18px;background-color:#E4EDE7;border-radius:10px;">
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8A6A2E;font-weight:bold;">
+                      Your Reference Code
+                    </div>
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:1px;color:#134B35;font-weight:bold;margin-top:6px;">
+                      {{ref_code}}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color:#C59D52;border-radius:999px;">
+                    <a href="https://virtualrishtanaata.com/account.html" style="display:inline-block;padding:14px 30px;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:14px;color:#134B35;text-decoration:none;">
+                      Go to My Dashboard
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:26px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#55604F;text-align:left;">
+                If you have any questions, just reply to this email — we're happy to help.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px 32px;border-top:1px solid #E4DCC8;text-align:left;">
+              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9AA79A;text-align:left;">
+                This is an automated notification sent when your profile's status changes.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

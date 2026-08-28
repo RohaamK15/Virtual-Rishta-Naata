@@ -16,3 +16,16 @@ window.EMAILJS_CONFIG = {
   templateId: "template_qisck9a",       // consultation request confirmation (services.html) — see email-templates/consultation-request.html
   signupTemplateId: "template_fbvt045",  // new member signup confirmation (signup.html) — see email-templates/new-signup.html
 };
+
+// Separate EmailJS account (contact@virtualrishtanaata.com), created
+// specifically for the profile-approved/rejected/comped notification — see
+// notifyProfileDecision() in admin.html and email-templates/profile-decision.html.
+// A different account means a different publicKey + serviceId, not just a
+// different templateId — fill these in from that account's dashboard once
+// the service (connected to contact@virtualrishtanaata.com) and the
+// profile-decision template both exist there.
+window.EMAILJS_DECISION_CONFIG = {
+  publicKey: "FILL_ME_IN",
+  serviceId: "FILL_ME_IN",
+  templateId: "FILL_ME_IN",
+};
