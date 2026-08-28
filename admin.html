@@ -715,28 +715,51 @@
     if (!contactEmail) return;
     const cfg = window.EMAILJS_DECISION_CONFIG;
     if (!cfg || !cfg.publicKey || cfg.publicKey === 'FILL_ME_IN') return; // not configured yet
+    // Written in very plain, one-action-per-step language on purpose — this
+    // reaches every member regardless of how comfortable they are with apps,
+    // so "what do I actually click, in what order" is spelled out rather
+    // than assumed. Each step is a separate <li> — see next_steps_html below.
     const messages = {
       approve: {
         status_heading: 'Your Profile Has Been Approved!',
-        status_message: "Good news — your profile has been reviewed and approved. Complete your membership from your dashboard to start browsing and messaging other members.",
+        status_message: "Good news! Our team has reviewed your profile and approved it.",
+        next_steps: [
+          "Tap the button below to open your dashboard.",
+          'Tap "Complete Your Membership".',
+          "Pay for your membership (£10 a month, or £100 a year).",
+          "Once you've paid, you can start looking at other members' profiles and sending messages.",
+        ],
       },
       reject: {
         status_heading: 'Your Profile Needs a Small Update',
-        status_message: reason || "Your profile needs a few changes before it can be approved. Please check your dashboard for details, make the changes, and resubmit — no need to start over.",
+        status_message: reason || "Your profile needs a small change before we can approve it.",
+        next_steps: [
+          "Tap the button below to open your dashboard.",
+          "Read the note that explains what needs to change.",
+          "Edit your profile to fix it.",
+          "Save your changes — this automatically sends your profile back to us for another look. You don't need to do anything else.",
+        ],
       },
       comp: {
         status_heading: 'You Have Complimentary Access!',
-        status_message: "Good news — you've been granted complimentary access to Virtual Rishta Naata. Once your profile is approved, you'll be able to browse and message other members at no cost.",
+        status_message: "Good news! You've been given free access to Virtual Rishta Naata — you will never be asked to pay.",
+        next_steps: [
+          "Tap the button below to open your dashboard.",
+          "If your profile has already been approved, you can start looking at other members' profiles and sending messages right away.",
+          "If it hasn't been approved yet, just wait — we'll let you know as soon as it is, and you still won't need to pay.",
+        ],
       },
     };
     const content = messages[kind];
     if (!content) return;
+    const next_steps_html = content.next_steps.map((step) => `<li>${step}</li>`).join('');
     try {
       await emailjs.send(cfg.serviceId, cfg.templateId, {
         to_email: contactEmail,
         ref_code: refCode || '',
         status_heading: content.status_heading,
         status_message: content.status_message,
+        next_steps_html,
       }, cfg.publicKey);
     } catch (err) {
       console.warn('Profile-decision email failed to send:', err);

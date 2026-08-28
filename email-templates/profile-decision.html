@@ -11,6 +11,9 @@
   in admin.html. One template covers all three outcomes: status_heading and
   status_message are filled in with outcome-specific wording by that
   function; ref_code and to_email come straight from the profile record.
+  next_steps_html is a pre-built <li> string (spelled-out, one action per
+  step) — it MUST stay a triple-brace {{{...}}} variable in EmailJS's editor,
+  not double-brace, or the <li> tags render as literal text instead of a list.
   Best-effort — a failure here never blocks or undoes the actual admin
   action, same reasoning as every other EmailJS send in this app.
 -->
@@ -50,7 +53,7 @@
                 {{status_message}}
               </p>
 
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border-collapse:separate;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;border-collapse:separate;">
                 <tr>
                   <td align="center" style="padding:22px 18px;background-color:#E4EDE7;border-radius:10px;">
                     <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8A6A2E;font-weight:bold;">
@@ -62,6 +65,15 @@
                   </td>
                 </tr>
               </table>
+
+              <div style="background-color:#F3E8D6;border-radius:10px;padding:20px 22px;margin:0 0 26px;">
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8A6A2E;font-weight:bold;margin-bottom:10px;">
+                  What To Do Next
+                </div>
+                <ol style="margin:0;padding-left:18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.8;color:#21311F;">
+                  {{{next_steps_html}}}
+                </ol>
+              </div>
 
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
