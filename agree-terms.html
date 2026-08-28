@@ -49,7 +49,11 @@
   #tosScrollHint{max-width:760px;margin:10px auto 0;font-size:.82rem;color:var(--ink-soft);text-align:center;}
 
   .commit-panel{
-    position:sticky;bottom:0;background:var(--surface-translucent);backdrop-filter:blur(12px);
+    /* bottom:0 has the same issue as .site-nav's old top:0 — once sticky
+       engages while scrolling, it re-sticks at the very bottom of the
+       viewport, under the home indicator, unless the offset itself accounts
+       for the safe area (mirrors the top:0 -> env(safe-area-inset-top) fix). */
+    position:sticky;bottom:env(safe-area-inset-bottom);background:var(--surface-translucent);backdrop-filter:blur(12px);
     border-top:1px solid rgba(19,75,53,.1);padding:22px 0;margin-top:32px;
     box-shadow:0 -12px 30px rgba(19,75,53,.08);
   }

@@ -242,7 +242,7 @@ section{position:relative;}
    each HTML file. z-index sits below .sheet/.overlay (see those rules) so a
    modal always wins if the two ever coincide. */
 .back-to-top{
-  position:fixed;right:22px;bottom:22px;width:46px;height:46px;border-radius:50%;
+  position:fixed;right:22px;bottom:calc(22px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;
   background:var(--green);color:#fff;border:none;display:flex;align-items:center;justify-content:center;
   box-shadow:var(--shadow-2);cursor:pointer;z-index:60;
   opacity:0;pointer-events:none;transform:translateY(12px);
@@ -251,7 +251,7 @@ section{position:relative;}
 .back-to-top.visible{opacity:1;pointer-events:auto;transform:translateY(0);}
 .back-to-top:hover{background:var(--green-2);transform:translateY(-2px);}
 .back-to-top:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
-@media (max-width:600px){.back-to-top{right:16px;bottom:16px;width:42px;height:42px;}}
+@media (max-width:600px){.back-to-top{right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:42px;height:42px;}}
 
 /* ---------- cards ---------- */
 .card{
@@ -359,8 +359,14 @@ input:focus,select:focus,textarea:focus{
 }
 
 .mobile-menu{
+  /* position:fixed ignores body's own safe-area padding entirely (fixed
+     elements are positioned against the viewport, not their parent's
+     padding box) — this needs its own top/bottom inset, same reasoning as
+     the fix applied to .site-nav/.app-header. Missed the first time round
+     since this uses the inset:0 shorthand rather than a literal top:0. */
   position:fixed;inset:0;background:var(--green-2);z-index:100;
-  display:flex;flex-direction:column;padding:28px 28px 40px;
+  display:flex;flex-direction:column;
+  padding:calc(28px + env(safe-area-inset-top)) 28px calc(40px + env(safe-area-inset-bottom));
   transform:translateX(100%);transition:transform .4s var(--ease-out);
 }
 .mobile-menu.open{transform:translateX(0);}
@@ -441,6 +447,12 @@ input:focus,select:focus,textarea:focus{
   background:var(--ivory);border-radius:28px 28px 0 0;box-shadow:var(--shadow-3);
   max-height:88vh;overflow-y:auto;
   transform:translateY(100%);transition:transform .45s var(--ease-out);
+  /* Every usage sets its own inline padding (e.g. style="padding:32px") which
+     would override any padding-bottom added here — margin doesn't collide
+     with that, so this lifts the whole sheet clear of the home-indicator
+     safe area instead, keeping a button at the very bottom of a sheet
+     actually tappable rather than sitting under the gesture zone. */
+  margin-bottom:env(safe-area-inset-bottom);
 }
 .sheet.open{transform:translateY(0);}
 @media (min-width:760px){
