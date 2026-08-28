@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#FFF9F2">
 <link rel="icon" type="image/png" href="/assets/img/favicon.png">
 <title>My Account — Virtual Rishta Naata</title>
@@ -11,7 +11,7 @@
 <style>
   body{padding-bottom:88px;background:var(--beige);}
   .app-header{
-    position:sticky;top:0;z-index:40;background:var(--surface-translucent);backdrop-filter:blur(10px);
+    position:sticky;top:env(safe-area-inset-top);z-index:40;background:var(--surface-translucent);backdrop-filter:blur(10px);
     border-bottom:1px solid rgba(19,75,53,.08);padding:18px 0;
   }
   .app-header .wrap{display:flex;align-items:center;justify-content:space-between;}
