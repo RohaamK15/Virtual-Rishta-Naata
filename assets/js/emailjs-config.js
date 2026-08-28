@@ -25,7 +25,7 @@ window.EMAILJS_CONFIG = {
 // the service (connected to contact@virtualrishtanaata.com) and the
 // profile-decision template both exist there.
 window.EMAILJS_DECISION_CONFIG = {
-  publicKey: "FILL_ME_IN",
-  serviceId: "FILL_ME_IN",
-  templateId: "FILL_ME_IN",
+  publicKey: "DaV_HdiWRv6734-W3",
+  serviceId: "service_5380n3l",
+  templateId: "template_e1n24ui",
 };
