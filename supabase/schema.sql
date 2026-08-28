@@ -126,6 +126,18 @@ create table if not exists public.profiles (
   -- update grant, same reasoning as tos_accepted_at: it's a record of when
   -- the acknowledgement was given, not something rewritable later.
   checkout_waiver_accepted_at timestamptz,
+  -- Lets a member skip the Ahmadi Verification questions/video at signup by
+  -- claiming an admin has already personally given them permission to do so
+  -- (e.g. a Lajna admin who already knows them personally) — added after
+  -- some members reported discomfort uploading the introduction video. This
+  -- is an honour-system claim, not a verified fact: the only real
+  -- enforcement is at review time, where an admin who recognizes the claim
+  -- as false simply rejects the profile (see submit-profile-for-review's
+  -- ALLOWED_PROFILE_FIELDS and admin.html's pending-review cards, which
+  -- surface this flag prominently). Set once at signup, deliberately never
+  -- in the member update grant — a member can't grant this to themselves
+  -- later just by editing their profile.
+  verified_by_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -316,7 +328,7 @@ grant select (
   plan, subscription_status, is_comped, is_admin, chat_guidelines_accepted_at,
   onboarding_completed_at, theme_preference, push_enabled, created_at,
   tos_accepted_at, religious_data_consent_at, email_marketing_opt_out,
-  checkout_waiver_accepted_at
+  checkout_waiver_accepted_at, verified_by_admin
 ) on public.profiles to authenticated;
 
 -- Any active, paying member can view the full details of another active member.

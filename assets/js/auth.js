@@ -111,7 +111,7 @@ const PROFILE_COLUMNS = [
   "profile_status", "profile_rejection_reason",
   "plan", "subscription_status", "is_comped", "is_admin", "chat_guidelines_accepted_at",
   "onboarding_completed_at", "theme_preference", "push_enabled", "created_at",
-  "email_marketing_opt_out",
+  "email_marketing_opt_out", "verified_by_admin",
 ].join(", ");
 
 async function vrnMyProfile() {

@@ -279,7 +279,12 @@
         <div class="field">
           <label>Ahmadi Verification</label>
           <p class="field-hint" style="margin:0 0 10px;">A few extra questions only our admin team sees, to help us confirm genuine Ahmadi members. This information is deleted permanently the moment your profile is reviewed — it's never stored long-term or shown to other members.</p>
-          <button type="button" class="btn btn-outline btn-block" onclick="openSheet('ahmadiVerificationModal')">Complete Ahmadi Verification</button>
+          <label class="radio-pill" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;cursor:pointer;width:fit-content;margin-bottom:10px;">
+            <input type="checkbox" id="verifiedByAdminCheckbox" onchange="onVerifiedByAdminToggle()" style="margin-top:3px;">
+            <span style="font-size:.86rem;">I've Been Verified by Admin</span>
+          </label>
+          <p id="verifiedByAdminDisclaimer" style="display:none;font-size:.8rem;color:var(--error);margin:-2px 0 12px;">⚠️ Only select this if an admin has personally given you express permission to skip verification. If you select this without that permission, your profile will simply be rejected.</p>
+          <button type="button" id="completeVerificationBtn" class="btn btn-outline btn-block" onclick="openSheet('ahmadiVerificationModal')">Complete Ahmadi Verification</button>
           <p id="ahmadiVerificationStatus" style="font-size:.82rem;color:var(--error);margin-top:8px;">Not yet completed</p>
         </div>
       </div>
@@ -742,10 +747,31 @@
   const AHMADI_VERIFICATION_FIELD_IDS = ['verifySadrContact', 'verifyPositions', 'verifyJoinedJamaat', 'verifyActivity'];
 
   function vrnAhmadiVerificationComplete(){
+    if (document.getElementById('verifiedByAdminCheckbox').checked) return true;
     const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
     if (isPakistan && !document.getElementById('verifyLocalJamaat').value.trim()) return false;
     if (!selectedVerifyVideoFile) return false;
     return AHMADI_VERIFICATION_FIELD_IDS.every(id => document.getElementById(id).value.trim());
+  }
+
+  // Lets a member skip the verification questions/video entirely by claiming
+  // an admin already gave them permission — see verified_by_admin in
+  // schema.sql. The disclaimer makes clear this is only safe with genuine
+  // prior permission; admin.html surfaces the claim prominently so a
+  // false one gets caught and rejected at review time.
+  function onVerifiedByAdminToggle(){
+    const checked = document.getElementById('verifiedByAdminCheckbox').checked;
+    document.getElementById('verifiedByAdminDisclaimer').style.display = checked ? 'block' : 'none';
+    document.getElementById('completeVerificationBtn').style.display = checked ? 'none' : '';
+    const status = document.getElementById('ahmadiVerificationStatus');
+    if (checked) {
+      status.textContent = '✓ Verified by Admin — no verification form needed';
+      status.style.color = 'var(--green)';
+    } else {
+      const complete = vrnAhmadiVerificationComplete();
+      status.textContent = complete ? '✓ Completed' : 'Not yet completed';
+      status.style.color = complete ? 'var(--green)' : 'var(--error)';
+    }
   }
 
   function collectAhmadiVerification(){
@@ -829,6 +855,7 @@
       consider_pakistan: document.querySelector('input[name="considerPakistan"]:checked')?.value === 'Yes',
       additional_note: document.getElementById('additionalNote').value,
       about: document.getElementById('aboutYourself').value,
+      verified_by_admin: document.getElementById('verifiedByAdminCheckbox').checked,
     };
   }
 
@@ -919,13 +946,18 @@
     const errorEl = document.getElementById('planError');
     const btn = document.getElementById('submitReviewBtn');
     try {
-      const user = await vrnCurrentUser();
-      const videoPath = await vrnUploadIntroVideo(user.id, selectedVerifyVideoFile);
-      const verification = collectAhmadiVerification();
-      const { error } = await sb.functions.invoke('submit-profile-verification', {
-        body: { ...verification, video_path: videoPath }
-      });
-      if (error) throw error;
+      // Skipped entirely when "Verified by Admin" was selected — there's no
+      // video or verification answers to submit, and verified_by_admin was
+      // already saved on the profile row itself by submit-profile-for-review.
+      if (!document.getElementById('verifiedByAdminCheckbox').checked) {
+        const user = await vrnCurrentUser();
+        const videoPath = await vrnUploadIntroVideo(user.id, selectedVerifyVideoFile);
+        const verification = collectAhmadiVerification();
+        const { error } = await sb.functions.invoke('submit-profile-verification', {
+          body: { ...verification, video_path: videoPath }
+        });
+        if (error) throw error;
+      }
 
       const profile = await vrnMyProfile();
       document.getElementById('refCodeOut').textContent = profile.ref_code;

@@ -178,11 +178,15 @@
             <label class="radio-pill"><input type="radio" name="hasChildren" value="No">No</label>
           </div>
         </div>
-        <div class="field">
+        <div class="field" id="ahmadiVerificationField">
           <label>Ahmadi Verification</label>
           <p class="field-hint" style="margin:0 0 10px;">Since you're changing your profile, it needs a fresh admin review — please re-confirm these questions, only seen by our admin team and deleted permanently the moment your profile is reviewed.</p>
           <button type="button" class="btn btn-outline btn-block" onclick="openSheet('ahmadiVerificationModal')">Complete Ahmadi Verification</button>
           <p id="ahmadiVerificationStatus" style="font-size:.82rem;color:var(--error);margin-top:8px;">Not yet completed</p>
+        </div>
+        <div class="field" id="verifiedByAdminNote" style="display:none;">
+          <label>Ahmadi Verification</label>
+          <p style="font-size:.85rem;color:var(--green);">✓ You were verified by admin at signup — no need to resubmit verification questions or a video.</p>
         </div>
       </div>
 
@@ -419,6 +423,17 @@
     document.getElementById('additionalNote').value = p.additional_note || '';
 
     document.getElementById('aboutYourself').value = p.about || '';
+
+    // A member who claimed admin pre-approval at signup never has verification
+    // answers/a video on file — re-requiring them on every subsequent edit
+    // would defeat the whole point of the bypass. verified_by_admin is
+    // immutable once set (see schema.sql), so this only ever applies to
+    // someone who already had it granted at signup, never something a
+    // member can turn on later from this page.
+    if (p.verified_by_admin) {
+      document.getElementById('ahmadiVerificationField').style.display = 'none';
+      document.getElementById('verifiedByAdminNote').style.display = '';
+    }
   }
 
   function validateForm(){
@@ -479,6 +494,7 @@
   const AHMADI_VERIFICATION_FIELD_IDS = ['verifySadrContact', 'verifyPositions', 'verifyJoinedJamaat', 'verifyActivity'];
 
   function vrnAhmadiVerificationComplete(){
+    if (currentProfile?.verified_by_admin) return true;
     const isPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
     if (isPakistan && !document.getElementById('verifyLocalJamaat').value.trim()) return false;
     if (!selectedVerifyVideoFile) return false;
@@ -551,11 +567,13 @@
     btn.textContent = 'Saving...';
     try {
       const user = await vrnCurrentUser();
-      const videoPath = await vrnUploadIntroVideo(user.id, selectedVerifyVideoFile);
-      const { error: verificationError } = await sb.functions.invoke('submit-profile-verification', {
-        body: { ...collectAhmadiVerification(), video_path: videoPath }
-      });
-      if (verificationError) throw new Error(await vrnFunctionErrorMessage(verificationError));
+      if (!currentProfile?.verified_by_admin) {
+        const videoPath = await vrnUploadIntroVideo(user.id, selectedVerifyVideoFile);
+        const { error: verificationError } = await sb.functions.invoke('submit-profile-verification', {
+          body: { ...collectAhmadiVerification(), video_path: videoPath }
+        });
+        if (verificationError) throw new Error(await vrnFunctionErrorMessage(verificationError));
+      }
 
       const { error: updateError } = await sb.from('profiles').update(updates).eq('id', user.id);
       if (updateError) throw updateError;

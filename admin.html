@@ -674,6 +674,9 @@
           ${p.is_resubmission
             ? `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--gold-soft);color:var(--gold-ink);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:10px;">🔄 Existing Member — Edited &amp; Resubmitted, Not a New Signup</span>`
             : `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--green-soft);color:var(--green);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:10px;">🆕 New Signup — First Review</span>`}
+          ${p.verified_by_admin
+            ? `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--rose-soft);color:var(--error);font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:10px;margin-left:6px;">🛡️ Claims Admin Pre-Approval — skipped verification, confirm this is genuine before approving</span>`
+            : ''}
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
             <strong>${p.ref_code}</strong>
             <span style="font-size:.8rem;color:var(--ink-soft);">${p.gender}, ${p.age} · ${escapeHtml(p.city || '')}${p.city ? ', ' : ''}${escapeHtml(p.country || '')} · Joined ${new Date(p.created_at).toLocaleDateString('en-GB')}</span>
@@ -684,7 +687,7 @@
             ${p.about ? `<div><strong>About:</strong> ${escapeHtml(p.about)}${aiFlagBadge(p.about)}</div>` : ''}
             ${p.additional_note ? `<div><strong>Additional note:</strong> ${escapeHtml(p.additional_note)}${aiFlagBadge(p.additional_note)}</div>` : ''}
           </div>
-          ${verificationBlock(p.profile_verification)}
+          ${verificationBlock(p.profile_verification, p.verified_by_admin)}
           <div style="display:flex;gap:8px;">
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="openProfile('${p.ref_code}')">View Full Profile</button>
           </div>
@@ -853,7 +856,8 @@
   // approved or rejected (see admin-review-profile) — this only ever
   // renders for a still-pending profile. If it's ever missing here, the
   // decision has already been made and there's nothing left to show.
-  function verificationBlock(v){
+  function verificationBlock(v, verifiedByAdmin){
+    if (verifiedByAdmin) return `<div style="background:var(--rose-soft);border:1px solid var(--error);border-radius:var(--radius-s);padding:14px 16px;margin-top:10px;"><p style="font-size:.85rem;color:var(--error);margin:0;font-weight:600;">🛡️ This member selected "Verified by Admin" at signup and submitted no verification questions or video. Only approve if an admin genuinely gave them this permission in advance — otherwise reject.</p></div>`;
     if (!v) return `<p style="font-size:.8rem;color:var(--ink-soft);font-style:italic;margin-top:10px;">No Ahmadi verification answers on file (already reviewed, or not yet submitted).</p>`;
     return `
       <div style="background:#FBF3E4;border:1px solid #E8D6A8;border-radius:var(--radius-s);padding:14px 16px;margin-top:10px;">
@@ -1094,10 +1098,11 @@
         ${row('Profile Status', p.profile_status)}
         ${row('Subscription Status', p.subscription_status)}
         ${row('Comped', p.is_comped ? 'Yes' : 'No')}
+        ${row('Verified by Admin (claimed)', p.verified_by_admin ? 'Yes — skipped verification' : 'No')}
         ${row('Admin', p.is_admin ? 'Yes' : 'No')}
         ${row('Photo Status', p.photo_status)}
         ${row('Joined', p.created_at ? new Date(p.created_at).toLocaleString('en-GB') : null)}
-        ${verificationBlock(p.profile_verification)}
+        ${verificationBlock(p.profile_verification, p.verified_by_admin)}
         ${p.profile_status === 'pending' ? `
           <div style="display:flex;gap:8px;margin-top:16px;">
             <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFromModal('${p.id}','approve')">Approve</button>

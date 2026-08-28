@@ -11,7 +11,11 @@
 // forward (harmless, and still correct for any legacy Stripe session that
 // was already in flight when this shipped).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -25,6 +29,7 @@ const ALLOWED_PROFILE_FIELDS = [
   "city", "county", "country", "is_ahmadi", "local_jamaat", "had_previous",
   "previous_type", "previous_duration", "has_children", "preference_line",
   "country_looking_in", "consider_pakistan", "additional_note", "about",
+  "verified_by_admin",
 ];
 
 function pickAllowedFields(profileData: Record<string, unknown>) {
@@ -32,6 +37,11 @@ function pickAllowedFields(profileData: Record<string, unknown>) {
   for (const key of ALLOWED_PROFILE_FIELDS) {
     if (key in profileData) picked[key] = profileData[key];
   }
+  // Coerced explicitly rather than trusted as-is — this is a client-supplied
+  // claim ("an admin already gave me permission to skip verification") that
+  // determines whether the Ahmadi Verification video/questions get asked at
+  // all, so it must never end up truthy from anything but a literal `true`.
+  if ("verified_by_admin" in picked) picked.verified_by_admin = picked.verified_by_admin === true;
   return picked;
 }
 

@@ -2,8 +2,33 @@
 // photo — see admin-list-pending-photos for that). Admin reviews the actual
 // content here since fake/inappropriate profiles can't be caught from a
 // ref code and a photo alone.
-import { corsHeaders } from "../_shared/cors.ts";
-import { requireAdmin } from "../_shared/requireAdmin.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Verifies the caller's JWT and checks is_admin using the service-role key —
+// never trust an is_admin claim supplied by the client itself.
+async function requireAdmin(req: Request) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) throw new Error("Missing Authorization header");
+
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const jwt = authHeader.replace("Bearer ", "");
+  const { data: { user }, error: userError } = await admin.auth.getUser(jwt);
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: profile, error: profileError } = await admin
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+  if (profileError || !profile?.is_admin) throw new Error("Admin access required");
+
+  return { admin, user };
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -16,7 +41,7 @@ Deno.serve(async (req) => {
         "id, ref_code, gender, age, height, qualifications, employment, immigration_status, " +
         "city, county, country, is_ahmadi, local_jamaat, had_previous, previous_type, " +
         "previous_duration, has_children, preference_line, country_looking_in, " +
-        "consider_pakistan, additional_note, about, created_at, " +
+        "consider_pakistan, additional_note, about, created_at, verified_by_admin, " +
         "profile_verification(local_jamaat, sadr_name_contact, positions_held, joined_jamaat, jamaat_activity, video_path)"
       )
       .eq("profile_status", "pending")
