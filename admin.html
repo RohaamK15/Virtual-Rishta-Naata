@@ -1175,7 +1175,11 @@
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFromModal('${p.id}','reject')">Reject</button>
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="grantCompedAccess('${p.id}')" title="Grant free access — they won't be asked to pay">Comp (Free)</button>
           </div>
-        ` : ''}
+        ` : `
+          <div style="margin-top:16px;">
+            <button class="btn btn-outline btn-sm btn-block" onclick="resendDecisionEmail('${p.ref_code}')" title="For members approved/rejected/comped before the notification email existed, or if a send failed">Resend Decision Email</button>
+          </div>
+        `}
       `;
     } catch (err) {
       body.innerHTML = `<p style="color:var(--error);">Couldn't load this profile (${await vrnFunctionErrorMessage(err)}).</p>`;
@@ -1185,6 +1189,31 @@
   async function reviewProfileFromModal(profileId, action){
     await reviewProfileFull(profileId, action);
     closeSheet('profileDetailModal');
+  }
+
+  // Re-sends the profile-decision email without touching profile_status/
+  // is_comped at all — for members whose original approve/reject/comp
+  // happened before this notification existed (or whose send failed for
+  // some other reason). Re-fetches the profile fresh via admin-get-profile
+  // rather than trusting whatever's cached in ALL_PROFILES/the open modal,
+  // since the rejection reason specifically isn't in ALL_PROFILES' lean
+  // select list.
+  async function resendDecisionEmail(ref){
+    try {
+      const { data, error } = await sb.functions.invoke('admin-get-profile', { body: { ref_code: ref } });
+      if (error) throw error;
+      const p = data.profile;
+      let kind, reason;
+      if (p.profile_status === 'rejected') { kind = 'reject'; reason = p.profile_rejection_reason; }
+      else if (p.is_comped) { kind = 'comp'; }
+      else if (p.profile_status === 'approved') { kind = 'approve'; }
+      else { alert('This profile has no decision email to resend — it\'s still pending review.'); return; }
+      if (!confirm(`Resend the ${kind === 'approve' ? 'approval' : kind === 'reject' ? 'rejection' : 'complimentary-access'} email to ${ref}?`)) return;
+      await notifyProfileDecision(p.contact_email, p.ref_code, kind, reason);
+      alert('Resend attempted. Check the recipient\'s inbox — or your browser console (F12) if it seems to have failed silently.');
+    } catch (err) {
+      alert('Could not resend: ' + await vrnFunctionErrorMessage(err));
+    }
   }
 
   document.getElementById('adminSearch').addEventListener('input', e => renderTable(e.target.value));
