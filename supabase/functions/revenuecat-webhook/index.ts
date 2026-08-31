@@ -35,8 +35,16 @@ const EXPIRED_EVENTS = new Set(["EXPIRATION"]);
 const PAST_DUE_EVENTS = new Set(["BILLING_ISSUE"]);
 
 Deno.serve(async (req) => {
-  const auth = req.headers.get("Authorization");
-  if (!auth || auth !== Deno.env.get("REVENUECAT_WEBHOOK_SECRET")) {
+  // Strips an optional "Bearer " prefix before comparing — RevenueCat's own
+  // docs are ambiguous about whether the configured "Authorization Header
+  // value" is sent as-is or wrapped in "Bearer ", and a mismatch on this
+  // alone would silently 401 every single webhook regardless of how
+  // carefully the secret itself was copied into both dashboards.
+  const rawAuth = req.headers.get("Authorization") || "";
+  const auth = rawAuth.replace(/^Bearer\s+/i, "");
+  const secret = Deno.env.get("REVENUECAT_WEBHOOK_SECRET");
+  if (!secret || !auth || auth !== secret) {
+    console.warn(`revenuecat-webhook auth mismatch — got auth header of length ${rawAuth.length}, secret configured: ${!!secret}`);
     return new Response("Unauthorized", { status: 401 });
   }
 
