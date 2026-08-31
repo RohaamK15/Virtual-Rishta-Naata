@@ -545,16 +545,23 @@
       await Purchases.purchasePackage({ aPackage: pkg });
 
       // The purchase itself just succeeded with Apple — revenuecat-webhook
-      // updates subscription_status/plan in Supabase asynchronously, usually
-      // within a few seconds. Poll briefly rather than leaving the member
-      // looking at a stale "Complete Your Membership" button.
+      // updates subscription_status/plan in Supabase asynchronously. Poll
+      // for up to 30s rather than leaving the member looking at a stale
+      // "Complete Your Membership" button with no idea whether it worked.
       setState(true, 'Finalizing...');
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 20; i++) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
         await loadAccount();
-        if (currentProfile?.subscription_status === 'active') return;
+        if (currentProfile?.subscription_status === 'active') {
+          alert('Payment successful! Your membership is now active — you can start browsing profiles and messaging other members.');
+          return;
+        }
       }
+      // The purchase genuinely succeeded with Apple at this point (we're
+      // past purchasePackage without it throwing) — only the activation on
+      // our side is delayed, so this must never read as "purchase failed."
       setState(false, 'Complete Your Membership');
+      alert("Your payment went through, but it's taking longer than usual to activate. Please check back in a minute — if your membership still isn't active after that, close and reopen the app, or contact us at contact@virtualrishtanaata.com.");
     } catch (err) {
       if (err?.userCancelled) { setState(false, 'Complete Your Membership'); return; }
       alert('Could not complete purchase: ' + (err.message || 'please try again.'));
