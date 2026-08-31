@@ -41,10 +41,14 @@ Deno.serve(async (req) => {
   // alone would silently 401 every single webhook regardless of how
   // carefully the secret itself was copied into both dashboards.
   const rawAuth = req.headers.get("Authorization") || "";
-  const auth = rawAuth.replace(/^Bearer\s+/i, "");
-  const secret = Deno.env.get("REVENUECAT_WEBHOOK_SECRET");
+  // .trim() on both sides — a trailing newline/space picked up when pasting
+  // the secret into either dashboard's input field would otherwise cause a
+  // silent, permanent mismatch that's invisible in the UI (both fields look
+  // identical to the eye) but never equal by strict string comparison.
+  const auth = rawAuth.replace(/^Bearer\s+/i, "").trim();
+  const secret = (Deno.env.get("REVENUECAT_WEBHOOK_SECRET") || "").trim();
   if (!secret || !auth || auth !== secret) {
-    console.warn(`revenuecat-webhook auth mismatch — got auth header of length ${rawAuth.length}, secret configured: ${!!secret}`);
+    console.warn(`revenuecat-webhook auth mismatch — got auth header of length ${rawAuth.length} (trimmed ${auth.length}), secret length ${secret.length}`);
     return new Response("Unauthorized", { status: 401 });
   }
 
