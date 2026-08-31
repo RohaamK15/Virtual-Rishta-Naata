@@ -845,9 +845,16 @@ grant select on public.app_min_version to anon, authenticated;
 -- that actually disables Google sign-in) specifically so every build at or
 -- below 16 — which still shows the Google button with no server-side
 -- backstop other than the Supabase provider toggle — is forced to update.
--- No iOS row yet: the app hasn't shipped there, so nothing is enforced for
--- that platform until its first real release adds one.
 insert into public.app_min_version (platform, min_build_number) values ('android', 17)
+on conflict (platform) do update set min_build_number = excluded.min_build_number, updated_at = now();
+
+-- iOS's first row, added ahead of its first-ever App Store submission
+-- (build 8) rather than reactively after some future incident — there's no
+-- downside to having the floor already in place before anyone real is on
+-- the platform, and it means vrnEnforceMinAppVersion() in app.js (already
+-- platform-generic, already live) has something to actually check the
+-- moment iOS ships instead of silently no-op'ing on a missing row.
+insert into public.app_min_version (platform, min_build_number) values ('ios', 8)
 on conflict (platform) do update set min_build_number = excluded.min_build_number, updated_at = now();
 
 -- ============================================================
