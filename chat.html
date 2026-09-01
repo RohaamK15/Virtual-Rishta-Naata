@@ -25,6 +25,33 @@
   .msg-row.theirs .msg-bubble{background:var(--surface);color:var(--ink);border-bottom-left-radius:4px;box-shadow:var(--shadow-1);}
   .msg-meta{display:flex;gap:8px;align-items:center;font-size:.68rem;color:var(--ink-soft);margin-top:4px;padding:0 2px;}
   .msg-flag-btn{font-size:.68rem;color:var(--ink-soft);text-decoration:underline;background:none;border:none;padding:0;cursor:pointer;}
+  .msg-row.mine .msg-meta{flex-direction:row-reverse;}
+
+  /* WhatsApp-style quoted preview shown inside a bubble that's a reply */
+  .msg-quote{
+    border-left:3px solid var(--gold);background:rgba(0,0,0,.06);border-radius:6px;
+    padding:6px 10px;margin-bottom:7px;font-size:.8rem;line-height:1.4;opacity:.85;
+    white-space:pre-wrap;word-break:break-word;
+  }
+  .msg-row.theirs .msg-quote{background:rgba(19,75,53,.06);}
+  .msg-quote-name{display:block;font-weight:700;font-size:.72rem;margin-bottom:2px;}
+
+  /* Reply preview banner above the composer, shown while a reply target is
+     selected — same purpose as WhatsApp's, so the sender can see exactly
+     what they're replying to before sending, and cancel it. */
+  .reply-bar{
+    display:none;align-items:flex-start;gap:10px;background:var(--beige);
+    border-top:1px solid rgba(19,75,53,.08);border-left:3px solid var(--green);
+    padding:10px 16px;flex-shrink:0;
+  }
+  .reply-bar.open{display:flex;}
+  .reply-bar-body{flex:1;min-width:0;}
+  .reply-bar-name{font-size:.76rem;font-weight:700;color:var(--green);display:block;}
+  .reply-bar-snippet{font-size:.82rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .reply-bar-close{background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:4px;flex-shrink:0;display:flex;}
+  .reply-bar-close:hover{color:var(--error);}
+  .msg-reply-btn{font-size:.68rem;color:var(--ink-soft);text-decoration:underline;background:none;border:none;padding:0;cursor:pointer;}
+
   .chat-composer{background:var(--surface);border-top:1px solid rgba(19,75,53,.08);padding:14px 16px calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px;flex-shrink:0;align-items:flex-end;}
   .chat-composer textarea{flex:1;resize:none;border:1.5px solid rgba(19,75,53,.16);border-radius:var(--radius-m);padding:10px 14px;font-family:inherit;font-size:.9rem;max-height:100px;}
   .chat-composer textarea:focus{outline:none;border-color:var(--green);}
@@ -113,6 +140,16 @@
 
 <div class="chat-body" id="chatBody"></div>
 
+<div class="reply-bar" id="replyBar">
+  <div class="reply-bar-body">
+    <span class="reply-bar-name" id="replyBarName"></span>
+    <span class="reply-bar-snippet" id="replyBarSnippet"></span>
+  </div>
+  <button type="button" class="reply-bar-close" aria-label="Cancel reply" onclick="cancelReply()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+</div>
+
 <form class="chat-composer" id="chatComposer" onsubmit="return false;" style="display:none;">
   <textarea id="chatInput" rows="1" placeholder="Type a message…" maxlength="2000"></textarea>
   <button type="button" class="btn btn-gold" id="sendBtn" onclick="sendMessage()">Send</button>
@@ -138,6 +175,8 @@
   let myUserId = null;
   let lastSignature = '';
   let pollTimer = null;
+  let lastMessages = [];
+  let replyingTo = null;
 
   function escapeHtml(str){
     const d = document.createElement('div');
@@ -311,10 +350,11 @@
 
   async function loadMessages(){
     const { data: msgs, error } = await sb.from('messages')
-      .select('id, sender_id, body, created_at')
+      .select('id, sender_id, body, created_at, reply_to_message_id')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
     if (error) return;
+    lastMessages = msgs;
 
     const signature = msgs.length + ':' + (msgs.length ? msgs[msgs.length - 1].id : '');
     if (signature === lastSignature) return;
@@ -322,16 +362,22 @@
 
     const bodyEl = document.getElementById('chatBody');
     const wasAtBottom = bodyEl.scrollTop + bodyEl.clientHeight >= bodyEl.scrollHeight - 60;
+    const msgsById = Object.fromEntries(msgs.map(m => [m.id, m]));
 
     bodyEl.innerHTML = msgs.length ? msgs.map(m => {
       const mine = m.sender_id === myUserId;
       const time = new Date(m.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      const quoted = m.reply_to_message_id ? msgsById[m.reply_to_message_id] : null;
+      const quoteHtml = quoted
+        ? `<div class="msg-quote"><span class="msg-quote-name">${quoted.sender_id === myUserId ? 'You' : escapeHtml(otherRefCode)}</span>${escapeHtml(quoted.body)}</div>`
+        : '';
       return `
         <div class="msg-row ${mine ? 'mine' : 'theirs'}">
           <div class="msg-col">
-            <div class="msg-bubble">${escapeHtml(m.body)}</div>
+            <div class="msg-bubble">${quoteHtml}${escapeHtml(m.body)}</div>
             <div class="msg-meta">
               <span>${time}</span>
+              <button class="msg-reply-btn" onclick="startReply('${m.id}')">Reply</button>
               ${!mine ? `<button class="msg-flag-btn" onclick="reportMessage('${m.id}')">Report</button>` : ''}
             </div>
           </div>
@@ -342,6 +388,21 @@
     if (wasAtBottom) bodyEl.scrollTop = bodyEl.scrollHeight;
   }
 
+  function startReply(messageId){
+    const m = lastMessages.find(x => x.id === messageId);
+    if (!m) return;
+    replyingTo = m.id;
+    document.getElementById('replyBarName').textContent = m.sender_id === myUserId ? 'You' : otherRefCode;
+    document.getElementById('replyBarSnippet').textContent = m.body;
+    document.getElementById('replyBar').classList.add('open');
+    document.getElementById('chatInput').focus();
+  }
+
+  function cancelReply(){
+    replyingTo = null;
+    document.getElementById('replyBar').classList.remove('open');
+  }
+
   async function sendMessage(){
     const input = document.getElementById('chatInput');
     const body = input.value.trim();
@@ -350,11 +411,12 @@
     btn.setAttribute('disabled', '');
     try {
       const { data: inserted, error } = await sb.from('messages')
-        .insert({ conversation_id: conversationId, sender_id: myUserId, body })
+        .insert({ conversation_id: conversationId, sender_id: myUserId, body, reply_to_message_id: replyingTo })
         .select('id')
         .single();
       if (error) throw error;
       input.value = '';
+      cancelReply();
       lastSignature = '';
       await loadMessages();
       // Best-effort — a push failing (or the recipient having no device

@@ -609,7 +609,13 @@ create table if not exists public.messages (
   reported boolean not null default false,
   reported_reason text,
   reviewed_by_admin boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- WhatsApp-style "reply to" quoting. set null on delete rather than
+  -- cascade — if a quoted message is ever removed, the reply itself should
+  -- still stand, just without a preview to show for it (chat.html already
+  -- handles a dangling id gracefully by simply not finding it in the
+  -- conversation's loaded messages).
+  reply_to_message_id uuid references public.messages(id) on delete set null
 );
 
 alter table public.conversations enable row level security;
@@ -627,6 +633,7 @@ as $$
 declare
   me uuid := auth.uid();
   my_gender text;
+  my_is_admin boolean;
   other_gender text;
   a uuid;
   b uuid;
@@ -642,19 +649,22 @@ begin
     raise exception 'An active membership is required to message other members';
   end if;
 
+  select gender, is_admin into my_gender, my_is_admin from public.profiles where id = me;
+
   select gender into other_gender from public.profiles
   where id = other_user_id and profile_status = 'approved'
     and (subscription_status = 'active' or is_comped = true)
-    and not is_admin;
+    and (not is_admin or my_is_admin);
   if other_gender is null then
     raise exception 'That member is not currently active';
   end if;
 
   -- This is a matrimonial platform for opposite-gender matches only — never
   -- weakened to a client-side/UI-only rule, since this function is the sole
-  -- way any conversation ever gets created (see comment above).
-  select gender into my_gender from public.profiles where id = me;
-  if my_gender = other_gender then
+  -- way any conversation ever gets created (see comment above). Admins are
+  -- the one exception: they need to reach any member to moderate the
+  -- platform, not just ones of the opposite gender.
+  if my_gender = other_gender and not my_is_admin then
     raise exception 'Messaging is only available between opposite-gender members';
   end if;
 
@@ -705,6 +715,17 @@ create policy "messages_insert_own_conversation" on public.messages
         and (c.member_a = auth.uid() or c.member_b = auth.uid())
         and not public.is_blocked_pair(c.member_a, c.member_b)
     )
+    -- A reply must quote a message from the same conversation — without
+    -- this, a client could set reply_to_message_id to any message id at
+    -- all, letting chat.html's client-side lookup leak a snippet of a
+    -- message from a conversation the sender isn't even part of.
+    and (
+      reply_to_message_id is null
+      or exists (
+        select 1 from public.messages m2
+        where m2.id = reply_to_message_id and m2.conversation_id = messages.conversation_id
+      )
+    )
   );
 
 -- Column-level grant: without the revoke-then-column-grant here (same
@@ -714,7 +735,7 @@ create policy "messages_insert_own_conversation" on public.messages
 -- below would otherwise correctly catch it for sharing contact details —
 -- completely bypassing the moderation system this feature exists to enforce.
 revoke insert on public.messages from authenticated;
-grant insert (conversation_id, sender_id, body) on public.messages to authenticated;
+grant insert (conversation_id, sender_id, body, reply_to_message_id) on public.messages to authenticated;
 
 -- Members can flag a message in their own conversation (reported/reported_reason
 -- only — column grants stop them from editing anything else, including body).
