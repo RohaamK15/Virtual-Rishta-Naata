@@ -398,6 +398,24 @@ async function vrnRenderNavAuthState(){
       a.onclick = (e) => { e.preventDefault(); vrnSignOut(); };
     }
   });
+
+  // The persistent bottom tab bar (home/search/messages/account, present on
+  // several pages — see .app-bottom-nav) never had an admin equivalent, so
+  // an admin on mobile had no way to reach admin.html short of the
+  // hamburger menu above. Appending here (rather than duplicating this per
+  // page) covers every page with the bar in one place, including home.html
+  // where the bar itself starts hidden and is shown later by that page's
+  // own script — appending a node doesn't care about that display toggle.
+  if (profile.is_admin) {
+    document.querySelectorAll('.app-bottom-nav').forEach(nav => {
+      if (nav.querySelector('.app-tab--admin')) return;
+      const adminTab = document.createElement('a');
+      adminTab.href = '/admin.html';
+      adminTab.className = 'app-tab app-tab--admin';
+      adminTab.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>Admin';
+      nav.appendChild(adminTab);
+    });
+  }
 }
 
 // Android hardware/gesture back button: without this, Capacitor's default
