@@ -29,6 +29,8 @@
   .convo-ref{font-family:'Montserrat',sans-serif;font-weight:600;font-size:.9rem;color:var(--ink);}
   .convo-preview{font-size:.82rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
   .convo-time{font-size:.72rem;color:var(--ink-soft);flex-shrink:0;}
+  .convo-delete-btn{width:32px;height:32px;border-radius:50%;background:none;border:none;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:color .2s,background .2s;}
+  .convo-delete-btn:hover{color:var(--error);background:var(--rose-soft);}
   .empty-state{text-align:center;padding:60px 20px;color:var(--ink-soft);background:var(--surface);border-radius:var(--radius-m);box-shadow:var(--shadow-1);}
   .empty-state a{color:var(--gold);font-weight:600;}
 </style>
@@ -118,7 +120,7 @@
     }
 
     const { data: convos, error } = await sb.from('conversations')
-      .select('id, member_a, member_b, last_message_at')
+      .select('id, member_a, member_b, last_message_at, hidden_for_a_at, hidden_for_b_at')
       .order('last_message_at', { ascending: false });
     if (error) {
       document.getElementById('emptyState').style.display = 'block';
@@ -136,8 +138,8 @@
     const othersById = Object.fromEntries((others || []).map(o => [o.id, o]));
 
     const listEl = document.getElementById('convoList');
-    listEl.style.display = 'block';
     listEl.innerHTML = '';
+    let shown = 0;
 
     for (const c of convos) {
       const otherId = c.member_a === user.id ? c.member_b : c.member_a;
@@ -149,19 +151,59 @@
         .limit(1);
       const lastMsg = lastMsgs?.[0];
 
+      // A chat only ever appears once at least one message has actually
+      // been sent — opening someone's profile and starting a chat used to
+      // create a visible-to-them "No messages yet" entry immediately, which
+      // told them you'd looked without you ever having said anything.
+      if (!lastMsg) continue;
+
+      // Deleting a chat only clears it from *your* inbox (hide_conversation
+      // only ever writes your own hidden_for_*_at column — see schema.sql).
+      // It reappears on its own the moment a new message arrives after that
+      // point, same as most chat apps.
+      const myHiddenAt = c.member_a === user.id ? c.hidden_for_a_at : c.hidden_for_b_at;
+      if (myHiddenAt && new Date(lastMsg.created_at) <= new Date(myHiddenAt)) continue;
+
+      shown++;
       const row = document.createElement('div');
       row.className = 'convo-row';
       row.innerHTML = `
         <div class="convo-avatar">${other ? other.ref_code.slice(-2) : '—'}</div>
         <div class="convo-main">
           <div class="convo-ref">${other ? other.ref_code : 'Member no longer active'}</div>
-          <div class="convo-preview">${lastMsg ? escapeHtml(lastMsg.body) : 'No messages yet'}</div>
+          <div class="convo-preview">${escapeHtml(lastMsg.body)}</div>
         </div>
-        <div class="convo-time">${lastMsg ? timeAgo(lastMsg.created_at) : ''}</div>
+        <div class="convo-time">${timeAgo(lastMsg.created_at)}</div>
+        <button type="button" class="convo-delete-btn" aria-label="Delete conversation" title="Delete conversation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6"/></svg>
+        </button>
       `;
-      if (other) row.onclick = () => { window.location.href = `/chat.html?ref=${other.ref_code}`; };
+      if (other) row.onclick = (e) => {
+        if (e.target.closest('.convo-delete-btn')) return;
+        window.location.href = `/chat.html?ref=${other.ref_code}`;
+      };
+      row.querySelector('.convo-delete-btn').onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete this conversation with ${other ? other.ref_code : 'this member'}? It'll be removed from your messages list — if they message you again, it'll reappear.`)) return;
+        const { error: hideError } = await sb.rpc('hide_conversation', { target_conversation_id: c.id });
+        if (hideError) { alert(hideError.message || 'Could not delete this conversation.'); return; }
+        row.remove();
+        if (!listEl.children.length) {
+          listEl.style.display = 'none';
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('emptyState').innerHTML = `<p>No conversations yet. Open a profile from Search and send a message to get started.</p>`;
+        }
+      };
       listEl.appendChild(row);
     }
+
+    if (!shown) {
+      listEl.style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('emptyState').innerHTML = `<p>No conversations yet. Open a profile from Search and send a message to get started.</p>`;
+      return;
+    }
+    listEl.style.display = 'block';
   }
 
   loadInbox();

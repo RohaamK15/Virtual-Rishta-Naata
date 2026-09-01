@@ -581,6 +581,14 @@ create table if not exists public.conversations (
   member_b uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
   last_message_at timestamptz not null default now(),
+  -- Set via hide_conversation() below when a member deletes a chat from
+  -- their own inbox — never touched directly by client updates. A hidden
+  -- conversation reappears on its own the moment a new message pushes
+  -- last_message_at past this timestamp (see messages.html's inbox filter),
+  -- same as most chat apps: "delete" just clears your own view of history
+  -- up to now, it doesn't stop the conversation from continuing.
+  hidden_for_a_at timestamptz,
+  hidden_for_b_at timestamptz,
   check (member_a < member_b),
   unique (member_a, member_b)
 );
@@ -744,6 +752,25 @@ drop trigger if exists trg_touch_conversation on public.messages;
 create trigger trg_touch_conversation
   after insert on public.messages
   for each row execute function public.touch_conversation_last_message();
+
+-- Lets a member "delete" a chat from their own inbox without exposing raw
+-- UPDATE access on conversations (which would otherwise let either party
+-- set the OTHER party's hidden_for_*_at column too). security definer +
+-- only ever writing the caller's own side keeps that impossible regardless
+-- of what a client sends.
+create or replace function public.hide_conversation(target_conversation_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid();
+begin
+  if me is null then raise exception 'Not authenticated'; end if;
+  update public.conversations
+    set hidden_for_a_at = case when member_a = me then now() else hidden_for_a_at end,
+        hidden_for_b_at = case when member_b = me then now() else hidden_for_b_at end
+    where id = target_conversation_id and (member_a = me or member_b = me);
+end;
+$$;
+
+grant execute on function public.hide_conversation(uuid) to authenticated;
 
 -- ============================================================
 -- 8. BLOCKING & REPORTING
