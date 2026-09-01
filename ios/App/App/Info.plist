@@ -58,5 +58,11 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Virtual Rishta Naata uses your camera to let you take a profile photo or record the short verification video used to confirm your identity during signup.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Virtual Rishta Naata uses your microphone to record the short verification video used to confirm your identity during signup.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Virtual Rishta Naata needs access to your photos so you can choose a profile picture from your library.</string>
 </dict>
 </plist>
