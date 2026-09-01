@@ -144,8 +144,10 @@
         <div class="plan-row"><span>Status</span><strong style="font-family:'Lato',sans-serif;font-weight:700;color:var(--ink);" id="f-substatus">—</strong></div>
         <p id="membershipCompNote" style="display:none;font-size:.82rem;color:var(--green);margin-top:14px;">You have complimentary access to Virtual Rishta Naata — thank you for being part of our community.</p>
         <p id="membershipWhyFee" style="display:none;font-size:.8rem;line-height:1.6;color:var(--ink-soft);margin-top:14px;background:var(--beige);border-radius:var(--radius-s);padding:12px 14px;">Why is there a fee? It keeps this a serious community of people genuinely looking to get married, not time-wasters — and covers our running costs. It's a standard service charge, not a matchmaking commission, and applies the same to everyone.</p>
+        <p id="membershipAutoRenewNote" style="display:none;font-size:.74rem;line-height:1.6;color:var(--ink-soft);margin-top:14px;">Payment is charged to your Apple ID at confirmation of purchase. Your subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period; your account is charged for renewal within 24 hours of that date at the plan's listed price. Manage or cancel anytime in your Apple ID subscription settings. See our <a href="/terms.html">Terms of Use</a> and <a href="/privacy.html">Privacy Policy</a>.</p>
         <button type="button" id="membershipCta" class="btn btn-primary btn-sm btn-block" style="display:none;margin-top:16px;" onclick="handleCompleteMembership()">Complete Your Membership</button>
         <a href="/pricing.html" class="btn btn-outline btn-sm btn-block" style="margin-top:16px;">View Plans &amp; Pricing</a>
+        <button type="button" id="restorePurchasesBtn" class="btn btn-outline btn-sm btn-block" style="display:none;margin-top:16px;" onclick="handleRestorePurchases()">Restore Purchases</button>
       </div>
       <div class="side-card" data-reveal>
         <h4>Sign-In Methods</h4>
@@ -271,19 +273,29 @@
     const compNote = document.getElementById('membershipCompNote');
     const membershipCta = document.getElementById('membershipCta');
     const whyFee = document.getElementById('membershipWhyFee');
+    const autoRenewNote = document.getElementById('membershipAutoRenewNote');
+    const isIOSNative = window.Capacitor?.isNativePlatform?.() && window.Capacitor.getPlatform() === 'ios';
     if (p.is_comped) {
       compNote.style.display = 'block';
       membershipCta.style.display = 'none';
       whyFee.style.display = 'none';
+      autoRenewNote.style.display = 'none';
     } else if (p.profile_status === 'approved' && p.subscription_status !== 'active') {
       compNote.style.display = 'none';
       membershipCta.style.display = 'block';
       whyFee.style.display = 'block';
+      autoRenewNote.style.display = isIOSNative ? 'block' : 'none';
     } else {
       compNote.style.display = 'none';
       membershipCta.style.display = 'none';
       whyFee.style.display = 'none';
+      autoRenewNote.style.display = 'none';
     }
+    // Apple requires a Restore Purchases affordance for any app selling IAP
+    // (App Review Guideline 3.1.1) — shown on iOS whenever membership isn't
+    // already fully active, e.g. after a reinstall before the client has
+    // re-synced with an existing Apple subscription.
+    document.getElementById('restorePurchasesBtn').style.display = (isIOSNative && !p.is_comped && p.subscription_status !== 'active') ? 'block' : 'none';
 
     // Fetching this directly via Storage (not the get-profile-photo edge
     // function) is fine here — profile_photos_select_own in schema.sql
@@ -566,6 +578,44 @@
       if (err?.userCancelled) { setState(false, 'Complete Your Membership'); return; }
       alert('Could not complete purchase: ' + (err.message || 'please try again.'));
       setState(false, 'Complete Your Membership');
+    }
+  }
+
+  async function handleRestorePurchases(){
+    const btn = document.getElementById('restorePurchasesBtn');
+    btn.setAttribute('disabled', '');
+    btn.textContent = 'Restoring...';
+    try {
+      const { Purchases } = window.Capacitor.Plugins;
+      const { customerInfo } = await Purchases.restorePurchases();
+      const hasActiveEntitlement = Object.keys(customerInfo?.entitlements?.active || {}).length > 0;
+      if (!hasActiveEntitlement) {
+        alert('No active purchase was found for this Apple ID to restore.');
+        btn.removeAttribute('disabled');
+        btn.textContent = 'Restore Purchases';
+        return;
+      }
+
+      // Same reasoning as handleCompleteMembershipIOS — the restore itself
+      // succeeded with Apple, but subscription_status only ever changes via
+      // revenuecat-webhook, so poll briefly for it to catch up rather than
+      // trusting the client-side entitlement alone.
+      btn.textContent = 'Finalizing...';
+      for (let i = 0; i < 10; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await loadAccount();
+        if (currentProfile?.subscription_status === 'active') {
+          alert('Your membership has been restored — you can start browsing profiles and messaging other members.');
+          return;
+        }
+      }
+      alert("We found an active purchase, but it's taking longer than usual to sync. Please check back in a minute — if it still hasn't restored, contact us at contact@virtualrishtanaata.com.");
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Restore Purchases';
+    } catch (err) {
+      alert('Could not restore purchases: ' + (err.message || 'please try again.'));
+      btn.removeAttribute('disabled');
+      btn.textContent = 'Restore Purchases';
     }
   }
 
