@@ -41,7 +41,16 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            // Play Console's "App optimization" score flagged near-zero code
+            // obfuscation. Safe to enable here: there's no custom native
+            // Java/Kotlin code beyond the stock MainActivity (everything real
+            // lives in the WebView's JS/HTML, which R8 never touches), and
+            // Capacitor's own library module already ships its own
+            // consumerProguardFiles keeping every Plugin subclass and
+            // @PluginMethod intact — see proguard-rules.pro for the
+            // additional belt-and-suspenders rules for RevenueCat/Firebase.
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
