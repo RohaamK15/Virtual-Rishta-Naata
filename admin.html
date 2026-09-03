@@ -217,41 +217,15 @@
       </div>
     </div>
 
-    <div class="panel" id="verificationTestTool" data-reveal>
-      <div class="panel-head">
-        <h3>Verification Retention Test Tool</h3>
-        <span style="font-size:.78rem;color:var(--ink-soft);">Creates a pending test profile with a real Ahmadi Verification record (text answers + an uploaded video) attached — approve or reject it below like any real profile, then check whether its verification record was actually deleted afterward. One-off testing tool, not part of normal moderation.</span>
-      </div>
-      <div style="padding:16px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-        <button type="button" class="btn btn-outline btn-sm" onclick="createVerificationTestProfile()" style="padding:8px 16px;font-size:.8rem;">Create Test Profile</button>
-        <span id="verificationTestResult" style="font-size:.82rem;color:var(--ink-soft);"></span>
-      </div>
-    </div>
-
-    <div class="panel" id="orphanedGoogle" data-reveal>
-      <div class="panel-head">
-        <h3>Orphaned Sign-In Accounts</h3>
-        <span style="font-size:.78rem;color:var(--ink-soft);">An auth account exists (often from "Continue with Google" before an account existed) but no profile was ever created — this reserves their email and blocks them from signing up for real until removed</span>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Email</th><th>Sign-In Method</th><th>Attempted</th><th>Actions</th></tr>
-          </thead>
-          <tbody id="orphanedGoogleTableBody"></tbody>
-        </table>
-      </div>
-      <div style="padding:16px 24px;border-top:1px solid rgba(19,75,53,.08);">
-        <button type="button" class="btn btn-outline btn-sm" id="deleteAllOrphansBtn" onclick="deleteAllOrphanedGoogleUsers()" style="padding:8px 16px;font-size:.8rem;">Delete All Listed</button>
-      </div>
-    </div>
-
     <div class="panel" id="emailBroadcast" data-reveal>
-      <div class="panel-head">
-        <h3>Send Email to Members</h3>
-        <span style="font-size:.78rem;color:var(--ink-soft);">Reaches everyone in the chosen group by email — the only channel that works regardless of device or app version</span>
+      <div class="panel-head" onclick="toggleEmailBroadcast()" style="cursor:pointer;justify-content:space-between;">
+        <div>
+          <h3>Send Email to Members</h3>
+          <span style="font-size:.78rem;color:var(--ink-soft);">Reaches everyone in the chosen group by email — the only channel that works regardless of device or app version</span>
+        </div>
+        <svg id="emailBroadcastChevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;transition:transform .2s;"><path d="M9 18l6-6-6-6"/></svg>
       </div>
-      <div style="padding:16px 24px;display:grid;gap:14px;max-width:640px;">
+      <div id="emailBroadcastBody" style="display:none;padding:16px 24px;gap:14px;max-width:640px;">
         <div class="field">
           <label for="emailSegment">Audience</label>
           <select id="emailSegment" onchange="previewEmailAudience()">
@@ -417,7 +391,6 @@
     loadReportedProfiles();
     loadPendingPhotos();
     loadPendingProfiles();
-    loadOrphanedGoogleUsers();
     loadRevenueStats();
     previewEmailAudience();
     loadEmailTemplates();
@@ -443,47 +416,14 @@
     }
   }
 
-  let ALL_ORPHANS = [];
-  async function loadOrphanedGoogleUsers(){
-    const tbody = document.getElementById('orphanedGoogleTableBody');
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;">Loading…</td></tr>`;
-    try {
-      const { data, error } = await sb.functions.invoke('admin-list-orphaned-google-users');
-      if (error) throw error;
-      ALL_ORPHANS = data.orphans;
-      renderOrphanedGoogleTable();
-    } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--error);">Couldn't load (${await vrnFunctionErrorMessage(err)}).</td></tr>`;
-    }
+  function toggleEmailBroadcast(){
+    const body = document.getElementById('emailBroadcastBody');
+    const chevron = document.getElementById('emailBroadcastChevron');
+    const open = body.style.display === 'grid';
+    body.style.display = open ? 'none' : 'grid';
+    chevron.style.transform = open ? '' : 'rotate(90deg)';
   }
-  function renderOrphanedGoogleTable(){
-    const tbody = document.getElementById('orphanedGoogleTableBody');
-    tbody.innerHTML = ALL_ORPHANS.map(o => `
-      <tr data-id="${o.id}">
-        <td>${escapeHtml(o.email)}</td>
-        <td>${escapeHtml((o.providers || ['email']).join(', '))}</td>
-        <td>${new Date(o.created_at).toLocaleString('en-GB')}</td>
-        <td>
-          <div class="row-actions">
-            <button class="action-btn danger" title="Delete this orphaned sign-in" onclick="deleteOrphanedGoogleUser('${o.id}','${escapeHtml(o.email)}')">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join('') || `<tr><td colspan="4" style="text-align:center;padding:20px;">None found — no cleanup needed.</td></tr>`;
-  }
-  async function deleteOrphanedGoogleUser(id, email){
-    if (!confirm(`Delete the orphaned Google sign-in for ${email}? They'll then be able to sign up normally with that email.`)) return;
-    try {
-      const { error } = await sb.functions.invoke('admin-delete-orphaned-user', { body: { id } });
-      if (error) throw error;
-      ALL_ORPHANS = ALL_ORPHANS.filter(o => o.id !== id);
-      renderOrphanedGoogleTable();
-    } catch (err) {
-      alert('Could not delete this sign-in: ' + await vrnFunctionErrorMessage(err));
-    }
-  }
+
   async function loadFromAliases(){
     try {
       const { data, error } = await sb.functions.invoke('admin-list-from-aliases');
@@ -654,55 +594,6 @@
     } catch (err) {
       alert('Could not send the update reminder: ' + await vrnFunctionErrorMessage(err));
     }
-  }
-
-  async function createVerificationTestProfile(){
-    const resultEl = document.getElementById('verificationTestResult');
-    resultEl.textContent = 'Creating...';
-    resultEl.style.color = 'var(--ink-soft)';
-    const stamp = Date.now();
-    const email = `verification-test-${stamp}@example.com`;
-    try {
-      const { data, error } = await sb.functions.invoke('admin-create-test-account', {
-        body: {
-          email,
-          password: 'TestPassword123!',
-          gender: 'M',
-          age: 30,
-          city: 'London',
-          country: 'United Kingdom',
-          about: 'Test account for verifying the Ahmadi Verification deletion fix.',
-          pendingWithVerification: true,
-        },
-      });
-      if (error) throw error;
-      resultEl.style.color = 'var(--green)';
-      resultEl.innerHTML = `Created — find it in Profile Review below (email: ${email}). Approve or reject it, then check its verification record is gone.`;
-      loadPendingProfiles();
-    } catch (err) {
-      resultEl.style.color = 'var(--error)';
-      resultEl.textContent = 'Could not create test profile: ' + await vrnFunctionErrorMessage(err);
-    }
-  }
-
-  async function deleteAllOrphanedGoogleUsers(){
-    if (ALL_ORPHANS.length === 0) return;
-    if (!confirm(`Delete all ${ALL_ORPHANS.length} orphaned Google sign-ins listed? This frees up their emails for a real signup.`)) return;
-    const btn = document.getElementById('deleteAllOrphansBtn');
-    btn.disabled = true;
-    const failures = [];
-    for (const o of [...ALL_ORPHANS]) {
-      try {
-        const { error } = await sb.functions.invoke('admin-delete-orphaned-user', { body: { id: o.id } });
-        if (error) throw error;
-        ALL_ORPHANS = ALL_ORPHANS.filter(x => x.id !== o.id);
-        renderOrphanedGoogleTable();
-      } catch (err) {
-        failures.push(`${o.email}: ${await vrnFunctionErrorMessage(err)}`);
-      }
-    }
-    btn.disabled = false;
-    if (failures.length) alert('Some could not be deleted:\n' + failures.join('\n'));
   }
 
   async function loadPendingProfiles(){
