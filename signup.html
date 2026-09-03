@@ -397,6 +397,14 @@
       </div>
       <p id="accountError" style="display:none;color:var(--error);font-size:.85rem;"></p>
 
+      <div class="field" style="margin-top:0;background:var(--beige);border-radius:var(--radius-m);padding:16px 18px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;width:fit-content;">
+          <input type="checkbox" id="marketingOptIn" style="width:18px;height:18px;flex-shrink:0;">
+          <span style="font-size:.86rem;">Send me occasional offers and announcements by email</span>
+        </label>
+        <p style="font-size:.8rem;line-height:1.5;color:var(--ink-soft);margin:8px 0 0 28px;">Entirely optional — you'll always get emails about your own account (approval status, payment) either way, and can change this anytime from My Account.</p>
+      </div>
+
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
         <button type="button" class="btn btn-primary" id="contactContinueBtn" onclick="handleContinueFromContact()">Continue</button>
@@ -857,6 +865,7 @@
       additional_note: document.getElementById('additionalNote').value,
       about: document.getElementById('aboutYourself').value,
       verified_by_admin: document.getElementById('verifiedByAdminCheckbox').checked,
+      email_marketing_opt_out: !document.getElementById('marketingOptIn').checked,
     };
   }
 

@@ -29,7 +29,7 @@ const ALLOWED_PROFILE_FIELDS = [
   "city", "county", "country", "is_ahmadi", "local_jamaat", "had_previous",
   "previous_type", "previous_duration", "has_children", "preference_line",
   "country_looking_in", "consider_pakistan", "additional_note", "about",
-  "verified_by_admin",
+  "verified_by_admin", "email_marketing_opt_out",
 ];
 
 function pickAllowedFields(profileData: Record<string, unknown>) {
@@ -42,6 +42,7 @@ function pickAllowedFields(profileData: Record<string, unknown>) {
   // determines whether the Ahmadi Verification video/questions get asked at
   // all, so it must never end up truthy from anything but a literal `true`.
   if ("verified_by_admin" in picked) picked.verified_by_admin = picked.verified_by_admin === true;
+  if ("email_marketing_opt_out" in picked) picked.email_marketing_opt_out = picked.email_marketing_opt_out === true;
   return picked;
 }
 
