@@ -32,35 +32,6 @@ const ALLOWED_PROFILE_FIELDS = [
   "verified_by_admin", "email_marketing_opt_out",
 ];
 
-// Best-effort — a summarization failure (missing API key, rate limit, etc.)
-// must never block signup itself. Returns null on any failure, leaving
-// about_summary unset rather than surfacing an error to a new member.
-async function summarizeAbout(about: string): Promise<string | null> {
-  try {
-    const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!apiKey) return null;
-    const prompt = `Summarize the following "About Me" text, written by someone on a matrimonial platform, as ONE natural-sounding sentence in first person (as if they wrote it themselves) — no more than 20 words. Capture the most distinctive details (personality, profession, interests, values), not a generic restatement. Return ONLY the sentence itself, with no quotation marks, preamble, or explanation.\n\nAbout Me text:\n"""\n${about.trim()}\n"""`;
-    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 80,
-        messages: [{ role: "user", content: prompt }],
-      }),
-    });
-    if (!aiRes.ok) return null;
-    const aiData = await aiRes.json();
-    return aiData?.content?.[0]?.text?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
 function pickAllowedFields(profileData: Record<string, unknown>) {
   const picked: Record<string, unknown> = {};
   for (const key of ALLOWED_PROFILE_FIELDS) {
@@ -134,12 +105,6 @@ Deno.serve(async (req) => {
       if (uploadError) throw uploadError;
       const { error: photoUpdateError } = await admin.from("profiles").update({ has_photo: true, photo_path: path }).eq("id", userId);
       if (photoUpdateError) throw photoUpdateError;
-
-      const about = (pickAllowedFields(profileData).about as string) || "";
-      if (about.trim()) {
-        const summary = await summarizeAbout(about);
-        if (summary) await admin.from("profiles").update({ about_summary: summary }).eq("id", userId);
-      }
 
       // Ahmadi Verification answers (including the intro video) are saved
       // separately, after this function returns and the client signs in —

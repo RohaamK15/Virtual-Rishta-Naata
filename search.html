@@ -235,6 +235,26 @@
     return match ? match[0].trim() : trimmed;
   }
 
+  // The About sentence that actually says something about who they are,
+  // not just a restatement of facts already shown in the stats line above
+  // (e.g. "I'm 25 and working as a Lead Optometrist" tells you nothing new
+  // when age/employment are already on the card). Skips sentences that
+  // just repeat their qualifications/employment or open with an age
+  // statement, and takes the first one that doesn't.
+  function personalSentence(p){
+    const trimmed = (p.about || '').trim();
+    if (!trimmed) return '';
+    const sentences = (trimmed.match(/[^.!?]+[.!?]?/g) || [trimmed]).map(s => s.trim()).filter(Boolean);
+    const opensWithAge = /^i'?m\s+\d+\b|^i am\s+\d+\b/i;
+    const isFactual = (s) => {
+      const lower = s.toLowerCase();
+      return opensWithAge.test(s)
+        || (p.qualifications && lower.includes(p.qualifications.toLowerCase()))
+        || (p.employment && lower.includes(p.employment.toLowerCase()));
+    };
+    return sentences.find(s => !isFactual(s)) || sentences[0];
+  }
+
   // A quick, scannable line of the things that matter most for a match —
   // height, qualifications, employment, and where they're looking — rather
   // than a snippet of free-text About, which never truncates cleanly.
@@ -248,11 +268,7 @@
     ].filter(Boolean);
     const statsLine = parts.length ? `<p class="pc-summary">${parts.map(escapeHtml).join(' &middot; ')}</p>` : '';
 
-    // Prefer the AI-generated summary (a real condensation, not just an
-    // extracted sentence) — see generate-about-summary. Falls back to the
-    // first-sentence heuristic only for profiles that predate this feature
-    // or whose summary hasn't generated yet, rather than showing nothing.
-    const about = (p.about_summary || '').trim() || firstSentence(p.about);
+    const about = personalSentence(p);
     const aboutLine = about ? `<p class="pc-summary pc-preference">About myself: ${escapeHtml(about)}</p>` : '';
 
     const preference = firstSentence(p.preference_line);

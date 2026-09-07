@@ -27,13 +27,6 @@ create table if not exists public.profiles (
   consider_pakistan boolean,
   additional_note text,
   about text,
-  -- AI-generated, one-sentence condensation of `about`, computed once by
-  -- generate-about-summary (called from submit-profile-for-review at
-  -- signup, and from edit-profile.html whenever `about` changes) rather
-  -- than on every card render — never client-settable, see the grant
-  -- lists below (present in the select grant, deliberately absent from
-  -- the update grant).
-  about_summary text,
   contact_email text not null,
   has_photo boolean not null default false,
   photo_path text,               -- storage path in the profile-photos bucket, either gender
@@ -330,7 +323,7 @@ grant select (
   id, ref_code, gender, age, height, qualifications, employment, immigration_status,
   city, county, country, is_ahmadi, local_jamaat, had_previous, previous_type,
   previous_duration, has_children, preference_line, country_looking_in,
-  consider_pakistan, additional_note, about, about_summary, has_photo, photo_path,
+  consider_pakistan, additional_note, about, has_photo, photo_path,
   photo_status, photo_rejection_reason, profile_status, profile_rejection_reason,
   plan, subscription_status, is_comped, is_admin, chat_guidelines_accepted_at,
   onboarding_completed_at, theme_preference, push_enabled, created_at,

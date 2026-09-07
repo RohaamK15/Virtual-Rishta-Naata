@@ -578,12 +578,6 @@
       const { error: updateError } = await sb.from('profiles').update(updates).eq('id', user.id);
       if (updateError) throw updateError;
 
-      // Regenerate the AI About summary only when About actually changed —
-      // best-effort, must never block the save itself if it fails.
-      if (updates.about !== currentProfile?.about) {
-        sb.functions.invoke('generate-about-summary', { body: { about: updates.about } }).catch(() => {});
-      }
-
       successEl.style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
