@@ -57,6 +57,8 @@
   .pc-summary{
     margin-top:14px;color:var(--ink-soft);font-size:.86rem;line-height:1.5;
   }
+  .pc-summary.pc-preference{font-style:italic;}
+  .pc-summary + .pc-summary.pc-preference{margin-top:6px;}
   .pc-cta{
     margin-top:18px;display:flex;align-items:center;justify-content:space-between;
     font-family:'Montserrat',sans-serif;font-weight:600;font-size:.78rem;color:var(--gold);
@@ -235,8 +237,18 @@
       p.employment,
       p.country_looking_in ? `Looking in ${p.country_looking_in}` : null,
     ].filter(Boolean);
-    if (!parts.length) return '';
-    return `<p class="pc-summary">${parts.map(escapeHtml).join(' &middot; ')}</p>`;
+    const statsLine = parts.length ? `<p class="pc-summary">${parts.map(escapeHtml).join(' &middot; ')}</p>` : '';
+
+    // Their preference, summarised to its first full sentence — reads as a
+    // complete thought rather than a fragment, same reasoning as the old
+    // About summary, but there's no fixed length cap here: it always wraps
+    // in full rather than clipping.
+    const trimmed = (p.preference_line || '').trim();
+    const sentenceMatch = trimmed.match(/^[^.!?]*[.!?]/);
+    const firstSentence = sentenceMatch ? sentenceMatch[0].trim() : trimmed;
+    const preferenceLine = firstSentence ? `<p class="pc-summary pc-preference">Looking for: ${escapeHtml(firstSentence)}</p>` : '';
+
+    return statsLine + preferenceLine;
   }
 
   // 4'0" to 7'11", matching the outer bound of the signup form's own height
