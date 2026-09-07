@@ -56,7 +56,7 @@
   .pc-stat span{font-size:.68rem;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;}
   .pc-summary{
     margin-top:14px;color:var(--ink-soft);font-size:.86rem;line-height:1.5;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .pc-cta{
     margin-top:18px;display:flex;align-items:center;justify-content:space-between;
@@ -225,6 +225,17 @@
     return d.innerHTML;
   }
 
+  // A quick, one-line taste of who someone is — not the full About text,
+  // which reads as an abruptly cut-off fragment at 2+ lines. Cuts at the
+  // last full word before the limit rather than mid-word.
+  function summarize(text, maxLen){
+    const trimmed = (text || '').trim();
+    if (trimmed.length <= maxLen) return trimmed;
+    const cut = trimmed.slice(0, maxLen);
+    const lastSpace = cut.lastIndexOf(' ');
+    return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trim() + '…';
+  }
+
   // 4'0" to 7'11", matching the outer bound of the signup form's own height
   // format check — used for both the min and max height dropdowns.
   function heightOptionsHTML(){
@@ -388,7 +399,7 @@
           <div class="pc-stat"><strong>${p.age}</strong><span>Years</span></div>
           <div class="pc-stat"><strong>${escapeHtml(p.country)}</strong><span>Country</span></div>
         </div>
-        ${p.about ? `<p class="pc-summary">${escapeHtml(p.about)}</p>` : ''}
+        ${p.about ? `<p class="pc-summary">${escapeHtml(summarize(p.about, 60))}</p>` : ''}
         <div class="pc-cta">View Full Profile <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
       </div>
     `).join('') || `<div class="empty-state" style="grid-column:1/-1;">
