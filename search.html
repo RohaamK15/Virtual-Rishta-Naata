@@ -54,6 +54,10 @@
   .pc-stat{display:flex;flex-direction:column;}
   .pc-stat strong{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--green);}
   .pc-stat span{font-size:.68rem;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;}
+  .pc-summary{
+    margin-top:14px;color:var(--ink-soft);font-size:.86rem;line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
   .pc-cta{
     margin-top:18px;display:flex;align-items:center;justify-content:space-between;
     font-family:'Montserrat',sans-serif;font-weight:600;font-size:.78rem;color:var(--gold);
@@ -384,6 +388,7 @@
           <div class="pc-stat"><strong>${p.age}</strong><span>Years</span></div>
           <div class="pc-stat"><strong>${escapeHtml(p.country)}</strong><span>Country</span></div>
         </div>
+        ${p.about ? `<p class="pc-summary">${escapeHtml(p.about)}</p>` : ''}
         <div class="pc-cta">View Full Profile <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
       </div>
     `).join('') || `<div class="empty-state" style="grid-column:1/-1;">

@@ -153,7 +153,7 @@ async function vrnSearchProfiles(filters = {}) {
   const blockedIds = (myBlocks || []).map((b) => b.blocked_id);
 
   let query = sb.from("profiles")
-    .select("id, ref_code, gender, age, height, country, city, county, consider_pakistan, had_previous, previous_type, has_children, immigration_status")
+    .select("id, ref_code, gender, age, height, country, city, county, consider_pakistan, had_previous, previous_type, has_children, immigration_status, about")
     .neq("id", me.id);
   if (!myProfile.is_admin) query = query.eq("gender", oppositeGender);
   if (blockedIds.length) query = query.not("id", "in", `(${blockedIds.join(",")})`);
