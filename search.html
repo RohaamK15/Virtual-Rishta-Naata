@@ -225,21 +225,19 @@
     return d.innerHTML;
   }
 
-  // A quick taste of who someone is. Cutting the raw About text at a fixed
-  // length — however short — always reads as a fragment clipped mid-clause,
-  // never as an actual summary. Prefer their first full sentence (ends in
-  // real punctuation, reads as a complete thought) and only fall back to a
-  // word-boundary cut for the rare case where even that first sentence is
-  // too long to show comfortably.
-  function summarize(text, maxLen){
-    const trimmed = (text || '').trim();
-    if (!trimmed) return '';
-    const sentenceMatch = trimmed.match(/^[^.!?]*[.!?]/);
-    const firstSentence = sentenceMatch ? sentenceMatch[0].trim() : trimmed;
-    if (firstSentence.length <= maxLen) return firstSentence;
-    const cut = trimmed.slice(0, maxLen);
-    const lastSpace = cut.lastIndexOf(' ');
-    return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trim() + '…';
+  // A quick, scannable line of the things that matter most for a match —
+  // height, qualifications, employment, and where they're looking — rather
+  // than a snippet of free-text About, which never truncates cleanly.
+  // Skips any field the member left blank rather than showing an empty gap.
+  function cardSummary(p){
+    const parts = [
+      p.height,
+      p.qualifications,
+      p.employment,
+      p.country_looking_in ? `Looking in ${p.country_looking_in}` : null,
+    ].filter(Boolean);
+    if (!parts.length) return '';
+    return `<p class="pc-summary">${parts.map(escapeHtml).join(' &middot; ')}</p>`;
   }
 
   // 4'0" to 7'11", matching the outer bound of the signup form's own height
@@ -405,7 +403,7 @@
           <div class="pc-stat"><strong>${p.age}</strong><span>Years</span></div>
           <div class="pc-stat"><strong>${escapeHtml(p.country)}</strong><span>Country</span></div>
         </div>
-        ${p.about ? `<p class="pc-summary">${escapeHtml(summarize(p.about, 95))}</p>` : ''}
+        ${cardSummary(p)}
         <div class="pc-cta">View Full Profile <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
       </div>
     `).join('') || `<div class="empty-state" style="grid-column:1/-1;">
