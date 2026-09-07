@@ -248,8 +248,12 @@
     ].filter(Boolean);
     const statsLine = parts.length ? `<p class="pc-summary">${parts.map(escapeHtml).join(' &middot; ')}</p>` : '';
 
-    const about = firstSentence(p.about);
-    const aboutLine = about ? `<p class="pc-summary pc-preference">${escapeHtml(about)}</p>` : '';
+    // Prefer the AI-generated summary (a real condensation, not just an
+    // extracted sentence) — see generate-about-summary. Falls back to the
+    // first-sentence heuristic only for profiles that predate this feature
+    // or whose summary hasn't generated yet, rather than showing nothing.
+    const about = (p.about_summary || '').trim() || firstSentence(p.about);
+    const aboutLine = about ? `<p class="pc-summary pc-preference">About myself: ${escapeHtml(about)}</p>` : '';
 
     const preference = firstSentence(p.preference_line);
     const preferenceLine = preference ? `<p class="pc-summary pc-preference">Looking for: ${escapeHtml(preference)}</p>` : '';
