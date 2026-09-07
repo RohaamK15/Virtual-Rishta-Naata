@@ -226,6 +226,15 @@
     return d.innerHTML;
   }
 
+  // Their first full sentence from a free-text field — reads as a complete
+  // thought rather than a fragment cut off mid-clause, and there's no fixed
+  // length cap: the caller always wraps it in full rather than clipping.
+  function firstSentence(text){
+    const trimmed = (text || '').trim();
+    const match = trimmed.match(/^[^.!?]*[.!?]/);
+    return match ? match[0].trim() : trimmed;
+  }
+
   // A quick, scannable line of the things that matter most for a match —
   // height, qualifications, employment, and where they're looking — rather
   // than a snippet of free-text About, which never truncates cleanly.
@@ -239,16 +248,13 @@
     ].filter(Boolean);
     const statsLine = parts.length ? `<p class="pc-summary">${parts.map(escapeHtml).join(' &middot; ')}</p>` : '';
 
-    // Their preference, summarised to its first full sentence — reads as a
-    // complete thought rather than a fragment, same reasoning as the old
-    // About summary, but there's no fixed length cap here: it always wraps
-    // in full rather than clipping.
-    const trimmed = (p.preference_line || '').trim();
-    const sentenceMatch = trimmed.match(/^[^.!?]*[.!?]/);
-    const firstSentence = sentenceMatch ? sentenceMatch[0].trim() : trimmed;
-    const preferenceLine = firstSentence ? `<p class="pc-summary pc-preference">Looking for: ${escapeHtml(firstSentence)}</p>` : '';
+    const about = firstSentence(p.about);
+    const aboutLine = about ? `<p class="pc-summary pc-preference">${escapeHtml(about)}</p>` : '';
 
-    return statsLine + preferenceLine;
+    const preference = firstSentence(p.preference_line);
+    const preferenceLine = preference ? `<p class="pc-summary pc-preference">Looking for: ${escapeHtml(preference)}</p>` : '';
+
+    return statsLine + aboutLine + preferenceLine;
   }
 
   // 4'0" to 7'11", matching the outer bound of the signup form's own height
