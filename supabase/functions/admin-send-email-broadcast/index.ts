@@ -71,19 +71,75 @@ const SEGMENTS: Record<string, (q: any) => any> = {
   all_members: (q) => q,
 };
 
-function wrapHtml(bodyHtml: string): string {
-  return `
-    <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;color:#2b2b28;">
-      <div style="text-align:center;margin-bottom:26px;">
-        <img src="https://virtualrishtanaata.com/assets/img/logo-full.png"
-             alt="Virtual Rishta Naata — Connecting Families. Creating Lifelong Bonds."
-             width="140" style="display:block;width:140px;max-width:140px;height:auto;margin:0 auto;">
-      </div>
-      <div style="font-size:15px;line-height:1.65;">${bodyHtml}</div>
-      <hr style="margin:34px 0 18px;border:none;border-top:1px solid #e5ddd0;">
-      <p style="font-size:12px;color:#8a8578;text-align:center;margin:0;">Virtual Rishta Naata · virtualrishtanaata.com</p>
-    </div>
-  `;
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Matches the table-based layout/colors used by every other branded email in
+// this app (see email-templates/*.html — profile-decision, new-signup,
+// discount-announcement, etc.), so a plain-text broadcast reads as the same
+// family of email rather than a bare, unstyled fallback. The subject doubles
+// as the header heading, same as those templates' status_heading pattern.
+// Body paragraphs split on blank lines (a single \n within a paragraph just
+// becomes a line break) — not escaped, same as before, so an admin can still
+// drop in a raw <a href> or <strong> if they want.
+function wrapHtml(subject: string, bodyText: string): string {
+  const paragraphs = bodyText
+    .split(/\n{2,}/)
+    .map((block) => `<p style="margin:0 0 20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#55604F;text-align:left;">${block.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+  const safeSubject = escapeHtml(subject);
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${safeSubject}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F3E8D6;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F3E8D6;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#FFF9F2;border-radius:14px;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#FFF9F2;padding:34px 40px 28px;text-align:center;border-bottom:1px solid #E4DCC8;">
+              <img src="https://virtualrishtanaata.com/assets/img/logo-full.png"
+                   alt="Virtual Rishta Naata — Connecting Families. Creating Lifelong Bonds."
+                   width="160"
+                   style="display:block;width:160px;max-width:160px;height:auto;margin:0 auto 18px;">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;color:#134B35;font-weight:bold;">
+                ${safeSubject}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;text-align:left;">
+              ${paragraphs}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px 32px;border-top:1px solid #E4DCC8;text-align:left;">
+              <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9AA79A;text-align:left;">
+                Questions? Just reply to this email, or reach us anytime at <a href="mailto:contact@virtualrishtanaata.com" style="color:#9AA79A;">contact@virtualrishtanaata.com</a>.
+              </p>
+              <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#9AA79A;text-align:left;">
+                Virtual Rishta Naata · virtualrishtanaata.com
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 Deno.serve(async (req) => {
@@ -135,14 +191,16 @@ Deno.serve(async (req) => {
         (err: unknown) => console.warn("Could not record from-alias:", err),
       );
     }
-    // Plain-text mode (default) converts line breaks to <br> and wraps the
-    // result in a minimal branded header/footer, since a bare paragraph
-    // with no styling looks unfinished. Raw-HTML mode assumes the admin has
-    // written (or pasted) a complete, self-contained email — e.g. matching
-    // the EmailJS templates' own full branded layout, logo included — and
-    // sends it exactly as written with nothing added, since double-wrapping
-    // a complete template in another header/footer would look broken.
-    const html = isHtml ? String(body) : wrapHtml(String(body).replace(/\n/g, "<br>"));
+    // Plain-text mode (the only mode the admin dashboard's compose box ever
+    // sends) wraps the text in the same branded card layout as every other
+    // email in this app — see wrapHtml() above. Raw-HTML mode is only ever
+    // used by pre-built templates (never composed in the dashboard): it
+    // assumes the template is a complete, self-contained email — e.g.
+    // matching the EmailJS templates' own full branded layout, logo included
+    // — and sends it exactly as written with nothing added, since
+    // double-wrapping a complete template in another header/footer would
+    // look broken.
+    const html = isHtml ? String(body) : wrapHtml(String(subject), String(body));
 
     let sent = 0;
     const failures: string[] = [];
