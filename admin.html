@@ -68,6 +68,20 @@
   }
   .action-btn:hover{background:var(--green-soft);}
   .action-btn.danger{color:var(--error);}
+
+  .email-mode-btn.active{background:var(--green);color:var(--on-dark);border-color:var(--green);}
+  .email-template-btn{
+    display:flex;align-items:center;gap:8px;padding:9px 12px 9px 16px;border-radius:999px;
+    border:1px solid rgba(19,75,53,.16);background:var(--surface);color:var(--ink);font-size:.84rem;
+    cursor:pointer;transition:all .2s;
+  }
+  .email-template-btn:hover{background:var(--beige);}
+  .email-template-btn.active{background:var(--green);color:var(--on-dark);border-color:var(--green);}
+  .email-template-btn .tpl-delete{
+    display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;
+    color:inherit;opacity:.6;
+  }
+  .email-template-btn .tpl-delete:hover{opacity:1;background:rgba(0,0,0,.12);}
   .action-btn.danger:hover{background:var(--rose-soft);}
   .status-pill{font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--green-soft);color:var(--green);}
 
@@ -226,26 +240,34 @@
         <svg id="emailBroadcastChevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;transition:transform .2s;"><path d="M9 18l6-6-6-6"/></svg>
       </div>
       <div id="emailBroadcastBody" style="display:none;padding:16px 24px;gap:14px;max-width:640px;">
-        <div class="field">
-          <label for="emailSegment">Audience</label>
-          <select id="emailSegment" onchange="previewEmailAudience()">
-            <option value="approved_unpaid">Approved, not yet paid</option>
-            <option value="all_active">All active members</option>
-            <option value="all_members">Everyone with a profile</option>
-          </select>
-          <p id="emailAudienceCount" style="font-size:.8rem;color:var(--ink-soft);margin-top:6px;"></p>
+
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="btn btn-outline btn-sm email-mode-btn" id="emailModeTemplateBtn" onclick="setEmailMode('template')" style="padding:9px 16px;font-size:.82rem;">Use a Template</button>
+          <button type="button" class="btn btn-outline btn-sm email-mode-btn" id="emailModeCustomBtn" onclick="setEmailMode('custom')" style="padding:9px 16px;font-size:.82rem;">Write Your Own Message</button>
         </div>
-        <div class="field">
-          <label for="emailTemplate">Template</label>
-          <div style="display:flex;gap:8px;">
-            <select id="emailTemplate" onchange="loadEmailTemplate()" style="flex:1;">
-              <option value="">— Write your own message —</option>
-            </select>
-            <button type="button" class="action-btn danger" id="deleteTemplateBtn" title="Delete this template" onclick="deleteEmailTemplate()" style="display:none;flex-shrink:0;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
-            </button>
+
+        <div id="emailTemplateSection" class="field">
+          <label>Choose a template</label>
+          <div id="emailTemplateGrid" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+          <p id="emailTemplateEmptyNote" style="font-size:.82rem;color:var(--ink-soft);margin-top:8px;display:none;">No templates saved yet — switch to "Write Your Own Message" below and save one to reuse later.</p>
+          <div id="emailTemplatePreview" style="display:none;background:var(--beige);border-radius:var(--radius-m);padding:14px 16px;margin-top:10px;">
+            <p style="font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:4px;">Subject</p>
+            <p id="emailTemplateSubjectPreview" style="font-size:.9rem;color:var(--ink);"></p>
           </div>
         </div>
+
+        <div id="emailCustomSection" style="display:none;">
+          <div class="field">
+            <label for="emailSubject">Subject</label>
+            <input type="text" id="emailSubject" placeholder="e.g. Complete your Virtual Rishta Naata membership">
+          </div>
+          <div class="field">
+            <label for="emailBody">Message</label>
+            <textarea id="emailBody" style="min-height:160px;" placeholder="Write your message here — it's automatically sent as a branded Virtual Rishta Naata email."></textarea>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" style="padding:10px 20px;font-size:.82rem;" onclick="saveEmailTemplate()">Save as Template</button>
+        </div>
+
         <div class="field">
           <label for="emailFromAlias">From alias (optional)</label>
           <div style="display:flex;align-items:center;gap:8px;">
@@ -255,25 +277,30 @@
           </div>
           <p id="emailFromPreview" style="font-size:.78rem;color:var(--ink-soft);margin-top:6px;">Leave blank to use the default sender. Any alias at the verified domain works — no extra setup needed.</p>
         </div>
-        <div class="field">
-          <label for="emailSubject">Subject</label>
-          <input type="text" id="emailSubject" placeholder="e.g. Complete your Virtual Rishta Naata membership">
-        </div>
-        <label class="radio-pill" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;width:fit-content;">
-          <input type="checkbox" id="emailIsHtml" onchange="document.getElementById('emailBody').placeholder = this.checked ? 'Write full HTML here — sent exactly as written, wrapped in the branded header/footer' : 'Write your message here — plain text is fine, line breaks are kept';">
-          <span style="font-size:.86rem;">This is custom HTML, not plain text</span>
-        </label>
-        <div class="field">
-          <label for="emailBody">Message</label>
-          <textarea id="emailBody" style="min-height:160px;font-family:monospace;" placeholder="Write your message here — plain text is fine, line breaks are kept"></textarea>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:6px;border-top:1px solid rgba(19,75,53,.08);">
-          <input type="email" id="emailTestAddress" placeholder="your@email.com" style="flex:1;min-width:200px;">
-          <button type="button" class="btn btn-outline btn-sm" style="padding:10px 18px;font-size:.82rem;" onclick="sendTestEmail()">Send Test to This Address</button>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button type="button" class="btn btn-primary btn-sm" style="padding:10px 20px;font-size:.82rem;" onclick="sendEmailBroadcast()">Send to Audience</button>
-          <button type="button" class="btn btn-outline btn-sm" style="padding:10px 20px;font-size:.82rem;" onclick="saveEmailTemplate()">Save as Template</button>
+
+        <div style="display:grid;gap:12px;padding-top:14px;border-top:1px solid rgba(19,75,53,.08);">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="field" style="flex:1;min-width:200px;margin:0;">
+              <label for="emailSegment">Send to an audience</label>
+              <select id="emailSegment" onchange="previewEmailAudience()">
+                <option value="approved_unpaid">Approved, not yet paid</option>
+                <option value="all_active">All active members</option>
+                <option value="all_members">Everyone with a profile</option>
+              </select>
+              <p id="emailAudienceCount" style="font-size:.8rem;color:var(--ink-soft);margin-top:6px;"></p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" style="padding:10px 20px;font-size:.82rem;" onclick="sendEmailBroadcast()">Send to Audience</button>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input type="email" id="emailSpecificAddress" placeholder="someone@example.com" style="flex:1;min-width:200px;">
+            <button type="button" class="btn btn-outline btn-sm" style="padding:10px 18px;font-size:.82rem;" onclick="sendToSpecificPerson()">Send to This Person</button>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input type="email" id="emailTestAddress" placeholder="your@email.com" style="flex:1;min-width:200px;">
+            <button type="button" class="btn btn-outline btn-sm" style="padding:10px 18px;font-size:.82rem;" onclick="sendTestEmail()">Send Test to This Address</button>
+          </div>
         </div>
       </div>
     </div>
@@ -435,42 +462,75 @@
     }
   }
 
+  // Two ways to compose an email, chosen via setEmailMode(): pick an
+  // existing template (is_html decided by whatever that template was saved
+  // as — never shown to the admin), or write plain text that always gets
+  // auto-wrapped in the branded HTML layout server-side (isHtml is hardcoded
+  // false below, not a checkbox — see wrapHtml() in
+  // admin-send-email-broadcast). This keeps HTML as a concept the admin
+  // never has to think about.
   let ALL_EMAIL_TEMPLATES = [];
+  let emailMode = 'template';
+  let selectedEmailTemplateId = '';
+
+  function setEmailMode(mode){
+    emailMode = mode;
+    document.getElementById('emailModeTemplateBtn').classList.toggle('active', mode === 'template');
+    document.getElementById('emailModeCustomBtn').classList.toggle('active', mode === 'custom');
+    document.getElementById('emailTemplateSection').style.display = mode === 'template' ? 'block' : 'none';
+    document.getElementById('emailCustomSection').style.display = mode === 'custom' ? 'block' : 'none';
+  }
+
   async function loadEmailTemplates(){
     try {
       const { data, error } = await sb.functions.invoke('admin-list-email-templates');
       if (error) throw error;
       ALL_EMAIL_TEMPLATES = data.templates || [];
-      const select = document.getElementById('emailTemplate');
-      const current = select.value;
-      select.innerHTML = `<option value="">— Write your own message —</option>` +
-        ALL_EMAIL_TEMPLATES.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
-      select.value = current && ALL_EMAIL_TEMPLATES.some(t => t.id === current) ? current : '';
+      if (!ALL_EMAIL_TEMPLATES.some(t => t.id === selectedEmailTemplateId)) selectedEmailTemplateId = '';
+      renderEmailTemplateGrid();
+      // Default to whichever mode actually has something to send: a fresh
+      // install with no templates yet should land straight on the compose box.
+      setEmailMode(ALL_EMAIL_TEMPLATES.length ? emailMode : 'custom');
     } catch (err) {
       console.warn('Could not load email templates:', err);
     }
   }
-  function loadEmailTemplate(){
-    const id = document.getElementById('emailTemplate').value;
-    document.getElementById('deleteTemplateBtn').style.display = id ? 'flex' : 'none';
-    if (!id) {
-      // "Write your own message" is a genuine blank slate, not just
-      // whatever was left over from a previously-selected template.
-      document.getElementById('emailSubject').value = '';
-      document.getElementById('emailBody').value = '';
-      document.getElementById('emailIsHtml').checked = false;
-      document.getElementById('emailFromAlias').value = '';
-      updateFromAliasPreview();
-      return;
-    }
+
+  function renderEmailTemplateGrid(){
+    const grid = document.getElementById('emailTemplateGrid');
+    document.getElementById('emailTemplateEmptyNote').style.display = ALL_EMAIL_TEMPLATES.length ? 'none' : 'block';
+    grid.innerHTML = ALL_EMAIL_TEMPLATES.map(t => `
+      <button type="button" class="email-template-btn${t.id === selectedEmailTemplateId ? ' active' : ''}" onclick="selectEmailTemplate('${t.id}')">
+        ${escapeHtml(t.name)}
+        <span class="tpl-delete" onclick="event.stopPropagation();deleteEmailTemplate('${t.id}')" title="Delete this template">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </span>
+      </button>
+    `).join('');
+    const t = ALL_EMAIL_TEMPLATES.find(x => x.id === selectedEmailTemplateId);
+    document.getElementById('emailTemplatePreview').style.display = t ? 'block' : 'none';
+    if (t) document.getElementById('emailTemplateSubjectPreview').textContent = t.subject;
+  }
+
+  function selectEmailTemplate(id){
+    selectedEmailTemplateId = id;
+    renderEmailTemplateGrid();
+  }
+
+  async function deleteEmailTemplate(id){
     const t = ALL_EMAIL_TEMPLATES.find(x => x.id === id);
     if (!t) return;
-    document.getElementById('emailSubject').value = t.subject;
-    document.getElementById('emailBody').value = t.body;
-    document.getElementById('emailIsHtml').checked = !!t.is_html;
-    document.getElementById('emailFromAlias').value = t.from_alias || '';
-    updateFromAliasPreview();
+    if (!confirm(`Delete the "${t.name}" template? This cannot be undone.`)) return;
+    try {
+      const { error } = await sb.functions.invoke('admin-delete-email-template', { body: { id } });
+      if (error) throw error;
+      if (selectedEmailTemplateId === id) selectedEmailTemplateId = '';
+      await loadEmailTemplates();
+    } catch (err) {
+      alert('Could not delete template: ' + await vrnFunctionErrorMessage(err));
+    }
   }
+
   function updateFromAliasPreview(){
     const alias = document.getElementById('emailFromAlias').value.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
     const preview = document.getElementById('emailFromPreview');
@@ -478,58 +538,40 @@
       ? `Will send as: Virtual Rishta Naata <${alias}@virtualrishtanaata.com>`
       : 'Leave blank to use the default sender. Any alias at the verified domain works — no extra setup needed.';
   }
+
   async function saveEmailTemplate(){
     const subject = document.getElementById('emailSubject').value.trim();
     const body = document.getElementById('emailBody').value.trim();
-    const is_html = document.getElementById('emailIsHtml').checked;
     const from_alias = document.getElementById('emailFromAlias').value.trim();
     if (!subject || !body) { alert('Please fill in both the subject and message before saving as a template.'); return; }
-
-    const selectedId = document.getElementById('emailTemplate').value;
-    let id = null;
-    let name;
-    if (selectedId) {
-      const existing = ALL_EMAIL_TEMPLATES.find(x => x.id === selectedId);
-      if (confirm(`Update the "${existing?.name}" template with the current subject/message?`)) {
-        id = selectedId;
-        name = existing.name;
-      } else {
-        name = prompt('Save as a new template — give it a name:');
-        if (!name) return;
-      }
-    } else {
-      name = prompt('Save as a new template — give it a name:');
-      if (!name) return;
-    }
-
+    const name = prompt('Save as a template — give it a name:');
+    if (!name) return;
     try {
-      const { data, error } = await sb.functions.invoke('admin-save-email-template', { body: { id, name, subject, body, is_html, from_alias } });
+      // Always is_html:false — a template saved from this compose box is
+      // always plain text auto-wrapped in branding, same as sending it directly.
+      const { data, error } = await sb.functions.invoke('admin-save-email-template', { body: { id: null, name, subject, body, is_html: false, from_alias } });
       if (error) throw error;
+      selectedEmailTemplateId = data.id;
       await loadEmailTemplates();
-      document.getElementById('emailTemplate').value = data.id;
-      document.getElementById('deleteTemplateBtn').style.display = 'flex';
+      setEmailMode('template');
       alert(`Template "${name}" saved.`);
     } catch (err) {
       alert('Could not save template: ' + await vrnFunctionErrorMessage(err));
     }
   }
-  async function deleteEmailTemplate(){
-    const id = document.getElementById('emailTemplate').value;
-    if (!id) return;
-    const t = ALL_EMAIL_TEMPLATES.find(x => x.id === id);
-    if (!confirm(`Delete the "${t?.name}" template? This cannot be undone.`)) return;
-    try {
-      const { error } = await sb.functions.invoke('admin-delete-email-template', { body: { id } });
-      if (error) throw error;
-      document.getElementById('emailTemplate').value = '';
-      document.getElementById('deleteTemplateBtn').style.display = 'none';
-      document.getElementById('emailSubject').value = '';
-      document.getElementById('emailBody').value = '';
-      document.getElementById('emailIsHtml').checked = false;
-      await loadEmailTemplates();
-    } catch (err) {
-      alert('Could not delete template: ' + await vrnFunctionErrorMessage(err));
+
+  // Pulls together whatever the admin has actually composed, regardless of
+  // mode, into the {subject, body, isHtml} shape every send action needs.
+  function getComposedEmail(){
+    if (emailMode === 'template') {
+      const t = ALL_EMAIL_TEMPLATES.find(x => x.id === selectedEmailTemplateId);
+      if (!t) { alert('Choose a template first.'); return null; }
+      return { subject: t.subject, body: t.body, isHtml: !!t.is_html };
     }
+    const subject = document.getElementById('emailSubject').value.trim();
+    const body = document.getElementById('emailBody').value.trim();
+    if (!subject || !body) { alert('Please fill in both the subject and message.'); return null; }
+    return { subject, body, isHtml: false };
   }
 
   async function previewEmailAudience(){
@@ -546,15 +588,13 @@
   }
 
   async function sendEmailBroadcast(){
+    const composed = getComposedEmail();
+    if (!composed) return;
     const segment = document.getElementById('emailSegment').value;
-    const subject = document.getElementById('emailSubject').value.trim();
-    const body = document.getElementById('emailBody').value.trim();
-    const isHtml = document.getElementById('emailIsHtml').checked;
     const fromAlias = document.getElementById('emailFromAlias').value.trim();
-    if (!subject || !body) { alert('Please fill in both the subject and message.'); return; }
     if (!confirm('Send this email now? This cannot be undone once sent.')) return;
     try {
-      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, subject, body, isHtml, fromAlias } });
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { segment, subject: composed.subject, body: composed.body, isHtml: composed.isHtml, fromAlias } });
       if (error) throw error;
       alert(`Sent to ${data.sent} of ${data.recipientCount} recipient(s)${data.failed ? ` — ${data.failed} failed` : ''}.`);
       loadFromAliases();
@@ -563,16 +603,31 @@
     }
   }
 
-  async function sendTestEmail(){
-    const testEmail = document.getElementById('emailTestAddress').value.trim();
-    const subject = document.getElementById('emailSubject').value.trim();
-    const body = document.getElementById('emailBody').value.trim();
-    const isHtml = document.getElementById('emailIsHtml').checked;
+  async function sendToSpecificPerson(){
+    const composed = getComposedEmail();
+    if (!composed) return;
+    const recipient = document.getElementById('emailSpecificAddress').value.trim();
+    if (!recipient) { alert("Enter the recipient's email address."); return; }
+    if (!confirm(`Send this email to ${recipient}?`)) return;
     const fromAlias = document.getElementById('emailFromAlias').value.trim();
-    if (!testEmail) { alert('Enter an email address to send the test to.'); return; }
-    if (!subject || !body) { alert('Please fill in both the subject and message.'); return; }
     try {
-      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { testEmail, subject, body, isHtml, fromAlias } });
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { testEmail: recipient, subject: composed.subject, body: composed.body, isHtml: composed.isHtml, fromAlias } });
+      if (error) throw error;
+      alert(data.sent ? `Sent to ${recipient}.` : `Failed to send to ${recipient} — check Resend setup.`);
+      loadFromAliases();
+    } catch (err) {
+      alert('Could not send: ' + await vrnFunctionErrorMessage(err));
+    }
+  }
+
+  async function sendTestEmail(){
+    const composed = getComposedEmail();
+    if (!composed) return;
+    const testEmail = document.getElementById('emailTestAddress').value.trim();
+    if (!testEmail) { alert('Enter an email address to send the test to.'); return; }
+    const fromAlias = document.getElementById('emailFromAlias').value.trim();
+    try {
+      const { data, error } = await sb.functions.invoke('admin-send-email-broadcast', { body: { testEmail, subject: composed.subject, body: composed.body, isHtml: composed.isHtml, fromAlias } });
       if (error) throw error;
       alert(data.sent ? `Test sent to ${testEmail}.` : `Test failed to send to ${testEmail} — check Resend setup.`);
       loadFromAliases();

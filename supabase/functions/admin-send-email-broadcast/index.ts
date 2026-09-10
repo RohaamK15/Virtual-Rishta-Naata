@@ -169,7 +169,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    await logAdminAction(admin, user.id, "email_broadcast", null, `segment=${segment} subject="${subject}" sent=${sent} failed=${failures.length}`);
+    const target = testEmail ? `to=${testEmail}` : `segment=${segment}`;
+    await logAdminAction(admin, user.id, "email_broadcast", null, `${target} subject="${subject}" sent=${sent} failed=${failures.length}`);
 
     return new Response(JSON.stringify({ success: true, recipientCount: emails.length, sent, failed: failures.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
