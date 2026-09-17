@@ -735,6 +735,21 @@
           "If it hasn't been approved yet, just wait — we'll let you know as soon as it is, and you still won't need to pay.",
         ],
       },
+      // Distinct from 'comp' above on purpose — that message promises free
+      // access forever, which would be false here. This is the automatic
+      // "first N members" launch offer (see admin-review-profile), which
+      // ends once we reach our target member count — at that point everyone
+      // who got in this way (this member included) is asked to subscribe,
+      // same as anyone else.
+      approve_promo: {
+        status_heading: "Your Profile Has Been Approved — And You're In Free!",
+        status_message: "Good news! Our team has reviewed and approved your profile. As one of our first members, you've been given complimentary access — no payment needed for now.",
+        next_steps: [
+          "Tap the button below to open your dashboard.",
+          "Start looking at other members' profiles and sending messages right away — no payment needed.",
+          "This is a limited-time launch offer for our first members. Once we reach our target number of active members, standard membership pricing (£10/month or £100/year) will apply, and you'll be asked to subscribe to keep your access.",
+        ],
+      },
     };
     const content = messages[kind];
     if (!content) return;
@@ -766,7 +781,14 @@
     try {
       const { data, error } = await sb.functions.invoke('admin-review-profile', { body: { profile_id: profileId, action, reason } });
       if (error) throw error;
-      notifyProfileDecision(data?.contact_email, data?.ref_code, action, reason);
+      // promo_ended means this exact approval filled the last free slot and
+      // was immediately converted back — send the normal approval email
+      // (payment needed) rather than one promising free access that's
+      // already gone by the time they read it.
+      notifyProfileDecision(data?.contact_email, data?.ref_code, action === 'approve' && data?.promo_comped && !data?.promo_ended ? 'approve_promo' : action, reason);
+      if (data?.promo_ended) {
+        alert('This was the last free-access spot — the launch promo has now ended automatically. Everyone who got in for free will need to subscribe to keep their access.');
+      }
       await loadPendingProfiles();
     } catch (err) {
       alert('Could not review this profile: ' + await vrnFunctionErrorMessage(err));
@@ -1022,6 +1044,7 @@
     if (p.profile_status === 'rejected') return { label: 'Rejected', bg: 'var(--warn-bg)', fg: 'var(--warn-text)' };
     if (p.profile_status === 'pending') return { label: 'Pending Review', bg: 'var(--gold-soft)', fg: 'var(--gold-ink)' };
     // From here, profile_status is 'approved'.
+    if (p.is_comped && p.is_promo_comped) return { label: 'Active (Free Launch Offer)', bg: 'var(--green-soft)', fg: 'var(--green)' };
     if (p.is_comped) return { label: 'Active (Comped)', bg: 'var(--green-soft)', fg: 'var(--green)' };
     if (p.subscription_status === 'active') return { label: 'Active Member', bg: 'var(--green-soft)', fg: 'var(--green)' };
     if (p.subscription_status === 'past_due') return { label: 'Payment Past Due', bg: 'var(--warn-bg)', fg: 'var(--warn-text)' };
@@ -1149,7 +1172,7 @@
         ${row('Plan', p.plan)}
         ${row('Profile Status', p.profile_status)}
         ${row('Subscription Status', p.subscription_status)}
-        ${row('Comped', p.is_comped ? 'Yes' : 'No')}
+        ${row('Comped', p.is_comped ? (p.is_promo_comped ? 'Yes — free launch offer' : 'Yes — manual') : 'No')}
         ${row('Verified by Admin (claimed)', p.verified_by_admin ? 'Yes — skipped verification' : 'No')}
         ${row('Admin', p.is_admin ? 'Yes' : 'No')}
         ${row('Photo Status', p.photo_status)}
@@ -1191,6 +1214,7 @@
       const p = data.profile;
       let kind, reason;
       if (p.profile_status === 'rejected') { kind = 'reject'; reason = p.profile_rejection_reason; }
+      else if (p.is_comped && p.is_promo_comped) { kind = 'approve_promo'; }
       else if (p.is_comped) { kind = 'comp'; }
       else if (p.profile_status === 'approved') { kind = 'approve'; }
       else { alert('This profile has no decision email to resend — it\'s still pending review.'); return; }

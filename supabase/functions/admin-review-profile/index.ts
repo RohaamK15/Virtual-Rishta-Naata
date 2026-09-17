@@ -156,15 +156,88 @@ Deno.serve(async (req) => {
     if (!profile_id) throw new Error("profile_id is required");
     if (!["approve", "reject"].includes(action)) throw new Error("action must be 'approve' or 'reject'");
 
+    // Launch promo: the first `member_cap` active members get comped
+    // automatically instead of having to pay — see FREE ACCESS PROMO in
+    // schema.sql. Only ever relevant on approval, and only for a profile
+    // that isn't already active — an already-paying (or already-comped)
+    // member re-approved after an edit/resubmission must never get
+    // re-flagged as a fresh promo grant.
+    let promoComped = false;
+    let promoJustEnded = false;
+    let promo: { enabled: boolean; member_cap: number } | null = null;
+    const updateFields: Record<string, unknown> = {
+      profile_status: action === "approve" ? "approved" : "rejected",
+      profile_rejection_reason: action === "reject" ? (reason || "Did not meet our community standards") : null,
+    };
+
+    if (action === "approve") {
+      const { data: current } = await admin.from("profiles").select("subscription_status, is_comped").eq("id", profile_id).single();
+      const alreadyActive = current?.subscription_status === "active" || current?.is_comped === true;
+      if (!alreadyActive) {
+        const { data: promoRow } = await admin.from("free_access_promo").select("enabled, member_cap").eq("id", true).maybeSingle();
+        promo = promoRow;
+        if (promo?.enabled) {
+          const { count } = await admin.from("profiles")
+            .select("id", { count: "exact", head: true })
+            .eq("profile_status", "approved")
+            .eq("is_admin", false)
+            .eq("is_hidden_from_browse", false)
+            .or("subscription_status.eq.active,is_comped.eq.true");
+          if ((count || 0) < promo.member_cap) {
+            promoComped = true;
+            updateFields.is_comped = true;
+            updateFields.is_promo_comped = true;
+          }
+        }
+      }
+    }
+
     // Returns the member's contact_email/ref_code alongside success so the
     // caller (admin.html) can send the profile-decision notification email
     // without a second round-trip — see notifyProfileDecision().
-    const { data: updated, error } = await admin.from("profiles").update({
-      profile_status: action === "approve" ? "approved" : "rejected",
-      profile_rejection_reason: action === "reject" ? (reason || "Did not meet our community standards") : null,
-    }).eq("id", profile_id).select("contact_email, ref_code").single();
+    const { data: updated, error } = await admin.from("profiles").update(updateFields)
+      .eq("id", profile_id).select("contact_email, ref_code").single();
     if (error) throw error;
     await logAdminAction(admin, user.id, `profile_${action}`, profile_id, reason || null);
+
+    // If this approval just filled the last promo slot, end the promo
+    // immediately for everyone who got in on it — never for a manual
+    // admin-granted comp, hence the is_promo_comped filter (see schema.sql).
+    if (promoComped && promo) {
+      const { count: newCount } = await admin.from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("profile_status", "approved")
+        .eq("is_admin", false)
+        .eq("is_hidden_from_browse", false)
+        .or("subscription_status.eq.active,is_comped.eq.true");
+      if ((newCount || 0) >= promo.member_cap) {
+        // Fetch who's actually affected BEFORE revoking, so they can be
+        // notified — a comp silently disappearing with no explanation would
+        // read as a bug, not the promo working as promised.
+        const { data: affected } = await admin.from("profiles")
+          .select("push_token, push_platform, push_enabled")
+          .eq("is_promo_comped", true).eq("is_comped", true);
+        await admin.from("free_access_promo").update({ enabled: false, updated_at: new Date().toISOString() }).eq("id", true);
+        await admin.from("profiles").update({ is_comped: false }).eq("is_promo_comped", true).eq("is_comped", true);
+        promoJustEnded = true;
+        await logAdminAction(admin, user.id, "free_access_promo_ended", null, `member_cap of ${promo.member_cap} reached`);
+
+        for (const member of affected || []) {
+          if (member.push_token && member.push_enabled !== false && member.push_platform === "android") {
+            try {
+              await sendFcmPush(
+                member.push_token,
+                "Our free launch offer has ended",
+                "We've reached our target number of members — complete your membership from My Account to keep full access.",
+                { url: "/account.html" },
+              );
+            } catch (pushErr) {
+              console.warn("Promo-ended push notification failed:", pushErr);
+            }
+          }
+        }
+      }
+    }
 
     // Ahmadi verification answers (including the intro video) are one-time-
     // viewing data for this decision only — never retained past the moment a
@@ -193,8 +266,14 @@ Deno.serve(async (req) => {
         .single();
       if (member?.push_token && member.push_enabled !== false && member.push_platform === "android") {
         const title = action === "approve" ? "Your profile has been approved!" : "Your profile needs a small update";
+        // promoJustEnded means THIS SAME approval filled the last slot and
+        // was immediately converted back — the "you have free access"
+        // wording would be false by the time they read it, so it falls
+        // through to the normal payment-needed message instead.
         const body = action === "approve"
-          ? "Complete your membership from the app to start browsing and messaging."
+          ? (promoComped && !promoJustEnded
+              ? "You're one of our first members and have free access — start browsing and messaging now."
+              : "Complete your membership from the app to start browsing and messaging.")
           : (reason || "Please review and resubmit your profile from My Account.");
         await sendFcmPush(member.push_token, title, body, { url: "/account.html" });
       }
@@ -202,7 +281,13 @@ Deno.serve(async (req) => {
       console.warn("Profile review push notification failed:", pushErr);
     }
 
-    return new Response(JSON.stringify({ success: true, contact_email: updated?.contact_email, ref_code: updated?.ref_code }), {
+    return new Response(JSON.stringify({
+      success: true,
+      contact_email: updated?.contact_email,
+      ref_code: updated?.ref_code,
+      promo_comped: promoComped,
+      promo_ended: promoJustEnded,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

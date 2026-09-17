@@ -142,7 +142,7 @@
         <h4>Membership</h4>
         <div class="plan-row"><span>Plan</span><strong id="f-plan">—</strong></div>
         <div class="plan-row"><span>Status</span><strong style="font-family:'Lato',sans-serif;font-weight:700;color:var(--ink);" id="f-substatus">—</strong></div>
-        <p id="membershipCompNote" style="display:none;font-size:.82rem;color:var(--green);margin-top:14px;">You have complimentary access to Virtual Rishta Naata — thank you for being part of our community.</p>
+        <p id="membershipCompNote" style="display:none;font-size:.82rem;color:var(--green);margin-top:14px;"></p>
         <p id="membershipWhyFee" style="display:none;font-size:.8rem;line-height:1.6;color:var(--ink-soft);margin-top:14px;background:var(--beige);border-radius:var(--radius-s);padding:12px 14px;">Why is there a fee? It keeps this a serious community of people genuinely looking to get married, not time-wasters — and covers our running costs. It's a standard service charge, not a matchmaking commission, and applies the same to everyone.</p>
         <p id="membershipAutoRenewNote" style="display:none;font-size:.74rem;line-height:1.6;color:var(--ink-soft);margin-top:14px;">Payment is charged to your Apple ID at confirmation of purchase. Your subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period; your account is charged for renewal within 24 hours of that date at the plan's listed price. Manage or cancel anytime in your Apple ID subscription settings. See our <a href="/terms.html">Terms of Use</a> and <a href="/privacy.html">Privacy Policy</a>.</p>
         <button type="button" id="membershipCta" class="btn btn-primary btn-sm btn-block" style="display:none;margin-top:16px;" onclick="handleCompleteMembership()">Complete Your Membership</button>
@@ -276,6 +276,13 @@
     const autoRenewNote = document.getElementById('membershipAutoRenewNote');
     const isIOSNative = window.Capacitor?.isNativePlatform?.() && window.Capacitor.getPlatform() === 'ios';
     if (p.is_comped) {
+      // The launch-promo note sets expectations up front — this comp is
+      // temporary and ends once we hit our target member count, unlike a
+      // manually-granted comp (friend/family/reviewer), which really is
+      // permanent. See is_promo_comped in schema.sql.
+      compNote.textContent = p.is_promo_comped
+        ? "You're one of our first members and currently have complimentary access — thank you for joining early! This is a limited-time launch offer: once we reach our target number of active members, standard membership pricing will apply and you'll need to subscribe to keep full access."
+        : "You have complimentary access to Virtual Rishta Naata — thank you for being part of our community.";
       compNote.style.display = 'block';
       membershipCta.style.display = 'none';
       whyFee.style.display = 'none';

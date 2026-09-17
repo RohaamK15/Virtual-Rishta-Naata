@@ -1,7 +1,8 @@
-// Grants or revokes admin-comped free access. Only ever touches is_comped —
-// never subscription_status or profile_status. A comped member still needs
-// profile_status = 'approved' like everyone else (see is_active_member() in
-// schema.sql); this only ever substitutes for payment, never for approval.
+// Grants or revokes admin-comped free access. Only ever touches is_comped
+// (and is_promo_comped, always clearing it) — never subscription_status or
+// profile_status. A comped member still needs profile_status = 'approved'
+// like everyone else (see is_active_member() in schema.sql); this only ever
+// substitutes for payment, never for approval.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -65,8 +66,11 @@ Deno.serve(async (req) => {
 
     // Returns the member's contact_email/ref_code alongside success so the
     // caller (admin.html) can send the profile-decision notification email
-    // without a second round-trip — see notifyProfileDecision().
-    const { data, error } = await admin.from("profiles").update({ is_comped: comped }).eq("id", profile_id)
+    // without a second round-trip — see notifyProfileDecision(). Always
+    // clears is_promo_comped: a manual grant/revoke here is by definition an
+    // admin decision, not the launch promo, so it must never be swept up in
+    // a later automatic promo cutover (see admin-review-profile).
+    const { data, error } = await admin.from("profiles").update({ is_comped: comped, is_promo_comped: false }).eq("id", profile_id)
       .select("contact_email, ref_code").single();
     if (error) throw error;
     await logAdminAction(admin, user.id, comped ? "comp_grant" : "comp_revoke", profile_id);

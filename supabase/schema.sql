@@ -94,6 +94,16 @@ create table if not exists public.profiles (
   -- just means subscription_status never has to become 'active'. Only ever
   -- set by admin-set-comped (service role) — never in the update grant.
   is_comped boolean not null default false,
+  -- Marks a comp granted automatically by the "first N members free" launch
+  -- promo (see FREE ACCESS PROMO below and admin-review-profile's approve
+  -- action) rather than one an admin granted by hand via admin-set-comped.
+  -- Needed so ending the promo (once member_cap is reached) only revokes
+  -- is_comped for promo members, never a friend/family/reviewer comp an
+  -- admin granted manually — admin-set-comped always clears this flag, so a
+  -- manual grant can never be swept up in a later promo cutover. Stays true
+  -- forever after, even once is_comped itself is revoked, as a historical
+  -- record of who joined during the free launch window.
+  is_promo_comped boolean not null default false,
   -- For internal/reviewer test accounts (e.g. Apple App Review's TestFlight
   -- sign-in) that need full is_active_member() functionality to browse and
   -- message real members, but must never appear in real members' own browse
@@ -325,7 +335,7 @@ grant select (
   previous_duration, has_children, preference_line, country_looking_in,
   consider_pakistan, additional_note, about, has_photo, photo_path,
   photo_status, photo_rejection_reason, profile_status, profile_rejection_reason,
-  plan, subscription_status, is_comped, is_admin, chat_guidelines_accepted_at,
+  plan, subscription_status, is_comped, is_promo_comped, is_admin, chat_guidelines_accepted_at,
   onboarding_completed_at, theme_preference, push_enabled, created_at,
   tos_accepted_at, religious_data_consent_at, email_marketing_opt_out,
   checkout_waiver_accepted_at, verified_by_admin
@@ -945,7 +955,33 @@ create table if not exists public.email_from_alias (
 alter table public.email_from_alias enable row level security;
 
 -- ============================================================
--- 12. FIRST ADMIN
+-- 12. FREE ACCESS PROMO
+-- ============================================================
+-- Launch promotion: the first `member_cap` active members get comped
+-- automatically (see admin-review-profile's approve action) instead of
+-- having to pay, to help populate the platform early on. The moment the cap
+-- is reached, this row's `enabled` flips to false — so no further approvals
+-- get auto-comped, even if the count later dips back below the cap (e.g. a
+-- promo member deletes their account) — and is_comped is revoked for every
+-- profile with is_promo_comped = true, so free members convert to needing a
+-- real subscription at the same moment new signups do. A single row,
+-- enforced by the boolean primary key (only `true` is ever a valid id).
+-- Zero RLS policies — same service-role-only pattern as email_template and
+-- profile_verification; nothing here needs to be readable by any client.
+create table if not exists public.free_access_promo (
+  id boolean primary key default true check (id),
+  enabled boolean not null default true,
+  member_cap int not null default 40,
+  updated_at timestamptz not null default now()
+);
+alter table public.free_access_promo enable row level security;
+revoke all on public.free_access_promo from anon, authenticated;
+
+insert into public.free_access_promo (id, enabled, member_cap) values (true, true, 40)
+on conflict (id) do nothing;
+
+-- ============================================================
+-- 13. FIRST ADMIN
 -- ============================================================
 -- After you've created your own account through the normal signup flow once,
 -- run this (with your real user id from auth.users) to make yourself an admin:

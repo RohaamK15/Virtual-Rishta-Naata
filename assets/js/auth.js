@@ -109,7 +109,7 @@ const PROFILE_COLUMNS = [
   "preference_line", "country_looking_in", "consider_pakistan", "additional_note",
   "about", "has_photo", "photo_path", "photo_status", "photo_rejection_reason",
   "profile_status", "profile_rejection_reason",
-  "plan", "subscription_status", "is_comped", "is_admin", "chat_guidelines_accepted_at",
+  "plan", "subscription_status", "is_comped", "is_promo_comped", "is_admin", "chat_guidelines_accepted_at",
   "onboarding_completed_at", "theme_preference", "push_enabled", "created_at",
   "email_marketing_opt_out", "verified_by_admin",
 ].join(", ");
