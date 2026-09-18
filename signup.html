@@ -74,15 +74,6 @@
   .upload-box:hover{border-color:var(--green);}
   .upload-box svg{color:var(--gold);margin-bottom:10px;}
 
-  .plan-pick{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  @media (max-width:520px){.plan-pick{grid-template-columns:1fr;}}
-  .plan-pick-card{position:relative;cursor:pointer;}
-  .plan-pick-card input{position:absolute;opacity:0;}
-  .plan-pick-card .box{border:1.5px solid rgba(19,75,53,.16);border-radius:var(--radius-m);padding:22px 20px;transition:all .25s;}
-  .plan-pick-card:hover .box{border-color:var(--green);}
-  .plan-pick-card input:checked + .box{border-color:var(--gold);background:var(--gold-soft);}
-  .plan-pick-card .amt{font-family:'Cinzel',serif;font-size:1.5rem;color:var(--green);margin-top:6px;}
-
   .confirm-panel{text-align:center;padding:20px 0 0;}
   .ref-badge{
     display:inline-flex;flex-direction:column;align-items:center;gap:6px;
@@ -119,7 +110,7 @@
 
 <main class="wizard-wrap">
   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-  <div class="progress-label"><span id="stepLabel">Step 1 of 8</span><span id="stepName">Basics</span></div>
+  <div class="progress-label"><span id="stepLabel">Step 1 of 7</span><span id="stepName">Basics</span></div>
 
   <form class="wizard-card" id="wizardForm" onsubmit="return false;">
 
@@ -405,44 +396,16 @@
         <p style="font-size:.8rem;line-height:1.5;color:var(--ink-soft);margin:8px 0 0 28px;">Entirely optional — you'll always get emails about your own account (approval status, payment) either way, and can change this anytime from My Account.</p>
       </div>
 
+      <p id="submitError" style="display:none;color:var(--error);font-size:.85rem;margin-top:16px;"></p>
+
       <div class="step-actions">
         <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-primary" id="contactContinueBtn" onclick="handleContinueFromContact()">Continue</button>
+        <button type="button" class="btn btn-gold" id="submitReviewBtn" onclick="handleContinueFromContact()">Submit for Review</button>
       </div>
     </div>
 
-    <!-- STEP 7: Plan -->
+    <!-- STEP 7: Confirmation -->
     <div class="step" data-step="7">
-      <span class="eyebrow step-eyebrow">Almost There</span>
-      <h2>Choose Your Membership</h2>
-      <p class="step-desc">Your reference code will be generated the moment you submit — payment only happens after our team approves your profile.</p>
-
-      <div class="field" style="margin-top:28px;">
-        <div class="plan-pick">
-          <label class="plan-pick-card">
-            <input type="radio" name="plan" value="monthly" checked onchange="onPlanChange()">
-            <div class="box"><span class="eyebrow eyebrow--green">Monthly</span><div class="amt">£10<span style="font-family:'Lato',sans-serif;font-size:.85rem;color:var(--ink-soft);">/mo</span></div></div>
-          </label>
-          <label class="plan-pick-card">
-            <input type="radio" name="plan" value="annual" onchange="onPlanChange()">
-            <div class="box"><span class="eyebrow eyebrow--green">Annual</span><div class="amt">£100<span style="font-family:'Lato',sans-serif;font-size:.85rem;color:var(--ink-soft);">/yr</span></div></div>
-          </label>
-        </div>
-      </div>
-      <div class="photo-note">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 15h4"/></svg>
-        <span id="planRenewalNote">A membership is required to browse profiles and message other members. You won't be charged today — once your profile is approved, you'll complete payment (£10/month, cancel anytime) from your Account page.</span>
-      </div>
-      <p id="planError" style="display:none;color:var(--error);font-size:.85rem;margin-top:16px;"></p>
-
-      <div class="step-actions">
-        <button type="button" class="btn btn-outline" onclick="prevStep()">Back</button>
-        <button type="button" class="btn btn-gold" id="submitReviewBtn" onclick="handleSubmitForReview()">Submit for Review</button>
-      </div>
-    </div>
-
-    <!-- STEP 8: Confirmation -->
-    <div class="step" data-step="8">
       <div class="confirm-panel" id="confirmDone">
         <div class="check-circle">
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
@@ -455,10 +418,8 @@
         </div>
         <div style="background:var(--gold-soft);border:2px solid var(--gold);border-radius:var(--radius-m);padding:20px 22px;margin:24px 0 4px;text-align:left;max-width:420px;margin-left:auto;margin-right:auto;">
           <p style="font-weight:800;font-size:1.05rem;color:var(--gold-ink);margin:0 0 10px;">⚠️ IMPORTANT — Please Read</p>
-          <p style="font-size:.92rem;color:var(--gold-ink);margin:0 0 10px;line-height:1.6;">You are <u>not able to browse or message anyone yet</u>. There are two steps left:</p>
-          <p style="font-size:.92rem;color:var(--gold-ink);margin:0 0 6px;line-height:1.6;"><strong>Step 1:</strong> Wait for our team to approve your profile (usually within a day).</p>
-          <p style="font-size:.92rem;color:var(--gold-ink);margin:0 0 10px;line-height:1.6;"><strong>Step 2:</strong> Once approved, you must <strong>PAY for your membership</strong> before you can use the app. Go to the <strong>"My Account"</strong> button below, and tap the <strong>"Complete Your Membership"</strong> button that appears there.</p>
-          <p style="font-size:.92rem;color:var(--gold-ink);margin:0;line-height:1.6;">Nothing will work — you will not see any profiles and cannot message anyone — until you have completed this payment step.</p>
+          <p style="font-size:.92rem;color:var(--gold-ink);margin:0 0 10px;line-height:1.6;">You are <u>not able to browse or message anyone yet</u>. There's one step left: wait for our team to approve your profile (usually within a day).</p>
+          <p style="font-size:.92rem;color:var(--gold-ink);margin:0;line-height:1.6;">As part of our launch, early members get <strong>free access</strong> once approved — no payment needed. If our free-access spots have already filled by the time you're approved, you'll be asked to complete a quick membership payment first. Either way, check the <strong>"My Account"</strong> button below once you're approved.</p>
         </div>
         <a href="/account.html" class="btn btn-primary btn-block" style="margin-top:20px;">Go to My Account</a>
         <a href="/home.html" class="btn btn-outline btn-block" style="margin-top:12px;">Back to Home</a>
@@ -545,18 +506,8 @@
     }
   })();
 
-  // Pre-select whichever plan they clicked on the Pricing page
-  // (/signup.html?plan=annual) — without this it silently defaulted back to
-  // Monthly regardless of what they chose, only surfacing at Step 7.
-  (function preselectPlanFromQuery(){
-    const plan = new URLSearchParams(window.location.search).get('plan');
-    if (plan !== 'monthly' && plan !== 'annual') return;
-    const radio = document.querySelector(`input[name="plan"][value="${plan}"]`);
-    if (radio) radio.checked = true;
-  })();
-
-  const TOTAL_STEPS = 8;
-  const stepNames = ["Basics","Background","Community & History","Preferences","About You","Contact","Membership","Complete"];
+  const TOTAL_STEPS = 7;
+  const stepNames = ["Basics","Background","Community & History","Preferences","About You","Contact","Complete"];
   let current = 1;
   let selectedPhotoFile = null;
   let selectedVerifyVideoFile = null;
@@ -819,18 +770,6 @@
     document.getElementById('previousDetailsFields').style.display = hadPrevious ? 'block' : 'none';
   }
 
-  // Google Play (and basic consumer-protection practice) requires renewal
-  // terms to be visible at the point of purchase itself, not just buried in
-  // a separate FAQ — this updates to match whichever plan is selected so the
-  // real billing terms are shown right next to the price, every time.
-  function onPlanChange(){
-    const plan = document.querySelector('input[name="plan"]:checked')?.value || 'monthly';
-    const note = document.getElementById('planRenewalNote');
-    note.textContent = plan === 'annual'
-      ? "A membership is required to browse profiles and message other members. You won't be charged today — once your profile is approved, you'll complete payment (£100/year, cancel anytime) from your Account page."
-      : "A membership is required to browse profiles and message other members. You won't be charged today — once your profile is approved, you'll complete payment (£10/month, cancel anytime) from your Account page.";
-  }
-
   // This service is exclusively for Ahmadi Muslims — answering "No" here
   // stops the application on the spot rather than letting it continue only
   // to be rejected later, and points them to alislam.org instead.
@@ -897,7 +836,7 @@
       errorEl.style.display = 'block';
       return;
     }
-    nextStep();
+    handleSubmitForReview();
   }
 
   function readFileAsDataUrl(file){
@@ -910,8 +849,15 @@
   }
 
   async function handleSubmitForReview(){
-    const plan = document.querySelector('input[name="plan"]:checked')?.value || 'monthly';
-    const errorEl = document.getElementById('planError');
+    // The plan picker is temporarily removed from signup during the
+    // free-access launch promo (see admin-review-profile) — nobody signing up
+    // right now knows yet whether they'll even need to pay. Defaults to
+    // monthly; account.html's confirmCheckoutWaiver() reuses this stored
+    // value with no re-prompt if this member ever does need to pay, so
+    // everyone who signs up while the plan step is hidden ends up on
+    // monthly billing unless the plan step comes back before then.
+    const plan = 'monthly';
+    const errorEl = document.getElementById('submitError');
     const btn = document.getElementById('submitReviewBtn');
     errorEl.style.display = 'none';
     btn.setAttribute('disabled', '');
@@ -953,7 +899,7 @@
   // 'pending' status, so this is safely retryable from the same signed-in
   // session rather than needing to redo the whole signup.
   async function submitVerificationAfterSignup(email){
-    const errorEl = document.getElementById('planError');
+    const errorEl = document.getElementById('submitError');
     const btn = document.getElementById('submitReviewBtn');
     try {
       // Skipped entirely when "Verified by Admin" was selected — there's no
@@ -971,7 +917,7 @@
 
       const profile = await vrnMyProfile();
       document.getElementById('refCodeOut').textContent = profile.ref_code;
-      goToStep(8);
+      goToStep(7);
       document.getElementById('confirmDone').style.display = 'block';
       document.getElementById('confirmError').style.display = 'none';
       notifyNewSignup(profile, email);
