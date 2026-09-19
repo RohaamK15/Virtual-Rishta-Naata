@@ -128,14 +128,25 @@ const VRN_COUNTRY_ISO2 = {
   "Venezuela": "VE", "Vietnam": "VN", "Yemen": "YE", "Zambia": "ZM", "Zimbabwe": "ZW",
 };
 
-// Derives a flag emoji from a country name via Unicode regional-indicator
-// symbols (each letter of the ISO code maps to A-Z's regional-indicator
-// codepoint block starting at U+1F1E6) — no image assets or network request
-// needed. Returns "" for anything not in the map (e.g. a free-text "Other"
-// country a member typed in), so callers should treat the result as
-// optional decoration, not something always present.
-function vrnCountryFlag(countryName) {
+// Renders a small flag icon via flagcdn.com (a long-established, free, no-
+// API-key image CDN) rather than a flag emoji. Emoji regional-indicator
+// flags render inconsistently across Android — confirmed on a real device
+// showing the raw two-letter code as plain text instead of an actual icon,
+// since many OEM Android skins don't bundle full flag glyph coverage in
+// their emoji font — so a real image is the only reliable way to show a
+// flag the same way everywhere. Requests 2x the display height for
+// crispness on high-DPI screens; only the height is set (not width), so the
+// browser keeps each flag's natural aspect ratio. Returns "" for anything
+// not in the map (e.g. a free-text "Other" country a member typed in), so
+// callers should treat the result as optional decoration, not something
+// always present.
+function vrnCountryFlagImg(countryName, displayHeight = 16) {
   const iso2 = VRN_COUNTRY_ISO2[countryName];
   if (!iso2) return "";
-  return [...iso2].map((ch) => String.fromCodePoint(0x1F1E6 + ch.charCodeAt(0) - 65)).join("");
+  const code = iso2.toLowerCase();
+  // .svg (not a raster size prefix like h32 — flagcdn.com only recognizes
+  // wNN or WxH for raster, and a bare .svg for vector) scales perfectly at
+  // any size with no blur, so there's no need to juggle a 2x request for
+  // high-DPI screens the way a raster image would.
+  return `<img src="https://flagcdn.com/${code}.svg" height="${displayHeight}" alt="" style="vertical-align:-3px;border-radius:2px;margin-right:4px;" loading="lazy">`;
 }
