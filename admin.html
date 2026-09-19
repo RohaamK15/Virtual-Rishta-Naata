@@ -1066,7 +1066,10 @@
         <td>${escapeHtml(p.country_looking_in) || '—'}</td>
         <td>${escapeHtml(p.contact_email)}</td>
         <td>${new Date(p.created_at).toLocaleDateString('en-GB')}</td>
-        <td><span class="status-pill" style="background:${status.bg};color:${status.fg};">${status.label}</span></td>
+        <td>
+          <span class="status-pill" style="background:${status.bg};color:${status.fg};">${status.label}</span>
+          ${p.push_platform === 'android' ? `<span class="status-pill" style="background:var(--green-soft);color:var(--green);margin-left:6px;" title="Registered for push notifications from the Android app">Android App</span>` : ''}
+        </td>
         <td>
           <div class="row-actions">
             <button class="action-btn" title="View full record" onclick="openProfile('${p.ref_code}')">
@@ -1175,6 +1178,7 @@
         ${row('Comped', p.is_comped ? (p.is_promo_comped ? 'Yes — free launch offer' : 'Yes — manual') : 'No')}
         ${row('Verified by Admin (claimed)', p.verified_by_admin ? 'Yes — skipped verification' : 'No')}
         ${row('Admin', p.is_admin ? 'Yes' : 'No')}
+        ${row('Platform', p.push_platform === 'android' ? 'Android app' : 'Not confirmed on the app (likely web, or app with notifications off)')}
         ${row('Photo Status', p.photo_status)}
         ${row('Joined', p.created_at ? new Date(p.created_at).toLocaleString('en-GB') : null)}
         ${verificationBlock(p.profile_verification, p.verified_by_admin)}
