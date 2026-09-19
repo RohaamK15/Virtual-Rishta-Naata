@@ -1,3 +1,20 @@
+// Turns had_previous/previous_type/previous_duration into one readable
+// sentence instead of the old "Marriage, 22" comma fragment — used on
+// account.html, chat.html, and search.html's profile detail view. duration
+// is free text (placeholder is "e.g. 8 months"), so a bare number is
+// assumed to mean years (the overwhelmingly common case for "how long did a
+// past marriage/engagement/Nikah last") and gets " years" appended; anything
+// that already has its own unit is used exactly as typed.
+function vrnFormatPreviousRelationship(type, duration) {
+  const verbByType = { Marriage: "married", Engagement: "engaged", Nikah: "in a Nikah" };
+  const verb = verbByType[type] || "in a relationship";
+  const trimmedDuration = (duration || "").trim();
+  const durationText = trimmedDuration
+    ? (/^\d+$/.test(trimmedDuration) ? `${trimmedDuration} years` : trimmedDuration)
+    : "an unspecified duration";
+  return `Yes — previously ${verb} for ${durationText}`;
+}
+
 // Shared show/hide toggle for any password field wrapped in a
 // .password-field with a .password-toggle button (see styles.css). Used on
 // login, signup, and reset-password — kept in one place so all three stay

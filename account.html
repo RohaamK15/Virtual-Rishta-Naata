@@ -256,7 +256,7 @@
     document.getElementById('f-pakistan').textContent = p.consider_pakistan ? 'Yes' : 'No';
     document.getElementById('f-ahmadi').textContent = p.is_ahmadi ? 'Yes' : 'No';
     document.getElementById('f-jamaat').textContent = p.local_jamaat || '—';
-    document.getElementById('f-previous').textContent = p.had_previous ? `Yes — ${p.previous_type || 'Not specified'}, ${p.previous_duration || 'duration not given'}` : 'No';
+    document.getElementById('f-previous').textContent = p.had_previous ? vrnFormatPreviousRelationship(p.previous_type, p.previous_duration) : 'No';
     document.getElementById('f-children').textContent = p.has_children ? 'Yes' : 'No';
     // contact_email is deliberately no longer selectable from profiles by any
     // client (see the SELECT column grant in schema.sql) — other members used

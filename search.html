@@ -497,7 +497,7 @@
         <div class="detail-field"><span>Considers Pakistan</span><strong>${p.consider_pakistan ? 'Yes' : 'No'}</strong></div>
         <div class="detail-field"><span>Ahmadi Muslim</span><strong>${p.is_ahmadi ? 'Yes' : 'No'}</strong></div>
         ${p.country !== 'Pakistan' ? `<div class="detail-field"><span>Local Jamaat</span><strong>${escapeHtml(p.local_jamaat) || '—'}</strong></div>` : ''}
-        <div class="detail-field"><span>Previously Engaged / Married</span><strong>${p.had_previous ? `Yes — ${escapeHtml(p.previous_type) || 'Not specified'}, ${escapeHtml(p.previous_duration) || 'duration not given'}` : 'No'}</strong></div>
+        <div class="detail-field"><span>Previously Engaged / Married</span><strong>${p.had_previous ? escapeHtml(vrnFormatPreviousRelationship(p.previous_type, p.previous_duration)) : 'No'}</strong></div>
         <div class="detail-field"><span>Children</span><strong>${p.has_children ? 'Yes' : 'No'}</strong></div>
       </div>
 
