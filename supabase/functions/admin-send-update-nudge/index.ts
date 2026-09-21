@@ -33,8 +33,8 @@ Deno.serve(async (req) => {
       try {
         await sendFcmPush(
           m.push_token,
-          "Please Update Virtual Rishta Naata",
-          "A new version is available with important fixes. Please update from the Play Store to keep using the app.",
+          "New Update Available",
+          "There's a new update available for Virtual Rishta Naata — download it from the Play Store now to keep using the app.",
           { url: PLAY_STORE_URL }
         );
         sent++;
