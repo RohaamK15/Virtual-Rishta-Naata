@@ -109,8 +109,18 @@
           <input type="text" id="qualifications" placeholder="e.g. MSc Mechanical Engineering">
         </div>
         <div class="field">
-          <label for="employment">Employment</label>
-          <input type="text" id="employment" placeholder="e.g. Design Engineer, Automotive sector">
+          <label for="employmentStatus">Employment</label>
+          <select id="employmentStatus" onchange="onEmploymentStatusChange()">
+            <option value="" disabled>Select your employment status</option>
+            <option value="Employed">Employed</option>
+            <option value="Self-employed">Self-employed</option>
+            <option value="Looking for employment">Looking for employment</option>
+            <option value="Unemployed">Unemployed</option>
+          </select>
+        </div>
+        <div class="field" id="employmentDetailField" style="display:none;">
+          <label for="employmentDetail" id="employmentDetailLabel">What is your employment?</label>
+          <input type="text" id="employmentDetail" placeholder="e.g. Design Engineer, Automotive sector">
         </div>
         <div class="field">
           <label for="immigrationStatus">Immigration Status</label>
@@ -343,6 +353,65 @@
     if (el) el.checked = true;
   }
 
+  // Employment is stored as one free-text column ("Employed, GP Assistant",
+  // "Self-employed, Owns a bakery", "Looking for employment, Marketing
+  // roles", or plain "Unemployed") rather than separate status/detail
+  // columns — no schema change needed, and every other page that reads
+  // p.employment (search, chat, admin) already just displays the string
+  // as-is. This only controls which detail label/placeholder shows under
+  // the status dropdown; "Unemployed" needs no further detail.
+  function onEmploymentStatusChange(){
+    const status = document.getElementById('employmentStatus').value;
+    const field = document.getElementById('employmentDetailField');
+    const label = document.getElementById('employmentDetailLabel');
+    const input = document.getElementById('employmentDetail');
+    if (!status || status === 'Unemployed') {
+      field.style.display = 'none';
+      input.value = '';
+      return;
+    }
+    field.style.display = 'block';
+    if (status === 'Self-employed') {
+      label.textContent = 'What is your self-employment?';
+      input.placeholder = 'e.g. Owns a bakery';
+    } else if (status === 'Looking for employment') {
+      label.textContent = 'What kind of employment are you looking for?';
+      input.placeholder = 'e.g. Marketing roles';
+    } else {
+      label.textContent = 'What is your employment?';
+      input.placeholder = 'e.g. Design Engineer, Automotive sector';
+    }
+  }
+
+  function composeEmploymentValue(){
+    const status = document.getElementById('employmentStatus').value;
+    if (!status) return '';
+    if (status === 'Unemployed') return 'Unemployed';
+    const detail = document.getElementById('employmentDetail').value.trim();
+    return detail ? `${status}, ${detail}` : status;
+  }
+
+  // Reverse of composeEmploymentValue, for pre-filling the dropdown+detail
+  // fields from whatever is already stored. Handles three shapes: this
+  // page's own "Status, detail" / plain "Unemployed" output; a handful of
+  // common unemployed synonyms someone may have typed before this dropdown
+  // existed (e.g. the literal "Non" seen on a real profile); and anything
+  // else, which is assumed to be a legacy free-text job description and
+  // mapped to "Employed" with that text as the detail, rather than left
+  // blank and silently dropped.
+  const EMPLOYMENT_STATUSES = ['Employed', 'Self-employed', 'Looking for employment'];
+  const UNEMPLOYED_ALIASES = ['unemployed', 'not employed', 'non', 'none', 'n/a', 'na', 'nil'];
+  function parseEmploymentValue(value){
+    const trimmed = (value || '').trim();
+    if (!trimmed) return { status: '', detail: '' };
+    for (const status of EMPLOYMENT_STATUSES) {
+      if (trimmed === status) return { status, detail: '' };
+      if (trimmed.startsWith(status + ', ')) return { status, detail: trimmed.slice(status.length + 2) };
+    }
+    if (UNEMPLOYED_ALIASES.includes(trimmed.toLowerCase())) return { status: 'Unemployed', detail: '' };
+    return { status: 'Employed', detail: trimmed };
+  }
+
   // Splits a stored country value back into (select value, "Other" specify
   // text) for a dropdown built by vrnPopulateCountrySelect — the stored value
   // is whatever was actually chosen or typed at signup, which may not be a
@@ -399,6 +468,17 @@
     document.getElementById('age').value = p.age ?? '';
     document.getElementById('height').value = p.height || '';
 
+    // employment is stored as one free-text column (composeEmploymentValue
+    // below writes "Employed, GP Assistant" etc.) — this splits an existing
+    // value back into the status dropdown + detail field. Anything from
+    // before this dropdown existed (a raw job description, or something
+    // like "Non"/"None" meaning unemployed) is handled as best-effort
+    // legacy data, not just the four exact strings this page itself writes.
+    const { status: employmentStatus, detail: employmentDetail } = parseEmploymentValue(p.employment);
+    document.getElementById('employmentStatus').value = employmentStatus;
+    document.getElementById('employmentDetail').value = employmentDetail;
+    onEmploymentStatusChange();
+
     const ahmadiNote = document.getElementById('ahmadiReadonly');
     ahmadiNote.textContent = (p.is_ahmadi ? 'Yes' : 'No') + ' — contact us if this needs to change.';
 
@@ -450,9 +530,15 @@
     const heightMatch = height.match(/^([3-8])'(\d{1,2})"?$/);
     if (!heightMatch || +heightMatch[2] > 11) return "Please enter your height in the format feet'inches, e.g. 5'9";
 
-    const required = ['qualifications', 'employment', 'immigrationStatus', 'preferenceLine', 'aboutYourself'];
+    const required = ['qualifications', 'employmentStatus', 'immigrationStatus', 'preferenceLine', 'aboutYourself'];
     for (const id of required) {
       if (!document.getElementById(id).value.trim()) return 'Please fill in every field before saving.';
+    }
+    const employmentStatus = document.getElementById('employmentStatus').value;
+    if (employmentStatus !== 'Unemployed' && !document.getElementById('employmentDetail').value.trim()) {
+      return employmentStatus === 'Looking for employment'
+        ? 'Please let us know what kind of employment you are looking for.'
+        : 'Please let us know what your employment is.';
     }
     if (!document.getElementById('countryOfResidence').value) return 'Please select your country of residence.';
     const residesInPakistan = document.getElementById('countryOfResidence').value === 'Pakistan';
@@ -546,7 +632,7 @@
       age: parseInt(document.getElementById('age').value, 10),
       height: document.getElementById('height').value.trim(),
       qualifications: document.getElementById('qualifications').value,
-      employment: document.getElementById('employment').value,
+      employment: composeEmploymentValue(),
       immigration_status: document.getElementById('immigrationStatus').value,
       city: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('city').value,
       county: document.getElementById('countryOfResidence').value === 'Pakistan' ? null : document.getElementById('county').value,

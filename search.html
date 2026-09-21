@@ -257,12 +257,19 @@
     // verbatim is still checked too, since this pattern list can't cover
     // every phrasing.
     const opensWithAchievement = /^i\s+(have\s+)?(completed|graduated|studied|obtained|hold|received|finished|work(ing|s)?\s+as|am\s+(currently\s+)?(working|studying|employed))/i;
+    // employment is stored as "Employed, GP Assistant" / "Self-employed,
+    // Owns a bakery" / "Looking for employment, Marketing roles" / plain
+    // "Unemployed" (see composeEmploymentValue) — comparing against the
+    // whole string would almost never match real About-text phrasing
+    // ("I work as a GP Assistant" doesn't contain "Employed, GP Assistant"),
+    // so this strips the leading status label for matching purposes only.
+    const employmentDetail = (p.employment || '').replace(/^(Employed|Self-employed|Looking for employment),\s*/i, '');
     const isFactual = (s) => {
       const lower = s.toLowerCase();
       return opensWithAge.test(s)
         || opensWithAchievement.test(s)
         || (p.qualifications && lower.includes(p.qualifications.toLowerCase()))
-        || (p.employment && lower.includes(p.employment.toLowerCase()));
+        || (employmentDetail && lower.includes(employmentDetail.toLowerCase()));
     };
     // A sentence isn't "factual" just because it isn't about age/education/
     // employment — plenty of true, neutral statements (routines, practices,
