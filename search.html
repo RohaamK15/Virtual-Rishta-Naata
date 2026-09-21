@@ -244,11 +244,23 @@
   function personalSentence(p){
     const trimmed = (p.about || '').trim();
     if (!trimmed) return '';
-    const sentences = (trimmed.match(/[^.!?]+[.!?]?/g) || [trimmed]).map(s => s.trim()).filter(Boolean);
+    // Split only where sentence-ending punctuation is followed by whitespace
+    // and then a capital letter — a plain "split on . ! ?" also breaks
+    // abbreviations like "B.Ed" or "M.A." into fake fragments (e.g. "I have
+    // completed my B." as its own "sentence"), since there's no such
+    // whitespace+capital right after the period in an abbreviation.
+    const sentences = trimmed.split(/(?<=[.!?])\s+(?=[A-Z])/).map(s => s.trim()).filter(Boolean);
     const opensWithAge = /^i'?m\s+\d+\b|^i am\s+\d+\b/i;
+    // Catches sentences describing what someone DID or their credentials/job
+    // — education, career, achievements — as opposed to who they ARE
+    // (personality, values, interests). Restating qualifications/employment
+    // verbatim is still checked too, since this pattern list can't cover
+    // every phrasing.
+    const opensWithAchievement = /^i\s+(have\s+)?(completed|graduated|studied|obtained|hold|received|finished|work(ing|s)?\s+as|am\s+(currently\s+)?(working|studying|employed))/i;
     const isFactual = (s) => {
       const lower = s.toLowerCase();
       return opensWithAge.test(s)
+        || opensWithAchievement.test(s)
         || (p.qualifications && lower.includes(p.qualifications.toLowerCase()))
         || (p.employment && lower.includes(p.employment.toLowerCase()));
     };
