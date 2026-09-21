@@ -697,8 +697,18 @@
   // the signup/consultation confirmations, so it's configured independently
   // via EMAILJS_DECISION_CONFIG rather than the shared EMAILJS_CONFIG — see
   // assets/js/emailjs-config.js and email-templates/profile-decision.html.
+  // TEMPORARILY disabled during the free-access launch promo — clicking
+  // "Comp (Free)" on top of "Approve" for a promo signup (the old habit,
+  // from before approval auto-comped) sends this redundant "you've been
+  // comped" email on top of the accurate approve_promo one, which already
+  // explains the free access is temporary. approve/reject/approve_promo
+  // emails are unaffected. Delete this line to re-enable once the promo
+  // wraps up and manual comps (via the Comp button) are meaningful again.
+  const COMP_EMAIL_DISABLED = true;
+
   async function notifyProfileDecision(contactEmail, refCode, kind, reason){
     if (!contactEmail) return;
+    if (kind === 'comp' && COMP_EMAIL_DISABLED) return;
     const cfg = window.EMAILJS_DECISION_CONFIG;
     if (!cfg || !cfg.publicKey || cfg.publicKey === 'FILL_ME_IN') return; // not configured yet
     // Written in very plain, one-action-per-step language on purpose — this
