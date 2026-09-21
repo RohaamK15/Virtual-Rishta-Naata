@@ -899,11 +899,12 @@ create policy "app_min_version_select_anyone" on public.app_min_version
 revoke insert, update, delete on public.app_min_version from anon, authenticated;
 grant select on public.app_min_version to anon, authenticated;
 
--- Android's min_build_number is bumped to 17 alongside this release (the one
--- that actually disables Google sign-in) specifically so every build at or
--- below 16 — which still shows the Google button with no server-side
--- backstop other than the Supabase provider toggle — is forced to update.
-insert into public.app_min_version (platform, min_build_number) values ('android', 17)
+-- Android's min_build_number is bumped to 35 alongside this release (the one
+-- that removed the plan picker from signup for the free-access launch
+-- promo) specifically so every build at or below 34 — which still shows
+-- the old plan picker with a payable Annual option instead of the current
+-- auto-comp flow — is forced to update.
+insert into public.app_min_version (platform, min_build_number) values ('android', 35)
 on conflict (platform) do update set min_build_number = excluded.min_build_number, updated_at = now();
 
 -- iOS's first row, added ahead of its first-ever App Store submission
