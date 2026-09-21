@@ -264,7 +264,14 @@
         || (p.qualifications && lower.includes(p.qualifications.toLowerCase()))
         || (p.employment && lower.includes(p.employment.toLowerCase()));
     };
-    return sentences.find(s => !isFactual(s)) || sentences[0];
+    // A sentence isn't "factual" just because it isn't about age/education/
+    // employment — plenty of true, neutral statements (routines, practices,
+    // appearance) still say nothing about who someone actually IS. Prefer a
+    // sentence that positively names an actual character trait/value; only
+    // fall back to "just not factual" if nothing matches this list.
+    const personalityWords = /\b(kind|caring|honest|loyal|funny|humorous|humour|humor|outgoing|introvert|extrovert|family[- ]oriented|genuine|loving|patient|calm|easy[- ]going|easygoing|hardworking|down[- ]to[- ]earth|warm|friendly|respectful|supportive|understanding|ambitious|independent|adventurous|creative|thoughtful|compassionate|generous|humble|confident|shy|reserved|quiet|talkative|sociable|sense of humou?r|love spending|enjoy spending|passionate about|value|believe in|my personality|as a person|at heart)\b/i;
+    const isPersonality = (s) => !isFactual(s) && personalityWords.test(s);
+    return sentences.find(isPersonality) || sentences.find(s => !isFactual(s)) || sentences[0];
   }
 
   // A quick, scannable line of the things that matter most for a match —
