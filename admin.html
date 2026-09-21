@@ -673,7 +673,7 @@
             ${p.local_jamaat ? `<div><strong>Jamaat:</strong> ${escapeHtml(p.local_jamaat)}</div>` : ''}
             ${p.preference_line ? `<div><strong>Preference:</strong> ${escapeHtml(p.preference_line)}</div>` : ''}
             ${p.about ? `<div><strong>About:</strong> ${escapeHtml(p.about)}${aiFlagBadge(p.about)}</div>` : ''}
-            ${p.additional_note ? `<div><strong>Additional note:</strong> ${escapeHtml(p.additional_note)}${aiFlagBadge(p.additional_note)}</div>` : ''}
+            ${p.additional_note ? `<div><strong>Preference (in detail):</strong> ${escapeHtml(p.additional_note)}${aiFlagBadge(p.additional_note)}</div>` : ''}
           </div>
           ${verificationBlock(p.profile_verification, p.verified_by_admin)}
           <div style="display:flex;gap:8px;">
@@ -1171,7 +1171,7 @@
         ${row('Preference', p.preference_line)}
         ${row('Looking In', p.country_looking_in)}
         ${row('Considers Pakistan', p.consider_pakistan === null ? null : (p.consider_pakistan ? 'Yes' : 'No'))}
-        ${row('Additional Note', p.additional_note, p.additional_note)}
+        ${row('Preference (In Detail)', p.additional_note, p.additional_note)}
         ${row('About', p.about, p.about)}
         ${row('Contact Email', p.contact_email)}
         ${row('Plan', p.plan)}
