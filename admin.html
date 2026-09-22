@@ -173,6 +173,23 @@
       <p id="revenueError" style="display:none;padding:0 24px 20px;color:var(--error);font-size:.85rem;"></p>
     </div>
 
+    <div class="panel" id="engagement" data-reveal>
+      <div class="panel-head">
+        <h3>Engagement</h3>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:.78rem;color:var(--ink-soft);">Counts only — never reads message content</span>
+          <button type="button" class="action-btn" title="Refresh" onclick="loadEngagementStats()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="stat-row" style="grid-template-columns:1fr 1fr;padding:20px 24px 24px;">
+        <div class="stat-card"><span>Conversations Started</span><strong id="statConversations">—</strong></div>
+        <div class="stat-card"><span>Messages Sent</span><strong id="statMessages">—</strong></div>
+      </div>
+      <p id="engagementError" style="display:none;padding:0 24px 20px;color:var(--error);font-size:.85rem;"></p>
+    </div>
+
     <div class="panel" id="notifications" data-reveal>
       <div class="panel-head">
         <h3>Recent Signup Notifications</h3>
@@ -419,6 +436,7 @@
     loadPendingPhotos();
     loadPendingProfiles();
     loadRevenueStats();
+    loadEngagementStats();
     previewEmailAudience();
     loadEmailTemplates();
     loadFromAliases();
@@ -439,6 +457,22 @@
       document.getElementById('revenuePeriodLabel').textContent = `Live from Stripe · ${data.periodLabel}`;
     } catch (err) {
       errorEl.textContent = `Couldn't load revenue figures (${await vrnFunctionErrorMessage(err)}).`;
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // Count-only — see admin-get-engagement-stats for why this never touches
+  // actual message/conversation content.
+  async function loadEngagementStats(){
+    const errorEl = document.getElementById('engagementError');
+    errorEl.style.display = 'none';
+    try {
+      const { data, error } = await sb.functions.invoke('admin-get-engagement-stats');
+      if (error) throw error;
+      document.getElementById('statConversations').textContent = data.conversations.toLocaleString('en-GB');
+      document.getElementById('statMessages').textContent = data.messages.toLocaleString('en-GB');
+    } catch (err) {
+      errorEl.textContent = `Couldn't load engagement figures (${await vrnFunctionErrorMessage(err)}).`;
       errorEl.style.display = 'block';
     }
   }
