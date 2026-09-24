@@ -57,6 +57,30 @@ function vrnValidatePortraitPhoto(file) {
   });
 }
 
+// iPhones save photos as HEIC/HEIF by default — every browser except Safari
+// itself fails to decode that format via <img>, so vrnValidatePortraitPhoto's
+// onerror fires "Could not read this image" even though the photo opens
+// perfectly fine on the phone itself; the browser can't handle the format,
+// not the file. Converts to JPEG transparently (via the heic2any CDN script,
+// loaded on any page with a photo upload) so a member never needs to know
+// or care what format their phone used. Returns the original file unchanged
+// if it isn't HEIC/HEIF, or null if conversion itself failed (the library
+// didn't load, or the specific file couldn't be decoded even by it) — the
+// caller should show its own explanatory message in that case.
+async function vrnConvertHeicIfNeeded(file) {
+  const isHeic = /\.hei[cf]$/i.test(file.name) || /^image\/hei[cf]/i.test(file.type);
+  if (!isHeic) return file;
+  if (typeof heic2any !== "function") return null;
+  try {
+    const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+    const blob = Array.isArray(converted) ? converted[0] : converted;
+    return new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" });
+  } catch (err) {
+    console.warn("HEIC conversion failed:", err);
+    return null;
+  }
+}
+
 // A phone photo can easily be 4000x6000px while still under the 5MB file-size
 // cap — the profile frame never displays anywhere near that size (it's shown
 // at most a few hundred px wide), so anything bigger than maxDimension just

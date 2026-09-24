@@ -485,6 +485,7 @@
 
 <script src="/assets/js/app.js"></script>
 <script src="/assets/js/countries.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/assets/js/supabase-config.js"></script>
 <script src="/assets/js/supabase-client.js"></script>
@@ -543,6 +544,18 @@
       e.target.value = '';
       return;
     }
+
+    // iPhones default to HEIC, which most browsers can't decode at all —
+    // convert to JPEG first so a member never sees a confusing "could not
+    // read this image" for a photo that's completely fine on their phone.
+    const converted = await vrnConvertHeicIfNeeded(selectedPhotoFile);
+    if (!converted) {
+      alert("This looks like an iPhone photo format (HEIC) we couldn't convert automatically. In your Photos app, tap Share, then choose \"Save as JPEG\" (or send the photo to yourself via email/WhatsApp, which usually converts it), then upload that copy instead.");
+      selectedPhotoFile = null;
+      e.target.value = '';
+      return;
+    }
+    selectedPhotoFile = converted;
 
     const shapeError = await vrnValidatePortraitPhoto(selectedPhotoFile);
     if (shapeError) {
