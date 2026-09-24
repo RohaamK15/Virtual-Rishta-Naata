@@ -34,26 +34,51 @@ function vrnTogglePasswordVisibility(btn) {
 // only see my mouth" problem. Rather than just cropping unpredictably,
 // reject the photo at upload time with a clear reason. Returns null if the
 // photo's shape is acceptable, otherwise a message to show the member.
-function vrnValidatePortraitPhoto(file) {
+// Many modern phone cameras (50-200MP sensors are now common, especially on
+// Android) produce photos whose FILE SIZE is well under any upload limit but
+// whose PIXEL dimensions (e.g. 8000x12000) are still too much for a
+// memory-constrained WebView to decode at full native resolution — decoding
+// that many raw pixels can genuinely exceed the decode/canvas memory budget
+// on a mid-range Android device (this is worse inside the Android app's
+// WebView than in a full desktop/mobile browser). A plain <img>/
+// new Image() decode always materializes the FULL native resolution first,
+// so a completely valid, uncorrupted JPEG can still fail with the exact
+// same "could not read this image" error as a genuinely broken file.
+// createImageBitmap's resize option lets a supporting browser decode a
+// bounded, downsampled version directly — real JPEG decoders can decode
+// while downsampling using the format's own multi-scale structure, using a
+// fraction of the memory a full decode would need. Falls back to the old
+// <img>-based path only if createImageBitmap itself isn't available.
+async function vrnDecodeImageSafely(file, targetMaxDimension) {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file, { resizeWidth: targetMaxDimension, resizeQuality: "medium" });
+      return { width: bitmap.width, height: bitmap.height, bitmap };
+    } catch (err) {
+      console.warn("createImageBitmap decode failed, falling back to <img>:", err);
+    }
+  }
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const ratio = img.naturalWidth / img.naturalHeight; // <1 means taller than wide
-      if (ratio >= 0.95) {
-        resolve("Please upload a portrait photo (clearly taller than it is wide) — landscape and square photos get cropped awkwardly in the profile frame.");
-      } else if (ratio < 0.5) {
-        resolve("This photo is too tall and narrow to fit the profile frame well — please choose a more standard portrait photo, like a typical phone photo.");
-      } else {
-        resolve(null);
-      }
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve("Could not read this image — please choose a different file.");
-    };
+    img.onload = () => { URL.revokeObjectURL(url); resolve({ width: img.naturalWidth, height: img.naturalHeight, bitmap: img }); };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
     img.src = url;
+  });
+}
+
+function vrnValidatePortraitPhoto(file) {
+  return vrnDecodeImageSafely(file, 1600).then((decoded) => {
+    if (!decoded) return "Could not read this image — please choose a different file.";
+    const ratio = decoded.width / decoded.height; // <1 means taller than wide
+    if (decoded.bitmap.close) decoded.bitmap.close(); // release ImageBitmap memory promptly, not just on next GC
+    if (ratio >= 0.95) {
+      return "Please upload a portrait photo (clearly taller than it is wide) — landscape and square photos get cropped awkwardly in the profile frame.";
+    }
+    if (ratio < 0.5) {
+      return "This photo is too tall and narrow to fit the profile frame well — please choose a more standard portrait photo, like a typical phone photo.";
+    }
+    return null;
   });
 }
 
@@ -137,30 +162,40 @@ async function vrnUploadIntroVideo(userId, file){
   return path;
 }
 
-function vrnDownscaleImage(file, maxDimension = 1600, quality = 0.85) {
+// Uses the same memory-safe decode as vrnValidatePortraitPhoto — decoding
+// the full native resolution here too (as the old <img>-based version did)
+// would just move the same large-photo decode failure one step later,
+// since this runs right after validation on the very same file. The
+// createImageBitmap path already comes back close to maxDimension (thanks
+// to resizeWidth), so there's normally no further resize/canvas work needed
+// at all — one small trade-off is that resizeWidth always targets that
+// width rather than only clamping a *larger* image down to it, so a source
+// already smaller than maxDimension could get slightly upscaled/re-encoded
+// here instead of returned untouched; harmless for real phone camera
+// photos, which are essentially never that small to begin with.
+async function vrnDownscaleImage(file, maxDimension = 1600, quality = 0.85) {
+  const decoded = await vrnDecodeImageSafely(file, maxDimension);
+  if (!decoded) return file; // let the later size/shape checks catch real problems
+  const { width: w, height: h, bitmap } = decoded;
+  if (w <= maxDimension && h <= maxDimension) {
+    if (bitmap.close) bitmap.close();
+    return file;
+  }
+  // Only reachable via the <img> fallback path — createImageBitmap already
+  // respected maxDimension via resizeWidth, so this is a full-res decode
+  // that still needs an explicit scale-down.
+  const scale = maxDimension / Math.max(w, h);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(w * scale);
+  canvas.height = Math.round(h * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  if (bitmap.close) bitmap.close();
   return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const { naturalWidth: w, naturalHeight: h } = img;
-      if (w <= maxDimension && h <= maxDimension) {
-        resolve(file);
-        return;
-      }
-      const scale = maxDimension / Math.max(w, h);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(w * scale);
-      canvas.height = Math.round(h * scale);
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => {
-        if (!blob) { resolve(file); return; } // canvas export failed — fall back to the original
-        resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
-      }, 'image/jpeg', quality);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); }; // let the later size/shape checks catch real problems
-    img.src = url;
+    canvas.toBlob((blob) => {
+      if (!blob) { resolve(file); return; } // canvas export failed — fall back to the original
+      resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }));
+    }, 'image/jpeg', quality);
   });
 }
 
