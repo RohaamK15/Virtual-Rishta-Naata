@@ -170,8 +170,30 @@ Deno.serve(async (req) => {
       profile_rejection_reason: action === "reject" ? (reason || "Did not meet our community standards") : null,
     };
 
+    // Recorded in admin_action_log so "was this member verified when
+    // approved?" stays answerable after the verification row is deleted below.
+    let verificationNote: string | null = null;
+
     if (action === "approve") {
-      const { data: current } = await admin.from("profiles").select("subscription_status, is_comped").eq("id", profile_id).single();
+      const { data: current } = await admin.from("profiles").select("subscription_status, is_comped, verified_by_admin").eq("id", profile_id).single();
+
+      // Safeguard: never approve a profile that has neither submitted
+      // Ahmadi verification (answers + video) nor been marked as pre-verified
+      // by an admin. Without this, an incomplete signup (e.g. the video upload
+      // failed and the member never retried) could be approved by mistake.
+      const { data: verifRow } = await admin
+        .from("profile_verification")
+        .select("video_path")
+        .eq("profile_id", profile_id)
+        .maybeSingle();
+      if (current?.verified_by_admin) {
+        verificationNote = "approved: member claimed verified_by_admin (no verification submitted)";
+      } else if (verifRow?.video_path) {
+        verificationNote = "approved: verification answers + video were on file";
+      } else {
+        throw new Error("Can't approve: this member hasn't completed Ahmadi verification (no answers/video on file) and isn't marked verified by admin. Ask them to resubmit verification, or reject.");
+      }
+
       const alreadyActive = current?.subscription_status === "active" || current?.is_comped === true;
       if (!alreadyActive) {
         const { data: promoRow } = await admin.from("free_access_promo").select("enabled, member_cap").eq("id", true).maybeSingle();
@@ -198,7 +220,7 @@ Deno.serve(async (req) => {
     const { data: updated, error } = await admin.from("profiles").update(updateFields)
       .eq("id", profile_id).select("contact_email, ref_code").single();
     if (error) throw error;
-    await logAdminAction(admin, user.id, `profile_${action}`, profile_id, reason || null);
+    await logAdminAction(admin, user.id, `profile_${action}`, profile_id, reason || verificationNote);
 
     // If this approval just filled the last promo slot, end the promo
     // immediately for everyone who got in on it — never for a manual
