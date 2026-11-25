@@ -31,13 +31,14 @@ create table if not exists public.profiles (
   has_photo boolean not null default false,
   photo_path text,               -- storage path in the profile-photos bucket, either gender
   -- null until a photo is uploaded. Reset to 'pending' automatically whenever
-  -- photo_path changes (see trg_reset_photo_status below) — members never get
+  -- photo_path is written (see trg_reset_photo_status below) — members never get
   -- direct write access to this column, only admins (service role) can set it
-  -- to 'approved'/'rejected', via admin-review-photo. A pending/rejected photo
-  -- is never shown to other members — see get-profile-photo.
+  -- to 'approved'/'rejected', and only as part of the whole-profile decision in
+  -- admin-review-profile (there is no separate photo review). A pending/rejected
+  -- photo is never shown to other members — see get-profile-photo.
   photo_status text check (photo_status in ('pending','approved','rejected')),
   photo_rejection_reason text,
-  -- Whole-profile moderation, independent of photo_status. Starts 'pending' the
+  -- Whole-profile moderation, which includes the photo. Starts 'pending' the
   -- moment a profile is created (see submit-profile-for-review) and is reset back to
   -- 'pending' automatically whenever any member-editable content field changes
   -- (see trg_reset_profile_status below) — same reasoning as photo_status:
@@ -190,20 +191,35 @@ create trigger trg_set_ref_code
   before insert on public.profiles
   for each row execute function public.set_ref_code();
 
--- Whenever photo_path changes — a new upload, a replacement, or removal —
+-- Whenever photo_path is written — a new upload, a replacement, or removal —
 -- photo_status resets automatically. This is the only way photo_status ever
 -- changes to 'pending': members are never granted UPDATE on that column
 -- directly (see the grant in section 3), so there's no way to self-approve.
 -- A trigger can still set columns the calling role has no grant on; only the
 -- statement's own SET clause is subject to column grants.
+--
+-- The photo is reviewed as PART OF the whole-profile review, never on its
+-- own (there is no separate photo queue — admin-review-profile sets
+-- photo_status alongside profile_status). So a new/replacement photo also
+-- sends the whole profile back to 'pending'. Removing a photo doesn't: there
+-- is nothing new to review.
+--
+-- "update OF photo_path" (rather than comparing old vs new) is deliberate:
+-- every upload goes to the same `{user_id}/photo.{ext}` object with
+-- upsert, so replacing a JPEG with another JPEG leaves photo_path unchanged
+-- — a value comparison would let the new image silently inherit the old
+-- photo's approval. Firing whenever the column is in the SET clause catches
+-- that, since every upload path re-writes photo_path afterwards.
 create or replace function public.reset_photo_status_on_change()
 returns trigger
 language plpgsql
 as $$
 begin
-  if new.photo_path is distinct from old.photo_path then
-    new.photo_status := case when new.photo_path is null then null else 'pending' end;
-    new.photo_rejection_reason := null;
+  new.photo_status := case when new.photo_path is null then null else 'pending' end;
+  new.photo_rejection_reason := null;
+  if new.photo_path is not null then
+    new.profile_status := 'pending';
+    new.profile_rejection_reason := null;
   end if;
   return new;
 end;
@@ -211,7 +227,7 @@ $$;
 
 drop trigger if exists trg_reset_photo_status on public.profiles;
 create trigger trg_reset_photo_status
-  before update on public.profiles
+  before update of photo_path on public.profiles
   for each row execute function public.reset_photo_status_on_change();
 
 -- Same idea as reset_photo_status_on_change, but for the whole profile: any

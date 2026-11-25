@@ -56,7 +56,7 @@ Each relevant illegal-content category under the Act's Schedule 7 (priority offe
 ## 4. Cross-cutting systems (apply across all categories)
 
 - **Reporting:** available on every profile and every message, in-app, routed to admins.
-- **Removal:** admins can reject a pending profile, reject a photo, or delete an account entirely (`admin-review-profile`, `admin-review-photo`, `admin-delete-profile`), all logged.
+- **Removal:** admins can reject a pending profile — including rejecting it specifically because of its photo, since the photo is reviewed as part of the profile and any new photo sends the whole profile back for review — or delete an account entirely (`admin-review-profile`, `admin-delete-profile`), all logged.
 - **Record-keeping:** `admin_action_log` retains every moderation decision permanently, which is also what allows this risk assessment to be checked against real outcomes over time rather than just intentions.
 - **Escalation to authorities:** stated commitment in `child-safety.html` to cooperate with law enforcement and report CSEA to NCMEC where applicable.
 

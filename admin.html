@@ -201,17 +201,9 @@
     <div class="panel" id="profileReview" data-reveal>
       <div class="panel-head">
         <h3>Profile Review</h3>
-        <span style="font-size:.78rem;color:var(--ink-soft);">New or edited profiles wait here until approved — never shown in search before that</span>
+        <span style="font-size:.78rem;color:var(--ink-soft);">New or edited profiles (including new photos) wait here until approved — approving a profile approves its photo too</span>
       </div>
       <div id="profileReviewList" style="display:grid;gap:16px;padding:20px 24px;"></div>
-    </div>
-
-    <div class="panel" id="photoReview" data-reveal>
-      <div class="panel-head">
-        <h3>Photo Review</h3>
-        <span style="font-size:.78rem;color:var(--ink-soft);">New uploads wait here until approved — never shown to other members before that</span>
-      </div>
-      <div id="photoReviewGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px;padding:20px 24px;"></div>
     </div>
 
     <div class="panel" id="reportedProfiles" data-reveal>
@@ -391,6 +383,34 @@
   <div id="conversationHistoryBody" style="display:grid;gap:10px;font-size:.86rem;color:var(--ink-soft);max-height:70vh;overflow-y:auto;"></div>
 </div>
 
+<!-- Reject dialog. The photo is judged as part of the profile, so the admin
+     says here whether the photo is the reason. That choice decides what the
+     member is told: the decision email, push and My Account page all say
+     "upload a new photo" rather than "edit your profile". -->
+<div class="overlay" id="rejectModal-overlay" onclick="resolveRejectModal(false)"></div>
+<div class="sheet" id="rejectModal" style="max-width:480px;padding:32px;" role="dialog" aria-labelledby="rejectModalTitle">
+  <h3 id="rejectModalTitle">Reject this profile?</h3>
+  <p style="margin-top:8px;color:var(--ink-soft);font-size:.86rem;">The member will need to fix it and resubmit before it can be reviewed again.</p>
+  <fieldset style="border:0;padding:0;margin:18px 0 0;display:grid;gap:10px;font-size:.88rem;">
+    <legend style="font-family:'Montserrat',sans-serif;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--green);margin-bottom:8px;">Why is it being rejected?</legend>
+    <label id="rejectReasonPhotoLabel" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
+      <input type="radio" name="rejectReasonType" value="photo" style="margin-top:3px;">
+      <span><strong>The photo</strong> — member is asked to upload a new photo</span>
+    </label>
+    <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;">
+      <input type="radio" name="rejectReasonType" value="details" style="margin-top:3px;">
+      <span><strong>Something else in the profile</strong> — member is asked to edit their profile</span>
+    </label>
+  </fieldset>
+  <label for="rejectReasonText" style="display:block;margin-top:16px;font-size:.82rem;color:var(--ink-soft);">Note shown to the member (optional, but recommended)</label>
+  <textarea id="rejectReasonText" rows="3" style="width:100%;margin-top:6px;padding:10px 12px;border-radius:var(--radius-m);border:1px solid rgba(19,75,53,.2);font:inherit;font-size:.88rem;resize:vertical;"></textarea>
+  <p id="rejectModalError" style="display:none;color:var(--error);font-size:.8rem;margin-top:8px;">Choose why the profile is being rejected.</p>
+  <div style="display:flex;gap:12px;margin-top:20px;">
+    <button type="button" class="btn btn-outline btn-block" onclick="resolveRejectModal(false)">Cancel</button>
+    <button type="button" class="btn btn-block" style="background:var(--error);color:#fff;" onclick="resolveRejectModal(true)">Reject</button>
+  </div>
+</div>
+
 <script src="/assets/js/app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/assets/js/supabase-config.js"></script>
@@ -433,7 +453,6 @@
     renderTable();
     loadFlaggedMessages();
     loadReportedProfiles();
-    loadPendingPhotos();
     loadPendingProfiles();
     loadRevenueStats();
     loadEngagementStats();
@@ -703,6 +722,12 @@
             <strong>${p.ref_code}</strong>
             <span style="font-size:.8rem;color:var(--ink-soft);">${p.gender}, ${p.age} · ${escapeHtml(p.city || '')}${p.city ? ', ' : ''}${escapeHtml(p.country || '')} · Joined ${new Date(p.created_at).toLocaleDateString('en-GB')}</span>
           </div>
+          <div style="margin-bottom:14px;">
+            <div style="font-family:'Montserrat',sans-serif;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--green);margin-bottom:6px;">Photo — approved or rejected with this profile</div>
+            ${p.photo_url
+              ? `<a href="${p.photo_url}" target="_blank" rel="noopener"><img src="${p.photo_url}" alt="${escapeHtml(p.ref_code)} photo" style="width:160px;max-width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:var(--radius-m);display:block;"></a>`
+              : `<span style="font-size:.82rem;color:var(--error);">No photo on file.</span>`}
+          </div>
           <div style="font-size:.86rem;color:var(--ink-soft);display:grid;gap:6px;margin-bottom:14px;">
             ${p.local_jamaat ? `<div><strong>Jamaat:</strong> ${escapeHtml(p.local_jamaat)}</div>` : ''}
             ${p.preference_line ? `<div><strong>Preference:</strong> ${escapeHtml(p.preference_line)}</div>` : ''}
@@ -715,7 +740,7 @@
           </div>
           <div style="display:flex;gap:8px;margin-top:8px;">
             <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','approve')">Approve</button>
-            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','reject')">Reject</button>
+            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFull('${p.id}','reject',${!!p.photo_path})">Reject</button>
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="grantCompedAccess('${p.id}')" title="Grant free access — they won't be asked to pay">Comp (Free)</button>
           </div>
         </div>
@@ -770,6 +795,20 @@
           "Save your changes — this automatically sends your profile back to us for another look. You don't need to do anything else.",
         ],
       },
+      // Rejected because of the photo. The fix is a new photo, not an edit,
+      // so the steps point at "Change Photo" (uploading one automatically
+      // resubmits the whole profile — see trg_reset_photo_status).
+      reject_photo: {
+        status_heading: 'Your Profile Photo Needs Updating',
+        status_message: "Our team has reviewed your profile and couldn't approve it because of your profile photo."
+          + (reason ? ` ${reason}` : " Please upload a clear, recent photo of just yourself."),
+        next_steps: [
+          "Tap the button below to open your dashboard.",
+          'In the "Your Photo" section, tap "Change Photo".',
+          "Choose a clear, recent photo of just yourself — no group photos, filters or pictures of other things.",
+          "Once it's uploaded, your profile is automatically sent back to us for another look. You don't need to do anything else.",
+        ],
+      },
       comp: {
         status_heading: 'You Have Complimentary Access!',
         status_message: "Good news! You've been given free access to Virtual Rishta Naata — you will never be asked to pay.",
@@ -811,31 +850,70 @@
     }
   }
 
-  async function reviewProfileFull(profileId, action){
+  // Promise-based so reviewProfileFull can simply await the admin's answer.
+  // Resolves { photoIssue, reason } on Reject, or null on Cancel. Doesn't use
+  // openSheet/closeSheet because it can open on top of profileDetailModal,
+  // and closeSheet would unlock page scroll while that modal is still open.
+  let rejectModalResolver = null;
+  function askRejection(hasPhoto){
+    const modal = document.getElementById('rejectModal');
+    document.querySelectorAll('input[name="rejectReasonType"]').forEach((r) => { r.checked = false; });
+    const photoRadio = document.querySelector('input[name="rejectReasonType"][value="photo"]');
+    photoRadio.disabled = !hasPhoto;
+    document.getElementById('rejectReasonPhotoLabel').style.opacity = hasPhoto ? '1' : '.45';
+    document.getElementById('rejectReasonText').value = '';
+    document.getElementById('rejectModalError').style.display = 'none';
+    modal.classList.add('open');
+    document.getElementById('rejectModal-overlay').classList.add('open');
+    return new Promise((resolve) => { rejectModalResolver = resolve; });
+  }
+  function resolveRejectModal(confirmed){
+    let result = null;
+    if (confirmed) {
+      const picked = document.querySelector('input[name="rejectReasonType"]:checked');
+      if (!picked) { document.getElementById('rejectModalError').style.display = 'block'; return; }
+      result = { photoIssue: picked.value === 'photo', reason: document.getElementById('rejectReasonText').value.trim() || undefined };
+    }
+    document.getElementById('rejectModal').classList.remove('open');
+    document.getElementById('rejectModal-overlay').classList.remove('open');
+    if (rejectModalResolver) { rejectModalResolver(result); rejectModalResolver = null; }
+  }
+
+  // Returns true only if the review actually went through, so callers (e.g.
+  // the profile modal) know whether to close.
+  async function reviewProfileFull(profileId, action, hasPhoto){
     let reason = null;
+    let photoIssue = false;
     if (action === 'reject') {
       // Reject sits right next to Approve and Comp in the same row — a real
-      // confirmation step matters here, not just an optional-reason prompt
-      // that fires the rejection regardless of what's typed or whether it's
-      // cancelled (that's exactly what silently rejected VRN-4224 from a
-      // misclick, with neither admin realizing it).
-      if (!confirm('Reject this profile? The member will need to edit and resubmit before it can be reviewed again.')) return;
-      reason = prompt('Optional: reason to show the member (e.g. "Please tell us more about yourself in the About section")') || undefined;
+      // confirmation step matters here (a bare optional-reason prompt is
+      // exactly what silently rejected VRN-4224 from a misclick, with
+      // neither admin realizing it). The dialog requires an explicit choice
+      // of reason type, and Cancel/clicking away does nothing.
+      const answer = await askRejection(hasPhoto !== false);
+      if (!answer) return false;
+      reason = answer.reason;
+      photoIssue = answer.photoIssue;
     }
     try {
-      const { data, error } = await sb.functions.invoke('admin-review-profile', { body: { profile_id: profileId, action, reason } });
+      const { data, error } = await sb.functions.invoke('admin-review-profile', { body: { profile_id: profileId, action, reason, photo_issue: photoIssue } });
       if (error) throw error;
       // promo_ended means this exact approval filled the last free slot and
       // was immediately converted back — send the normal approval email
       // (payment needed) rather than one promising free access that's
       // already gone by the time they read it.
-      notifyProfileDecision(data?.contact_email, data?.ref_code, action === 'approve' && data?.promo_comped && !data?.promo_ended ? 'approve_promo' : action, reason);
+      let kind = action;
+      if (action === 'approve' && data?.promo_comped && !data?.promo_ended) kind = 'approve_promo';
+      else if (action === 'reject' && data?.photo_rejected) kind = 'reject_photo';
+      notifyProfileDecision(data?.contact_email, data?.ref_code, kind, reason);
       if (data?.promo_ended) {
         alert('This was the last free-access spot — the launch promo has now ended automatically. Everyone who got in for free will need to subscribe to keep their access.');
       }
       await loadPendingProfiles();
+      return true;
     } catch (err) {
       alert('Could not review this profile: ' + await vrnFunctionErrorMessage(err));
+      return false;
     }
   }
 
@@ -862,43 +940,6 @@
       renderTable(document.getElementById('adminSearch').value);
     } catch (err) {
       alert('Could not update free-access status: ' + await vrnFunctionErrorMessage(err));
-    }
-  }
-
-  async function loadPendingPhotos(){
-    const grid = document.getElementById('photoReviewGrid');
-    grid.innerHTML = `<p style="padding:10px;color:var(--ink-soft);">Loading…</p>`;
-    try {
-      const { data, error } = await sb.functions.invoke('admin-list-pending-photos');
-      if (error) throw error;
-      grid.innerHTML = data.photos.map(p => `
-        <div style="background:var(--beige);border-radius:var(--radius-m);overflow:hidden;">
-          <img src="${p.photo_url}" alt="${p.ref_code}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;">
-          <div style="padding:12px;">
-            <strong style="display:block;font-size:.85rem;margin-bottom:8px;">${p.ref_code}</strong>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewPhoto('${p.id}','approve')">Approve</button>
-              <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewPhoto('${p.id}','reject')">Reject</button>
-            </div>
-          </div>
-        </div>
-      `).join('') || `<p style="padding:10px;color:var(--ink-soft);">No photos waiting for review.</p>`;
-    } catch (err) {
-      grid.innerHTML = `<p style="padding:10px;color:var(--error);">Couldn't load pending photos (${await vrnFunctionErrorMessage(err)}).</p>`;
-    }
-  }
-
-  async function reviewPhoto(profileId, action){
-    let reason = null;
-    if (action === 'reject') {
-      reason = prompt('Optional: reason to show the member (e.g. "Please upload a clear photo of yourself, not a group photo")') || undefined;
-    }
-    try {
-      const { error } = await sb.functions.invoke('admin-review-photo', { body: { profile_id: profileId, action, reason } });
-      if (error) throw error;
-      await loadPendingPhotos();
-    } catch (err) {
-      alert('Could not review this photo: ' + await vrnFunctionErrorMessage(err));
     }
   }
 
@@ -1231,7 +1272,7 @@
         ${p.profile_status === 'pending' ? `
           <div style="display:flex;gap:8px;margin-top:16px;">
             <button class="btn btn-primary btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFromModal('${p.id}','approve')">Approve</button>
-            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFromModal('${p.id}','reject')">Reject</button>
+            <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="reviewProfileFromModal('${p.id}','reject',${!!p.photo_path})">Reject</button>
             <button class="btn btn-outline btn-sm" style="flex:1;padding:8px;font-size:.76rem;" onclick="grantCompedAccess('${p.id}')" title="Grant free access — they won't be asked to pay">Comp (Free)</button>
           </div>
         ` : `
@@ -1245,9 +1286,8 @@
     }
   }
 
-  async function reviewProfileFromModal(profileId, action){
-    await reviewProfileFull(profileId, action);
-    closeSheet('profileDetailModal');
+  async function reviewProfileFromModal(profileId, action, hasPhoto){
+    if (await reviewProfileFull(profileId, action, hasPhoto)) closeSheet('profileDetailModal');
   }
 
   // Re-sends the profile-decision email without touching profile_status/
@@ -1263,12 +1303,15 @@
       if (error) throw error;
       const p = data.profile;
       let kind, reason;
-      if (p.profile_status === 'rejected') { kind = 'reject'; reason = p.profile_rejection_reason; }
+      // A photo-related rejection always leaves photo_status='rejected' too
+      // (see admin-review-profile), which is how it's recognised here.
+      if (p.profile_status === 'rejected' && p.photo_status === 'rejected') { kind = 'reject_photo'; reason = p.photo_rejection_reason; }
+      else if (p.profile_status === 'rejected') { kind = 'reject'; reason = p.profile_rejection_reason; }
       else if (p.is_comped && p.is_promo_comped) { kind = 'approve_promo'; }
       else if (p.is_comped) { kind = 'comp'; }
       else if (p.profile_status === 'approved') { kind = 'approve'; }
       else { alert('This profile has no decision email to resend — it\'s still pending review.'); return; }
-      if (!confirm(`Resend the ${kind === 'approve' ? 'approval' : kind === 'reject' ? 'rejection' : 'complimentary-access'} email to ${ref}?`)) return;
+      if (!confirm(`Resend the ${kind === 'approve' ? 'approval' : kind === 'reject' ? 'rejection' : kind === 'reject_photo' ? 'photo rejection' : 'complimentary-access'} email to ${ref}?`)) return;
       await notifyProfileDecision(p.contact_email, p.ref_code, kind, reason);
       alert('Resend attempted. Check the recipient\'s inbox — or your browser console (F12) if it seems to have failed silently.');
     } catch (err) {

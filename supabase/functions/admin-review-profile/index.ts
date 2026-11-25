@@ -3,6 +3,12 @@
 // column at all (see schema.sql's trg_reset_profile_status). Rejecting never
 // touches subscription_status or deletes anything: the member keeps their
 // subscription and can simply edit their profile to resubmit for review.
+//
+// The photo is part of the profile decision, not a separate review: approving
+// the profile approves its photo, and a rejection can be flagged as being
+// because of the photo (photo_issue: true), which marks the photo rejected too
+// so the member is told to upload a new one. Uploading a new photo sends the
+// whole profile back to 'pending' (see trg_reset_photo_status in schema.sql).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -152,9 +158,19 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const { admin, user } = await requireAdmin(req);
-    const { profile_id, action, reason } = await req.json();
+    const { profile_id, action, reason, photo_issue } = await req.json();
     if (!profile_id) throw new Error("profile_id is required");
     if (!["approve", "reject"].includes(action)) throw new Error("action must be 'approve' or 'reject'");
+    const photoRejected = action === "reject" && photo_issue === true;
+    const rejectionReason = action !== "reject"
+      ? null
+      : (reason || (photoRejected
+          ? "Your profile photo didn't meet our photo guidelines — please upload a clear, recent photo of just yourself."
+          : "Did not meet our community standards"));
+
+    const { data: photoRow } = await admin.from("profiles").select("photo_path").eq("id", profile_id).single();
+    const hasPhoto = !!photoRow?.photo_path;
+    if (photoRejected && !hasPhoto) throw new Error("This member has no photo on file, so it can't be the reason for rejecting.");
 
     // Launch promo: the first `member_cap` active members get comped
     // automatically instead of having to pay — see FREE ACCESS PROMO in
@@ -167,8 +183,24 @@ Deno.serve(async (req) => {
     let promo: { enabled: boolean; member_cap: number } | null = null;
     const updateFields: Record<string, unknown> = {
       profile_status: action === "approve" ? "approved" : "rejected",
-      profile_rejection_reason: action === "reject" ? (reason || "Did not meet our community standards") : null,
+      profile_rejection_reason: rejectionReason,
     };
+    // Approving the profile approves the photo the admin just reviewed with
+    // it. A rejection for other reasons puts the photo back to 'pending' — it
+    // gets judged again with the resubmitted profile. That also keeps
+    // photo_status='rejected' meaning exactly "the latest rejection was
+    // because of the photo", which account.html and the resend-email button
+    // rely on (otherwise an earlier photo rejection would linger).
+    if (hasPhoto && action === "approve") {
+      updateFields.photo_status = "approved";
+      updateFields.photo_rejection_reason = null;
+    } else if (photoRejected) {
+      updateFields.photo_status = "rejected";
+      updateFields.photo_rejection_reason = rejectionReason;
+    } else if (hasPhoto) {
+      updateFields.photo_status = "pending";
+      updateFields.photo_rejection_reason = null;
+    }
 
     // Recorded in admin_action_log so "was this member verified when
     // approved?" stays answerable after the verification row is deleted below.
@@ -220,7 +252,10 @@ Deno.serve(async (req) => {
     const { data: updated, error } = await admin.from("profiles").update(updateFields)
       .eq("id", profile_id).select("contact_email, ref_code").single();
     if (error) throw error;
-    await logAdminAction(admin, user.id, `profile_${action}`, profile_id, reason || verificationNote);
+    await logAdminAction(
+      admin, user.id, `profile_${action}`, profile_id,
+      photoRejected ? `photo: ${rejectionReason}` : (reason || verificationNote),
+    );
 
     // If this approval just filled the last promo slot, end the promo
     // immediately for everyone who got in on it — never for a manual
@@ -287,7 +322,9 @@ Deno.serve(async (req) => {
         .eq("id", profile_id)
         .single();
       if (member?.push_token && member.push_enabled !== false && member.push_platform === "android") {
-        const title = action === "approve" ? "Your profile has been approved!" : "Your profile needs a small update";
+        const title = action === "approve"
+          ? "Your profile has been approved!"
+          : (photoRejected ? "Your profile photo needs updating" : "Your profile needs a small update");
         // promoJustEnded means THIS SAME approval filled the last slot and
         // was immediately converted back — the "you have free access"
         // wording would be false by the time they read it, so it falls
@@ -296,7 +333,9 @@ Deno.serve(async (req) => {
           ? (promoComped && !promoJustEnded
               ? "You're one of our first members and have free access — start browsing and messaging now."
               : "Complete your membership from the app to start browsing and messaging.")
-          : (reason || "Please review and resubmit your profile from My Account.");
+          : (reason || (photoRejected
+              ? "Please upload a new photo from My Account."
+              : "Please review and resubmit your profile from My Account."));
         await sendFcmPush(member.push_token, title, body, { url: "/account.html" });
       }
     } catch (pushErr) {
@@ -309,6 +348,8 @@ Deno.serve(async (req) => {
       ref_code: updated?.ref_code,
       promo_comped: promoComped,
       promo_ended: promoJustEnded,
+      photo_rejected: photoRejected,
+      rejection_reason: rejectionReason,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

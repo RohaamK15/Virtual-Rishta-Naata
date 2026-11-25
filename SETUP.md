@@ -54,8 +54,6 @@ The admin dashboard and payments run through small server-side functions in
    `supabase functions deploy admin-mark-message-reviewed`
    `supabase functions deploy admin-list-profile-reports`
    `supabase functions deploy admin-mark-report-reviewed`
-   `supabase functions deploy admin-list-pending-photos`
-   `supabase functions deploy admin-review-photo`
    `supabase functions deploy send-message-push`
 
 ## 3. Stripe (payments)

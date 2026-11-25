@@ -1,7 +1,7 @@
-// Returns every profile awaiting whole-profile review (as opposed to just the
-// photo — see admin-list-pending-photos for that). Admin reviews the actual
-// content here since fake/inappropriate profiles can't be caught from a
-// ref code and a photo alone.
+// Returns every profile awaiting review — content AND photo together, since
+// the photo is approved/rejected as part of the profile decision (there is
+// no separate photo queue; see admin-review-profile). Fake/inappropriate
+// profiles can't be caught from a ref code and a photo alone.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
         "id, ref_code, gender, age, height, qualifications, employment, immigration_status, " +
         "city, county, country, is_ahmadi, local_jamaat, had_previous, previous_type, " +
         "previous_duration, has_children, preference_line, country_looking_in, " +
-        "consider_pakistan, additional_note, about, created_at, verified_by_admin, " +
+        "consider_pakistan, additional_note, about, created_at, verified_by_admin, photo_path, photo_status, " +
         "profile_verification(local_jamaat, sadr_name_contact, positions_held, joined_jamaat, jamaat_activity, video_path)"
       )
       .eq("profile_status", "pending")
@@ -80,13 +80,18 @@ Deno.serve(async (req) => {
     const withVerification = await Promise.all((profiles || []).map(async (p: Record<string, unknown>) => {
       const v = Array.isArray(p.profile_verification) ? p.profile_verification[0] as Record<string, unknown> | undefined : p.profile_verification as Record<string, unknown> | undefined;
       const is_resubmission = previouslyApprovedIds.has(p.id as string);
-      if (!v) return { ...p, profile_verification: null, is_resubmission };
+      let photo_url = null;
+      if (p.photo_path) {
+        const { data: signedPhoto } = await admin.storage.from("profile-photos").createSignedUrl(p.photo_path as string, 300);
+        photo_url = signedPhoto?.signedUrl || null;
+      }
+      if (!v) return { ...p, photo_url, profile_verification: null, is_resubmission };
       let video_url = null;
       if (v.video_path) {
         const { data: signed } = await admin.storage.from("verification-videos").createSignedUrl(v.video_path as string, 300);
         video_url = signed?.signedUrl || null;
       }
-      return { ...p, profile_verification: { ...v, video_url }, is_resubmission };
+      return { ...p, photo_url, profile_verification: { ...v, video_url }, is_resubmission };
     }));
 
     return new Response(JSON.stringify({ profiles: withVerification }), {

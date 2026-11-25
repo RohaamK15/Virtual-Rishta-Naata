@@ -346,12 +346,19 @@
     const profileEditCta = document.getElementById('profileEditCta');
     const profilePayCta = document.getElementById('profilePayCta');
     if (p.profile_status === 'rejected') {
+      // The photo is reviewed as part of the profile — a rejection because of
+      // the photo leaves photo_status='rejected' too (see admin-review-profile),
+      // and the fix is a new photo, not an edit.
+      const rejectedForPhoto = p.photo_status === 'rejected';
       if (p.profile_rejection_reason) {
-        profileRejectionNote.textContent = `Reason: ${p.profile_rejection_reason}`;
+        profileRejectionNote.textContent = `${rejectedForPhoto ? 'Reason (your photo)' : 'Reason'}: ${p.profile_rejection_reason}`;
         profileRejectionNote.style.display = 'block';
       }
+      profileResubmitNote.textContent = rejectedForPhoto
+        ? 'Upload a new photo in the "Your Photo" section and your profile will automatically be resubmitted for review — no need to pay again or start over.'
+        : 'Make the changes below and your profile will automatically be resubmitted for review — no need to pay again or start over.';
       profileResubmitNote.style.display = 'block';
-      profileEditCta.style.display = 'block';
+      profileEditCta.style.display = rejectedForPhoto ? 'none' : 'block';
     } else {
       profileRejectionNote.style.display = 'none';
       profileResubmitNote.style.display = 'none';
@@ -430,6 +437,14 @@
       e.target.value = '';
       return;
     }
+    // The photo is approved as part of the whole profile, so a new one sends
+    // the profile back for review (trg_reset_photo_status) — and an approved
+    // member drops out of search until then. Say so before doing it.
+    if (currentProfile?.profile_status === 'approved' &&
+        !confirm('Changing your photo sends your profile back to our team for a quick review. Until it\'s approved again, your profile won\'t appear in search and you won\'t be able to browse or message. Continue?')) {
+      e.target.value = '';
+      return;
+    }
     const user = await vrnCurrentUser();
     const ext = file.type === 'image/png' ? 'png' : 'jpg';
     const path = `${user.id}/photo.${ext}`;
@@ -439,9 +454,10 @@
     try {
       const { error: uploadError } = await sb.storage.from('profile-photos').upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
-      // Changing photo_path is what resets photo_status to 'pending' — see
-      // trg_reset_photo_status in schema.sql. No admin approval carries over
-      // from a previous photo.
+      // Writing photo_path (even to the same value — re-uploads reuse the
+      // same object path) is what resets photo_status AND profile_status to
+      // 'pending' — see trg_reset_photo_status in schema.sql. No admin
+      // approval carries over from a previous photo.
       const { error: updateError } = await sb.from('profiles').update({ has_photo: true, photo_path: path }).eq('id', user.id);
       if (updateError) throw updateError;
       await loadAccount();
